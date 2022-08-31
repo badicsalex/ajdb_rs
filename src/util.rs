@@ -2,6 +2,12 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::{
+    fs::File,
+    io::{self, Read},
+    path::Path,
+};
+
 use chrono::NaiveDate;
 
 #[derive(Debug, Clone)]
@@ -28,6 +34,12 @@ impl Iterator for NaiveDateRange {
         self.from = self.from.succ();
         Some(result)
     }
+}
+
+pub fn read_all(path: impl AsRef<Path>) -> io::Result<Vec<u8>> {
+    let mut result = Vec::new();
+    File::open(path)?.read_to_end(&mut result)?;
+    Ok(result)
 }
 
 #[cfg(test)]

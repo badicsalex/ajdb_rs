@@ -9,6 +9,8 @@ edition = "2021"
 anyhow = "1.0"
 chrono = {version = "0.4", default-features = false}
 hun_law = { path = "../hun_law" }
+serde = {version = "1.0", features = ["derive"]}
+serde_yaml = "0.8"
 
 [dev-dependencies]
 pretty_assertions = "1"

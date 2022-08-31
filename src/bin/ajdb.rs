@@ -1,14 +1,23 @@
 // This file is part of AJDB
 // Copyright 2022, Alex Badics
 // All rights reserved.
+
+use std::path::Path;
+
 use anyhow::Result;
 
-use ajdb::{amender::apply_amendments, database::Database, util::NaiveDateRange};
+use ajdb::{amender::apply_amendments, database::{Database, ActInDatabase}, util::{NaiveDateRange, read_all}};
 use chrono::NaiveDate;
+use hun_law::structure::Act;
 
-pub fn cli_add_raw(path: &str) {
-    // Load act
-    // Add to database at publish date
+pub fn cli_add_raw(path: &Path) -> Result<()>{
+    let act: Act = serde_yaml::from_slice(&read_all(path)?)?;
+    let date = act.publication_date;
+    let mut db = Database::new();
+    let mut state = db.get_state(date);
+    state.set_act(ActInDatabase::save(act));
+    db.set_state(date, state);
+    Ok(())
 }
 pub fn cli_recalculate(from: NaiveDate, to: NaiveDate) {
     let mut db = Database::new();
