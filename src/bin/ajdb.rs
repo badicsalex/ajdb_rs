@@ -6,31 +6,34 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use ajdb::{amender::apply_amendments, database::{Database, ActInDatabase}, util::{NaiveDateRange, read_all}};
+use ajdb::{
+    amender::{apply_all_modifications, get_all_modifications},
+    database::{Database, Persistence},
+    util::{read_all, NaiveDateRange},
+};
 use chrono::NaiveDate;
 use hun_law::structure::Act;
 
-pub fn cli_add_raw(path: &Path) -> Result<()>{
+pub fn cli_add_raw(path: &Path) -> Result<()> {
     let act: Act = serde_yaml::from_slice(&read_all(path)?)?;
     let date = act.publication_date;
-    let mut db = Database::new();
+    let persistence = Persistence::new("db");
+    let mut db = Database::new(persistence);
     let mut state = db.get_state(date);
-    state.set_act(ActInDatabase::save(act));
+    state.store_act(act);
     db.set_state(date, state);
     Ok(())
 }
 pub fn cli_recalculate(from: NaiveDate, to: NaiveDate) {
-    let mut db = Database::new();
-    let mut state = db.get_state(from);
+    let persistence = Persistence::new("db");
+    let mut db = Database::new(persistence);
     for date in NaiveDateRange::new(from.succ(), to) {
-        let new_state = db.get_state(date);
-        for act in new_state.get_new_acts_compared_to(&state) {
-            state.set_act(act);
-        }
-        for act in state.get_acts_enforced_at_date(date) {
-            apply_amendments(&mut state, act, date);
-        }
-        db.set_state(date, state.clone());
+        db.copy_state(date.pred(), date);
+        let mut state = db.get_state(date);
+        let interesting_acts = state.get_acts_enforced_at_date(date);
+        let modifications = get_all_modifications(&interesting_acts, date);
+        apply_all_modifications(&mut state, &modifications);
+        db.set_state(date, state);
     }
 }
 

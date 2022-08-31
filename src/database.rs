@@ -2,25 +2,73 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::path::PathBuf;
+
 use chrono::NaiveDate;
 use hun_law::{identifier::ActIdentifier, reference::Reference, structure::Act};
 
-pub struct Database {}
+#[derive(Debug, Clone)]
+pub struct Persistence {
+    path: PathBuf,
+}
 
-// Should be somewhat lightweight
-#[derive(Clone)]
-pub struct DatabaseState {}
+impl Persistence {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        Self { path: path.into() }
+    }
+}
+
+pub struct Database {
+    persistence: Persistence,
+}
+
+pub struct DatabaseState {
+    persistence: Persistence,
+}
 
 // Should contain cached data, and gie back act when needed
-pub struct ActInDatabase {}
+pub struct StoredAct {
+    persistence: Persistence,
+}
 
-impl ActInDatabase {
-    // Also does the save to db
-    // This is where article dedup could be implemented
-    pub fn save(act: Act) -> Self {
+impl Database {
+    pub fn new(persistence: Persistence) -> Self {
         todo!()
     }
 
+    pub fn get_state(&self, date: NaiveDate) -> DatabaseState {
+        todo!()
+    }
+    pub fn set_state(&mut self, date: NaiveDate, state: DatabaseState) {
+        todo!()
+    }
+
+    /// Copy acts from old_date state to new_date state,
+    /// overwriting exisitng acts and keeping new ones.
+    pub fn copy_state(&mut self, old_date: NaiveDate, new_date: NaiveDate) {
+        todo!()
+    }
+}
+
+impl DatabaseState {
+    pub fn act(&self, id: ActIdentifier) -> StoredAct {
+        todo!()
+    }
+
+    pub fn get_new_acts_compared_to(&self, other: &DatabaseState) -> Vec<StoredAct> {
+        todo!()
+    }
+
+    pub fn get_acts_enforced_at_date(&self, date: NaiveDate) -> Vec<StoredAct> {
+        todo!()
+    }
+
+    pub fn store_act(&mut self, act: Act) -> StoredAct {
+        todo!()
+    }
+}
+
+impl StoredAct {
     // This is what does the actual load
     pub fn load(&self) -> Act {
         todo!()
@@ -28,36 +76,4 @@ impl ActInDatabase {
 
     // Something about being in force? Probably cached
     // Other cached stuff and metadata here.
-}
-
-impl Database {
-    pub fn new() -> Self {
-        todo!()
-    }
-
-    pub fn get_state(&self, date: NaiveDate) -> DatabaseState {
-        todo!()
-    }
-    pub fn set_state(&mut self, date: NaiveDate, state: DatabaseState) -> DatabaseState {
-        todo!()
-    }
-}
-
-impl DatabaseState {
-    pub fn get_act(&self, id: ActIdentifier) -> ActInDatabase {
-        // Maybe return a lighter weight Act, or Act Proxy
-        todo!()
-    }
-
-    pub fn get_new_acts_compared_to(&self, other: &DatabaseState) -> Vec<ActInDatabase> {
-        todo!()
-    }
-
-    pub fn get_acts_enforced_at_date(&self, date: NaiveDate) -> Vec<ActInDatabase> {
-        todo!()
-    }
-
-    pub fn set_act(&mut self, act: ActInDatabase) {
-        todo!()
-    }
 }
