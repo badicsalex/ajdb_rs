@@ -9,3 +9,6 @@ edition = "2021"
 anyhow = "1.0"
 chrono = {version = "0.4", default-features = false}
 hun_law = { path = "../hun_law" }
+
+[dev-dependencies]
+pretty_assertions = "1"
