@@ -5,3 +5,4 @@
 pub mod util;
 pub mod database;
 pub mod amender;
+pub mod persistence;
