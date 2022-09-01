@@ -31,8 +31,8 @@ pub fn cli_recalculate(from: NaiveDate, to: NaiveDate) -> Result<()> {
     for date in NaiveDateRange::new(from.succ(), to) {
         db.copy_state(date.pred(), date)?;
         let mut state = db.get_state(date)?;
-        let interesting_acts = state.get_acts_enforced_at_date(date);
-        let modifications = get_all_modifications(&interesting_acts, date)?;
+        let acts = state.get_acts()?;
+        let modifications = get_all_modifications(&acts, date)?;
         apply_all_modifications(&mut state, &modifications)?;
         state.save()?;
     }

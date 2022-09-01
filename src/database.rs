@@ -37,7 +37,7 @@ impl<'p> Database<'p> {
             data,
         })
     }
-    fn set_state(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
+    fn set_state_data(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
         self.persistence
             .store(KeyType::Forced(Self::state_key(date)), &state)?;
         Ok(())
@@ -46,7 +46,11 @@ impl<'p> Database<'p> {
     /// Copy acts from old_date state to new_date state,
     /// overwriting exisitng acts and keeping new ones.
     pub fn copy_state(&mut self, old_date: NaiveDate, new_date: NaiveDate) -> Result<()> {
-        todo!()
+        let old_data = self.get_state(old_date)?.data;
+        let mut state = self.get_state(new_date)?;
+        state.merge_into(old_data);
+        state.save()?;
+        Ok(())
     }
 }
 
@@ -63,6 +67,10 @@ pub struct DatabaseState<'p, 'db> {
 }
 
 impl<'p, 'db> DatabaseState<'p, 'db> {
+    pub fn has_act(&self, id: ActIdentifier) -> bool {
+        self.data.acts.contains_key(&id)
+    }
+
     pub fn get_act(&self, id: ActIdentifier) -> Result<ActEntry> {
         if let Some(act_key) = self.data.acts.get(&id) {
             Ok(ActEntry {
@@ -78,25 +86,30 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
         }
     }
 
-    pub fn get_new_acts_compared_to(&self, other: &DatabaseState) -> Vec<ActEntry> {
-        todo!()
-    }
-
-    pub fn get_acts_enforced_at_date(&self, date: NaiveDate) -> Vec<ActEntry> {
-        todo!()
+    pub fn get_acts(&self) -> Result<Vec<ActEntry>> {
+        self.data
+            .acts
+            .keys()
+            // TODO: this does a double lookup. At least we don't repeat ActEntry construction
+            .map(|&act_id| self.get_act(act_id))
+            .collect()
     }
 
     pub fn store_act(&mut self, act: Act) -> Result<ActEntry> {
-        let act_key = self.db.persistence.store(KeyType::Calculated("act"), &act)?;
-        self.data.acts.insert(act.identifier, act_key.clone());
-        Ok(ActEntry {
-            persistence: self.db.persistence,
-            act_key,
-        })
+        let act_key = self
+            .db
+            .persistence
+            .store(KeyType::Calculated("act"), &act)?;
+        self.data.acts.insert(act.identifier, act_key);
+        self.get_act(act.identifier)
     }
 
-    pub fn save(self) -> Result<()>{
-        self.db.set_state(self.date, self.data)
+    fn merge_into(&mut self, mut other: StateData) {
+        self.data.acts.append(&mut other.acts);
+    }
+
+    pub fn save(self) -> Result<()> {
+        self.db.set_state_data(self.date, self.data)
     }
 }
 
