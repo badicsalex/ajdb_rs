@@ -2,31 +2,46 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::collections::HashMap;
+
+use anyhow::Result;
 use chrono::NaiveDate;
 use hun_law::{identifier::ActIdentifier, structure::Act};
 
-use crate::database::{DatabaseState, StoredAct};
+use crate::database::{ActEntry, DatabaseState};
 
 pub struct ActModification {}
 
 impl ActModification {
-    pub fn affected_act_id(&self) -> ActIdentifier {
-        todo!()
-    }
-
-    pub fn modify_act(&self, act: Act) -> Act {
+    pub fn modify_act(&self, act: &mut Act) -> Result<()> {
         todo!()
     }
 }
 
-pub fn get_all_modifications(acts: &[StoredAct], date: NaiveDate) -> Vec<ActModification> {
-    todo!()
+pub type ActModificationSet = HashMap<ActIdentifier, Vec<ActModification>>;
+
+pub fn get_all_modifications(
+    act_entries: &[ActEntry],
+    date: NaiveDate,
+) -> Result<ActModificationSet> {
+    let result = HashMap::new();
+    for act_entry in act_entries {
+        let act = act_entry.act()?;
+        todo!()
+    }
+    Ok(result)
 }
 
-pub fn apply_all_modifications(state: &mut DatabaseState, modifications: &[ActModification]) {
-    for modification in modifications {
-        let act = state.act(modification.affected_act_id()).load();
-        let act = modification.modify_act(act);
-        state.store_act(act);
+pub fn apply_all_modifications(
+    state: &mut DatabaseState,
+    modifications: &ActModificationSet,
+) -> Result<()> {
+    for (act_id, modifications) in modifications {
+        let mut act = state.get(*act_id)?.act()?;
+        for modification in modifications {
+            modification.modify_act(&mut act)?;
+        }
+        state.store(act);
     }
+    Ok(())
 }
