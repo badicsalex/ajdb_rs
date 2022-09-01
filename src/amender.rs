@@ -37,11 +37,11 @@ pub fn apply_all_modifications(
     modifications: &ActModificationSet,
 ) -> Result<()> {
     for (act_id, modifications) in modifications {
-        let mut act = state.get(*act_id)?.act()?;
+        let mut act = state.get_act(*act_id)?.act()?;
         for modification in modifications {
             modification.modify_act(&mut act)?;
         }
-        state.store(act);
+        state.store_act(act)?;
     }
     Ok(())
 }

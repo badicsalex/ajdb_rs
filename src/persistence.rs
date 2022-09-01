@@ -35,7 +35,7 @@ impl Persistence {
         format!("{}/{:08x}", prefix, seahash::hash(data))
     }
 
-    pub fn store<T: serde::Serialize>(&self, input_key: KeyType, data: &T) -> Result<PersistenceKey> {
+    pub fn store<T: serde::Serialize>(&mut self, input_key: KeyType, data: &T) -> Result<PersistenceKey> {
         let the_json = serde_json::to_vec(data)?;
 
         let key = match input_key {

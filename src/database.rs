@@ -11,12 +11,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::persistence::{KeyType, Persistence, PersistenceKey};
 
-pub struct Database<'a> {
-    persistence: &'a Persistence,
+pub struct Database<'p> {
+    persistence: &'p mut Persistence,
 }
 
-impl<'a> Database<'a> {
-    pub fn new(persistence: &'a Persistence) -> Self {
+impl<'p> Database<'p> {
+    pub fn new(persistence: &'p mut Persistence) -> Self {
         Self { persistence }
     }
 
@@ -24,7 +24,7 @@ impl<'a> Database<'a> {
         format!("state/{}", date)
     }
 
-    pub fn get_state(&self, date: NaiveDate) -> Result<DatabaseState> {
+    pub fn get_state(&mut self, date: NaiveDate) -> Result<DatabaseState<'p, '_>> {
         let key = Self::state_key(date);
         let data = if self.persistence.exists(&key)? {
             self.persistence.load(&key)?
@@ -32,12 +32,12 @@ impl<'a> Database<'a> {
             StateData::default()
         };
         Ok(DatabaseState {
-            persistence: self.persistence,
+            db: self,
             date,
             data,
         })
     }
-    pub fn set_state(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
+    fn set_state(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
         self.persistence
             .store(KeyType::Forced(Self::state_key(date)), &state)?;
         Ok(())
@@ -55,18 +55,18 @@ pub struct StateData {
     acts: BTreeMap<ActIdentifier, PersistenceKey>,
 }
 
-pub struct DatabaseState<'a> {
-    persistence: &'a Persistence,
+pub struct DatabaseState<'p, 'db> {
+    db: &'db mut Database<'p>,
     // Should only be used for debugging purposes
     date: NaiveDate,
     data: StateData,
 }
 
-impl<'a> DatabaseState<'a> {
-    pub fn get(&self, id: ActIdentifier) -> Result<ActEntry> {
+impl<'p, 'db> DatabaseState<'p, 'db> {
+    pub fn get_act(&self, id: ActIdentifier) -> Result<ActEntry> {
         if let Some(act_key) = self.data.acts.get(&id) {
             Ok(ActEntry {
-                persistence: self.persistence,
+                persistence: self.db.persistence,
                 act_key: act_key.clone(),
             })
         } else {
@@ -86,17 +86,17 @@ impl<'a> DatabaseState<'a> {
         todo!()
     }
 
-    pub fn store(&mut self, act: Act) -> Result<ActEntry> {
-        let act_key = self.persistence.store(KeyType::Calculated("act"), &act)?;
+    pub fn store_act(&mut self, act: Act) -> Result<ActEntry> {
+        let act_key = self.db.persistence.store(KeyType::Calculated("act"), &act)?;
         self.data.acts.insert(act.identifier, act_key.clone());
         Ok(ActEntry {
-            persistence: self.persistence,
+            persistence: self.db.persistence,
             act_key,
         })
     }
 
-    pub fn data(self) -> StateData {
-        self.data
+    pub fn save(self) -> Result<()>{
+        self.db.set_state(self.date, self.data)
     }
 }
 
