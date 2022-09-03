@@ -2,7 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-pub mod util;
-pub mod database;
 pub mod amender;
+pub mod database;
 pub mod persistence;
+pub mod util;

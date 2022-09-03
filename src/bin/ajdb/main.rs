@@ -7,11 +7,11 @@ mod recalculate;
 
 use std::io::Write;
 
-use add::{AddArgs, cli_add_raw};
+use add::{cli_add_raw, AddArgs};
 use anyhow::Result;
 
 use clap::Parser;
-use recalculate::{RecalculateArgs, cli_recalculate};
+use recalculate::{cli_recalculate, RecalculateArgs};
 
 /// AJDB command line interface
 ///
@@ -23,7 +23,7 @@ struct AjdbArgs {
 }
 
 #[derive(clap::Subcommand, Debug)]
-enum AjdbCommand{
+enum AjdbCommand {
     /// Add raw acts as parsed from MK. Usually created by the default invocation of hun_law
     Add(AddArgs),
     /// Recalculate amendments in the given date range. Be sure that the end date range is the end
