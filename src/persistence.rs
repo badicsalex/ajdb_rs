@@ -100,6 +100,12 @@ impl Persistence {
     }
 
     fn compute_key(prefix: &str, data: &[u8]) -> PersistenceKey {
-        format!("{}/{:08x}", prefix, seahash::hash(data))
+        let hash: u64 = seahash::hash(data);
+        format!(
+            "{}/{:02x}/{:06x}",
+            prefix,
+            hash >> 56,
+            hash & 0xFFFFFFFFFFFFFF
+        )
     }
 }
