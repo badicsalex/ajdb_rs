@@ -21,6 +21,9 @@ impl ActModification {
 
 pub type ActModificationSet = HashMap<ActIdentifier, Vec<ActModification>>;
 
+/// Return all modifications that comes in force on the specific day
+/// Include the auto-repeal of said modifications the next day, according to
+/// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
 pub fn get_all_modifications(
     act_entries: &[ActEntry],
     date: NaiveDate,
@@ -35,6 +38,9 @@ pub fn get_all_modifications(
     Ok(result)
 }
 
+/// Apply the modification lsit calculated by get_all_modifications
+/// This function is separate to make sure that immutable and mutable
+/// references to the DatabaseState are properly exclusive.
 pub fn apply_all_modifications(
     state: &mut DatabaseState,
     modifications: &ActModificationSet,
