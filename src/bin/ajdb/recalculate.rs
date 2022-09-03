@@ -30,6 +30,8 @@ pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
         db.copy_state(date.pred(), date)?;
         let mut state = db.get_state(date)?;
         let acts = state.get_acts()?;
+        // NOTE: this will not handle modifications which modify other
+        //       modifications coming into force in the same day
         let modifications = get_all_modifications(&acts, date)?;
         apply_all_modifications(&mut state, &modifications)?;
         state.save()?;
