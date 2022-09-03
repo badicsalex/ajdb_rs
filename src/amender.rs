@@ -14,6 +14,7 @@ pub struct ActModification {}
 
 impl ActModification {
     pub fn modify_act(&self, act: &mut Act) -> Result<()> {
+        let _ = act;
         todo!()
     }
 }
@@ -27,7 +28,9 @@ pub fn get_all_modifications(
     let result = HashMap::new();
     for act_entry in act_entries {
         let act = act_entry.act()?;
-        todo!()
+        let _ = act;
+        let _ = date;
+        // todo!()
     }
     Ok(result)
 }
