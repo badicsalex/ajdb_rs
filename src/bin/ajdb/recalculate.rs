@@ -3,6 +3,7 @@
 // All rights reserved.
 
 use anyhow::Result;
+use log::info;
 
 use ajdb::{
     amender::{apply_all_modifications, get_all_modifications},
@@ -26,6 +27,7 @@ pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
     let mut persistence = Persistence::new("db");
     let mut db = Database::new(&mut persistence);
     for date in NaiveDateRange::new(args.from.succ(), args.to) {
+        info!("Recaulculating {}", date);
         db.copy_state(date.pred(), date)?;
         let mut state = db.get_state(date)?;
         let acts = state.get_acts()?;
