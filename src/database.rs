@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use hun_law::{identifier::ActIdentifier, structure::Act};
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,9 @@ impl<'p> Database<'p> {
     pub fn get_state(&mut self, date: NaiveDate) -> Result<DatabaseState<'p, '_>> {
         let key = Self::state_key(date);
         let data = if self.persistence.exists(&key)? {
-            self.persistence.load(&key)?
+            self.persistence
+                .load(&key)
+                .with_context(|| anyhow!("Could not load state with key {}", key))?
         } else {
             StateData::default()
         };
@@ -38,8 +40,10 @@ impl<'p> Database<'p> {
         })
     }
     fn set_state_data(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
+        let key = Self::state_key(date);
         self.persistence
-            .store(KeyType::Forced(Self::state_key(date)), &state)?;
+            .store(KeyType::Forced(key.clone()), &state)
+            .with_context(|| anyhow!("Could save state with key {}", key))?;
         Ok(())
     }
 
