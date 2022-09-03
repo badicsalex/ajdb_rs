@@ -42,7 +42,7 @@ impl Persistence {
         input_key: KeyType,
         data: &T,
     ) -> Result<PersistenceKey> {
-        let the_json = serde_json::to_vec(data).with_context(|| {
+        let the_json = serde_json::to_vec_pretty(data).with_context(|| {
             anyhow::anyhow!(
                 "Encoding to JSON failed for {:?}, value type={}",
                 input_key,
