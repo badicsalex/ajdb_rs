@@ -59,7 +59,7 @@ impl<'p> Database<'p> {
     }
 
     fn state_key(date: NaiveDate) -> PersistenceKey {
-        format!("state/{}", date)
+        date.format("state/%Y/%m/%d").to_string()
     }
 
     // TODO: Garbage collection
