@@ -4,9 +4,8 @@
 
 use std::path::PathBuf;
 
-use anyhow::Result;
-
 use ajdb::{database::Database, persistence::Persistence, util::read_all};
+use anyhow::Result;
 use hun_law::structure::Act;
 
 #[derive(Debug, clap::Args)]

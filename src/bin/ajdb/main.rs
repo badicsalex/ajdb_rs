@@ -9,7 +9,6 @@ use std::io::Write;
 
 use add::{cli_add_raw, AddArgs};
 use anyhow::Result;
-
 use clap::Parser;
 use recalculate::{cli_recalculate, RecalculateArgs};
 

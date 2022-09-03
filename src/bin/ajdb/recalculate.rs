@@ -2,16 +2,15 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::Result;
-use log::info;
-
 use ajdb::{
     amender::{apply_all_modifications, get_all_modifications},
     database::Database,
     persistence::Persistence,
     util::NaiveDateRange,
 };
+use anyhow::Result;
 use chrono::NaiveDate;
+use log::info;
 
 #[derive(Debug, clap::Args)]
 pub struct RecalculateArgs {
