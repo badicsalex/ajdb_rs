@@ -60,7 +60,7 @@ impl<'p> Database<'p> {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct StateData {
-    acts: BTreeMap<ActIdentifier, PersistenceKey>,
+    acts: BTreeMap<String, PersistenceKey>,
 }
 
 pub struct DatabaseState<'p, 'db> {
@@ -71,12 +71,16 @@ pub struct DatabaseState<'p, 'db> {
 }
 
 impl<'p, 'db> DatabaseState<'p, 'db> {
+    fn act_key(id: ActIdentifier) -> String {
+        format!("{}/{}", id.year, id.number)
+    }
+
     pub fn has_act(&self, id: ActIdentifier) -> bool {
-        self.data.acts.contains_key(&id)
+        self.data.acts.contains_key(&Self::act_key(id))
     }
 
     pub fn get_act(&self, id: ActIdentifier) -> Result<ActEntry> {
-        if let Some(act_key) = self.data.acts.get(&id) {
+        if let Some(act_key) = self.data.acts.get(&Self::act_key(id)) {
             Ok(ActEntry {
                 persistence: self.db.persistence,
                 act_key: act_key.clone(),
@@ -91,12 +95,14 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     }
 
     pub fn get_acts(&self) -> Result<Vec<ActEntry>> {
-        self.data
+        Ok(self.data
             .acts
-            .keys()
-            // TODO: this does a double lookup. At least we don't repeat ActEntry construction
-            .map(|&act_id| self.get_act(act_id))
-            .collect()
+            .values()
+            .map(|act_key| ActEntry {
+                persistence: self.db.persistence,
+                act_key: act_key.clone(),
+            })
+            .collect())
     }
 
     pub fn store_act(&mut self, act: Act) -> Result<ActEntry> {
@@ -104,7 +110,7 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
             .db
             .persistence
             .store(KeyType::Calculated("act"), &act)?;
-        self.data.acts.insert(act.identifier, act_key);
+        self.data.acts.insert(Self::act_key(act.identifier), act_key);
         self.get_act(act.identifier)
     }
 
