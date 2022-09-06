@@ -4,6 +4,6 @@
 
 pub mod amender;
 pub mod database;
-mod enforcement_date_set;
+pub mod enforcement_date_set;
 pub mod persistence;
 pub mod util;
