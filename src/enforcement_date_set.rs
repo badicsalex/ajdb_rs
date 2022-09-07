@@ -2,9 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use std::ops::Add;
-
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Context, Result};
 use chrono::{Datelike, NaiveDate};
 use hun_law::{
     reference::Reference,
@@ -27,7 +25,12 @@ impl EnforcementDateSet {
     pub fn from_act(act: &Act) -> Result<Self> {
         let mut visitor = EnforcementDateAccumulator::default();
         act.walk_saes(&mut visitor)?;
-        let raw_enforcement_dates = visitor.result;
+        Self::from_enforcement_dates(&visitor.result, act.publication_date)
+    }
+    pub fn from_enforcement_dates(
+        raw_enforcement_dates: &[EnforcementDate],
+        publication_date: NaiveDate,
+    ) -> Result<Self> {
         let default_dates: Vec<_> = raw_enforcement_dates
             .iter()
             .filter(|d| d.positions.is_empty())
@@ -45,11 +48,12 @@ impl EnforcementDateSet {
                 raw_enforcement_dates.len()
             );
         }
-        let default_date = ActualEnforcementDate::from_enforcement_date(default_dates[0], act.publication_date)?.date;
+        let default_date =
+            ActualEnforcementDate::from_enforcement_date(default_dates[0], publication_date)?.date;
         let enforcement_dates = raw_enforcement_dates
-            .into_iter()
+            .iter()
             .filter(|d| !d.positions.is_empty())
-            .map(|d| ActualEnforcementDate::from_enforcement_date(&d, act.publication_date))
+            .map(|d| ActualEnforcementDate::from_enforcement_date(d, publication_date))
             .collect::<Result<Vec<_>>>()?;
 
         Ok(Self {
@@ -58,24 +62,37 @@ impl EnforcementDateSet {
         })
     }
 
-    pub fn effective_enforcement_date(&self, position: &Reference) -> NaiveDate {
+    /// Check the enforcement date of the reference.
+    pub fn effective_enforcement_date(&self, position: &Reference) -> Result<NaiveDate> {
+        ensure!(
+            !position.is_act_set(),
+            "Reference contained act in effective_enforcement_date"
+        );
         let mut result = self.default_date;
         for ed in &self.enforcement_dates {
-            for ed_pos in &ed.positions{
+            for ed_pos in &ed.positions {
                 if ed_pos.contains(position) {
                     result = ed.date;
                 }
             }
         }
-        result
+        Ok(result)
     }
 
-    pub fn is_in_force(&self, position: &Reference, on_date: NaiveDate) -> bool {
-        self.effective_enforcement_date(position) <= on_date
+    pub fn is_in_force(&self, position: &Reference, on_date: NaiveDate) -> Result<bool> {
+        // TODO: short circuit trivial case when all dates are in the past
+        Ok(self
+            .effective_enforcement_date(position)
+            .with_context(|| "In is_in_force()")?
+            <= on_date)
     }
 
-    pub fn came_into_force_today(&self, position: &Reference, on_date: NaiveDate) -> bool {
-        self.effective_enforcement_date(position) == on_date
+    pub fn came_into_force_today(&self, position: &Reference, on_date: NaiveDate) -> Result<bool> {
+        // TODO: short circuit trivial cases when no dates are "on_date"
+        Ok(self
+            .effective_enforcement_date(position)
+            .with_context(|| "In came_into_force_today()")?
+            == on_date)
     }
 }
 
@@ -99,6 +116,10 @@ impl ActualEnforcementDate {
         ed: &EnforcementDate,
         publication_date: NaiveDate,
     ) -> Result<Self> {
+        ensure!(
+            !ed.positions.iter().any(|p| p.is_act_set()),
+            "Reference contained act in from_enforcement_date"
+        );
         let date = match ed.date {
             hun_law::semantic_info::EnforcementDateType::Date(d) => d,
             hun_law::semantic_info::EnforcementDateType::DaysAfterPublication(num_days) => {
@@ -116,11 +137,130 @@ impl ActualEnforcementDate {
                     day as u32,
                 )
             }
-            hun_law::semantic_info::EnforcementDateType::Special(_) => todo!(),
         };
         Ok(Self {
             positions: ed.positions.clone(),
             date,
         })
+    }
+}
+#[cfg(test)]
+mod tests {
+    use hun_law::util::singleton_yaml;
+    use pretty_assertions::assert_eq;
+    use serde::{Deserialize, Serialize};
+
+    use super::*;
+
+    #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+    struct TestRef {
+        position: Reference,
+        date: NaiveDate,
+    }
+
+    const TEST_ED_SET: &str = r#"
+        - date:
+            Date: 2013-07-02
+        - date:
+            Date: 2013-11-02
+          positions:
+            - article: "180"
+              paragraph: "1"
+              point: "a"
+        - date:
+            Date: 2014-09-01
+          positions:
+            - article:
+                start: "55"
+                end: "66"
+            - article: "70"
+            - article: "72"
+              point: a
+            - article: "73"
+              point: a
+            - article: "73"
+              point: b
+        - date:
+            DayInMonthAfterPublication:
+              day: 1
+          positions:
+            - article: "38"
+        - date:
+            DayInMonthAfterPublication:
+              month: 2
+              day: 5
+          positions:
+            - article: "39"
+        - date:
+            DaysAfterPublication: 30
+          positions:
+            - article: "40"
+    "#;
+
+    const TEST_REFS: &str = r#"
+        - position:
+            article: '1'
+          date: 2013-07-02
+        - position:
+            article: '180'
+            paragraph: '1'
+          date: 2013-07-02
+        - position:
+            article: '180'
+            paragraph: '1'
+          date: 2013-07-02
+        - position:
+            article: '180'
+            paragraph: '1'
+            point: 'a'
+          date: 2013-11-02
+        - position:
+            article: '180'
+            paragraph: '1'
+            point: 'a'
+            subpoint: 'ab'
+          date: 2013-11-02
+        - position:
+            article: "60"
+            paragraph: "5"
+          date: 2014-09-01
+        - position:
+            article: "73"
+            point: "b"
+          date: 2014-09-01
+        - position:
+            article: "38"
+          date: 2012-09-01
+        - position:
+            article: "39"
+          date: 2012-10-05
+        - position:
+            article: "40"
+          date: 2012-09-27
+    "#;
+
+    #[test]
+    fn test_enforcement_date_set() {
+        let enforcement_dates: Vec<EnforcementDate> =
+            singleton_yaml::from_str(TEST_ED_SET).unwrap();
+        let test_refs: Vec<TestRef> = singleton_yaml::from_str(TEST_REFS).unwrap();
+        let ed_set = EnforcementDateSet::from_enforcement_dates(
+            &enforcement_dates,
+            NaiveDate::from_ymd(2012, 8, 28),
+        )
+        .unwrap();
+
+        for test_ref in test_refs {
+            let effective = TestRef {
+                position: test_ref.position.clone(),
+                date: ed_set
+                    .effective_enforcement_date(&test_ref.position)
+                    .unwrap(),
+            };
+            assert_eq!(
+                singleton_yaml::to_string(&test_ref).unwrap(),
+                singleton_yaml::to_string(&effective).unwrap()
+            );
+        }
     }
 }
