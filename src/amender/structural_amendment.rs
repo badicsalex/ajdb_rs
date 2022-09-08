@@ -6,9 +6,10 @@ use hun_law::{semantic_info::StructuralBlockAmendment, structure::ActChild};
 
 use super::ModifyAct;
 
+#[derive(Debug)]
 pub struct StructuralBlockAmendmentWithContent {
-    block_amendment: StructuralBlockAmendment,
-    content: Vec<ActChild>,
+    pub block_amendment: StructuralBlockAmendment,
+    pub content: Vec<ActChild>,
 }
 
 impl ModifyAct for StructuralBlockAmendmentWithContent {

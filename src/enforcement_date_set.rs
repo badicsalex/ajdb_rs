@@ -11,11 +11,13 @@ use hun_law::{
     util::walker::SAEVisitor,
 };
 
+#[derive(Debug)]
 pub struct ActualEnforcementDate {
     positions: Vec<Reference>,
     date: NaiveDate,
 }
 
+#[derive(Debug)]
 pub struct EnforcementDateSet {
     default_date: NaiveDate,
     enforcement_dates: Vec<ActualEnforcementDate>,
@@ -93,6 +95,18 @@ impl EnforcementDateSet {
             .effective_enforcement_date(position)
             .with_context(|| "In came_into_force_today()")?
             == on_date)
+    }
+
+    pub fn came_into_force_yesterday(
+        &self,
+        position: &Reference,
+        on_date: NaiveDate,
+    ) -> Result<bool> {
+        // TODO: short circuit trivial cases when no dates are "on_date"
+        Ok(self
+            .effective_enforcement_date(position)
+            .with_context(|| "In came_into_force_today()")?
+            == on_date.pred())
     }
 }
 

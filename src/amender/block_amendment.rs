@@ -6,9 +6,10 @@ use hun_law::{semantic_info::BlockAmendment, structure::BlockAmendmentChildren};
 
 use super::ModifyAct;
 
+#[derive(Debug)]
 pub struct BlockAmendmentWithContent {
-    block_amendment: BlockAmendment,
-    content: BlockAmendmentChildren,
+    pub block_amendment: BlockAmendment,
+    pub content: BlockAmendmentChildren,
 }
 
 impl ModifyAct for BlockAmendmentWithContent {
