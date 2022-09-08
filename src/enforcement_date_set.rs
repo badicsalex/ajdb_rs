@@ -8,7 +8,7 @@ use hun_law::{
     reference::Reference,
     semantic_info::{EnforcementDate, SemanticInfo, SpecialPhrase},
     structure::Act,
-    util::walker::{SAEVisitor, WalkSAE},
+    util::walker::SAEVisitor,
 };
 
 pub struct ActualEnforcementDate {
@@ -65,7 +65,7 @@ impl EnforcementDateSet {
     /// Check the enforcement date of the reference.
     pub fn effective_enforcement_date(&self, position: &Reference) -> Result<NaiveDate> {
         ensure!(
-            !position.is_act_set(),
+            position.act().is_none(),
             "Reference contained act in effective_enforcement_date"
         );
         let mut result = self.default_date;
@@ -103,7 +103,12 @@ struct EnforcementDateAccumulator {
 
 impl SAEVisitor for EnforcementDateAccumulator {
     // on_enter and on_exit not needed, since EnforcementDates are always in leaf nodes.
-    fn on_text(&mut self, _text: &String, semantic_info: &SemanticInfo) -> Result<()> {
+    fn on_text(
+        &mut self,
+        _position: &Reference,
+        _text: &String,
+        semantic_info: &SemanticInfo,
+    ) -> Result<()> {
         if let Some(SpecialPhrase::EnforcementDate(ed)) = &semantic_info.special_phrase {
             self.result.push(ed.clone())
         }
@@ -117,7 +122,7 @@ impl ActualEnforcementDate {
         publication_date: NaiveDate,
     ) -> Result<Self> {
         ensure!(
-            !ed.positions.iter().any(|p| p.is_act_set()),
+            ed.positions.iter().all(|p| p.act().is_none()),
             "Reference contained act in from_enforcement_date"
         );
         let date = match ed.date {
