@@ -3,9 +3,7 @@
 // All rights reserved.
 
 use ajdb::{
-    amender::{apply_all_modifications, get_all_modifications},
-    database::Database,
-    persistence::Persistence,
+    amender::AppliableModificationSet, database::Database, persistence::Persistence,
     util::NaiveDateRange,
 };
 use anyhow::Result;
@@ -32,8 +30,8 @@ pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
         let acts = state.get_acts()?;
         // NOTE: this will not handle modifications which modify other
         //       modifications coming into force in the same day
-        let modifications = get_all_modifications(&acts, date)?;
-        apply_all_modifications(&mut state, &modifications)?;
+        let modifications = AppliableModificationSet::from_acts(&acts, date)?;
+        modifications.apply(&mut state)?;
         state.save()?;
     }
     Ok(())

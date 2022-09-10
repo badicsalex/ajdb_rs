@@ -2,12 +2,19 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use hun_law::semantic_info::ArticleTitleAmendment;
+use anyhow::{anyhow, Result};
+use hun_law::{identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act};
 
 use super::ModifyAct;
 
 impl ModifyAct for ArticleTitleAmendment {
-    fn modify_act(&self, act: &mut hun_law::structure::Act) -> anyhow::Result<()> {
+    fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
+    }
+
+    fn affected_act(&self) -> Result<ActIdentifier> {
+        self.position
+            .act()
+            .ok_or_else(|| anyhow!("No act in reference in special phrase"))
     }
 }

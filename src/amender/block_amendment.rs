@@ -2,18 +2,29 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use hun_law::{semantic_info::BlockAmendment, structure::BlockAmendmentChildren};
+use anyhow::{anyhow, Result};
+use hun_law::{
+    identifier::ActIdentifier,
+    semantic_info::BlockAmendment,
+    structure::{Act, BlockAmendmentChildren},
+};
 
 use super::ModifyAct;
 
 #[derive(Debug)]
 pub struct BlockAmendmentWithContent {
-    pub block_amendment: BlockAmendment,
+    pub metadata: BlockAmendment,
     pub content: BlockAmendmentChildren,
 }
 
 impl ModifyAct for BlockAmendmentWithContent {
-    fn modify_act(&self, act: &mut hun_law::structure::Act) -> anyhow::Result<()> {
+    fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
+    }
+    fn affected_act(&self) -> Result<ActIdentifier> {
+        self.metadata
+            .position
+            .act()
+            .ok_or_else(|| anyhow!("No act in reference in special phrase"))
     }
 }

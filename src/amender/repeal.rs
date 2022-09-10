@@ -2,12 +2,26 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use hun_law::semantic_info::Repeal;
+use anyhow::{anyhow, ensure, Result};
+use hun_law::{identifier::ActIdentifier, semantic_info::Repeal, structure::Act};
 
 use super::ModifyAct;
 
 impl ModifyAct for Repeal {
-    fn modify_act(&self, act: &mut hun_law::structure::Act) -> anyhow::Result<()> {
+    fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
+    }
+    fn affected_act(&self) -> Result<ActIdentifier> {
+        let result = self
+            .positions
+            .first()
+            .ok_or_else(|| anyhow!("No positions in special phrase"))?
+            .act()
+            .ok_or_else(|| anyhow!("No act in reference in special phrase"))?;
+        ensure!(
+            self.positions.iter().all(|p| p.act() == Some(result)),
+            "The positions didn't correspond to the same act"
+        );
+        Ok(result)
     }
 }
