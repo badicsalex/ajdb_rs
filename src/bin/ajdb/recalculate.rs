@@ -8,6 +8,7 @@ use ajdb::{
 };
 use anyhow::Result;
 use chrono::NaiveDate;
+use hun_law::structure::Act;
 use log::info;
 
 #[derive(Debug, clap::Args)]
@@ -27,10 +28,14 @@ pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
         info!("Recaulculating {}", date);
         db.copy_state(date.pred(), date)?;
         let mut state = db.get_state(date)?;
-        let acts = state.get_acts()?;
+        let acts = state
+            .get_acts()?
+            .iter()
+            .map(|ae| ae.act())
+            .collect::<Result<Vec<Act>>>()?;
         // NOTE: this will not handle modifications which modify other
         //       modifications coming into force in the same day
-        let modifications = AppliableModificationSet::from_acts(&acts, date)?;
+        let modifications = AppliableModificationSet::from_acts(acts.iter(), date)?;
         modifications.apply(&mut state)?;
         state.save()?;
     }

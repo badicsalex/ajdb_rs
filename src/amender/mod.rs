@@ -20,7 +20,7 @@ use hun_law::{
 };
 use multimap::MultiMap;
 
-use crate::database::{ActEntry, DatabaseState};
+use crate::database::DatabaseState;
 
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
@@ -49,11 +49,13 @@ impl AppliableModificationSet {
     /// Extract all modifications that comes in force on the specific day
     /// Include the auto-repeal of said modifications the next day, according to
     /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
-    pub fn from_acts(act_entries: &[ActEntry], date: NaiveDate) -> Result<Self> {
+    pub fn from_acts<'a>(
+        act_entries: impl IntoIterator<Item = &'a Act>,
+        date: NaiveDate,
+    ) -> Result<Self> {
         let mut modifications = MultiMap::default();
-        for act_entry in act_entries {
-            let act = act_entry.act()?;
-            for modification in extract_modifications_from_act(&act, date)? {
+        for act in act_entries {
+            for modification in extract_modifications_from_act(act, date)? {
                 modifications.insert(modification.affected_act()?, modification);
             }
         }
