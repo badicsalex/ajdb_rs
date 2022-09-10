@@ -62,6 +62,11 @@ impl AppliableModificationSet {
         }
         Ok(Self { modifications })
     }
+
+    /// Used only for testing
+    pub fn get_modifications(self) -> MultiMap<ActIdentifier, AppliableModification> {
+        self.modifications
+    }
 }
 
 trait ModifyAct {
