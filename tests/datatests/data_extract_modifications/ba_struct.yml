@@ -1,0 +1,28 @@
+2012-01-02:
+  2009. évi III. törvény:
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2009
+          number: 3
+        book: '3'
+        structural_element:
+          Title: 8a
+      pure_insertion: false
+      content:
+      - StructuralElement:
+          identifier: 8a
+          title: NEM
+          element_type: Title
+      - Article:
+          identifier: '1'
+          children:
+          - body: Pls no.
+2012-01-03:
+  2012. évi I. törvény:
+  - Repeal:
+      positions:
+      - act:
+          year: 2012
+          number: 1
+        article: '2'
