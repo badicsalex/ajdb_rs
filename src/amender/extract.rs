@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use hun_law::{
     identifier::ActIdentifier,
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{Repeal, SpecialPhrase},
+    semantic_info::{Repeal, SemanticInfo, SpecialPhrase},
     structure::{
         Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
         SAEBody,
@@ -130,9 +130,9 @@ struct ModificationAccumulator<'a> {
 impl<'a> SAEVisitor for ModificationAccumulator<'a> {
     fn on_text(
         &mut self,
-        position: &hun_law::reference::Reference,
+        position: &Reference,
         _text: &String,
-        semantic_info: &hun_law::semantic_info::SemanticInfo,
+        semantic_info: &SemanticInfo,
     ) -> Result<()> {
         if self.ed_set.came_into_force_today(position, self.date)? {
             if let Some(phrase) = &semantic_info.special_phrase {
