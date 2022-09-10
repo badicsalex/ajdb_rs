@@ -137,18 +137,10 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
         if self.ed_set.came_into_force_today(position, self.date)? {
             if let Some(phrase) = &semantic_info.special_phrase {
                 match phrase {
-                    SpecialPhrase::ArticleTitleAmendment(sp) => {
-                        self.record_one([sp.position.act()].into_iter(), sp)?
-                    }
-                    SpecialPhrase::Repeal(sp) => {
-                        self.record_one(sp.positions.iter().map(|p| p.act()), sp)?
-                    }
-                    SpecialPhrase::TextAmendment(sp) => {
-                        self.record_one(sp.positions.iter().map(|p| p.act()), sp)?
-                    }
-                    SpecialPhrase::StructuralRepeal(sp) => {
-                        self.record_one([sp.position.act].into_iter(), sp)?
-                    }
+                    SpecialPhrase::ArticleTitleAmendment(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::Repeal(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::TextAmendment(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::StructuralRepeal(sp) => self.result.push(sp.clone().into()),
                     // These are handled specially with get_modifications_for_block_amendment
                     SpecialPhrase::StructuralBlockAmendment(_) => (),
                     SpecialPhrase::BlockAmendment(_) => (),
@@ -157,26 +149,6 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                 };
             }
         }
-        Ok(())
-    }
-}
-
-impl<'a> ModificationAccumulator<'a> {
-    fn record_one<TA, TC>(&mut self, act_ids: TA, content: &TC) -> Result<()>
-    where
-        TA: Iterator<Item = Option<ActIdentifier>>,
-        TC: Clone + Into<AppliableModification>,
-    {
-        let act_ids: Vec<_> = act_ids.collect();
-        let act_id = act_ids
-            .first()
-            .ok_or_else(|| anyhow!("No positions in special phrase"))?
-            .ok_or_else(|| anyhow!("No act in reference in special phrase"))?;
-        ensure!(
-            act_ids.iter().all(|a| *a == Some(act_id)),
-            "The positions didn't correspond to the same act"
-        );
-        self.result.push(content.clone().into());
         Ok(())
     }
 }
