@@ -8,10 +8,11 @@ use hun_law::{
     reference::Reference,
     structure::{Act, BlockAmendmentChildren},
 };
+use serde::{Deserialize, Serialize};
 
 use super::ModifyAct;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockAmendmentWithContent {
     pub position: Reference,
     pub pure_insertion: bool,

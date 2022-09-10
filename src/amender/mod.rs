@@ -19,6 +19,7 @@ use hun_law::{
     structure::Act,
 };
 use multimap::MultiMap;
+use serde::{Deserialize, Serialize};
 
 use crate::database::DatabaseState;
 
@@ -68,7 +69,7 @@ trait ModifyAct {
     fn affected_act(&self) -> Result<ActIdentifier>;
 }
 
-#[derive(Debug, FromVariants)]
+#[derive(Debug, Clone, FromVariants, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppliableModification {
     ArticleTitleAmendment(ArticleTitleAmendment),
     BlockAmendment(BlockAmendmentWithContent),

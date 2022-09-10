@@ -8,10 +8,11 @@ use hun_law::{
     reference::structural::StructuralReference,
     structure::{Act, ActChild},
 };
+use serde::{Deserialize, Serialize};
 
 use super::ModifyAct;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralBlockAmendmentWithContent {
     pub position: StructuralReference,
     pub pure_insertion: bool,
