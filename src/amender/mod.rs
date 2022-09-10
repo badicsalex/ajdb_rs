@@ -70,8 +70,8 @@ impl AppliableModificationSet {
     }
 }
 
-trait ModifyAct {
-    fn apply(&self, act: &mut Act) -> Result<()>;
+trait Modify<T> {
+    fn apply(&self, target: &mut T) -> Result<()>;
 }
 
 trait AffectedAct {
@@ -88,7 +88,7 @@ pub enum AppliableModification {
     StructuralRepeal(StructuralRepeal),
 }
 
-impl ModifyAct for AppliableModification {
+impl Modify<Act> for AppliableModification {
     fn apply(&self, act: &mut Act) -> Result<()> {
         match self {
             AppliableModification::ArticleTitleAmendment(m) => m.apply(act),

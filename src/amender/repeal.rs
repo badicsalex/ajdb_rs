@@ -5,9 +5,9 @@
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{identifier::ActIdentifier, semantic_info::Repeal, structure::Act};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, Modify};
 
-impl ModifyAct for Repeal {
+impl Modify<Act> for Repeal {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }

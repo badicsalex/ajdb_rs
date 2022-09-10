@@ -10,7 +10,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, Modify};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockAmendmentWithContent {
@@ -19,7 +19,7 @@ pub struct BlockAmendmentWithContent {
     pub content: BlockAmendmentChildren,
 }
 
-impl ModifyAct for BlockAmendmentWithContent {
+impl Modify<Act> for BlockAmendmentWithContent {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }
