@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{Repeal, SemanticInfo, SpecialPhrase},
+    semantic_info::{SemanticInfo, SpecialPhrase},
     structure::{
         Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
         SAEBody,
@@ -17,7 +17,7 @@ use hun_law::{
 use crate::enforcement_date_set::EnforcementDateSet;
 
 use super::{
-    block_amendment::BlockAmendmentWithContent,
+    auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
     structural_amendment::StructuralBlockAmendmentWithContent, AppliableModification,
 };
 
@@ -35,12 +35,7 @@ pub fn extract_modifications_from_act(
         date,
         result: Default::default(),
     };
-    let mut auto_repeals = AutoRepealAccumulator {
-        ed_set: &ed_set,
-        date,
-        act_ref: act.reference(),
-        result: Default::default(),
-    };
+    let mut auto_repeals = AutoRepealAccumulator::new(&ed_set, date);
     for act_child in &act.children {
         if let ActChild::Article(article) = act_child {
             let article_ref = article.reference();
@@ -57,7 +52,9 @@ pub fn extract_modifications_from_act(
         }
     }
     let mut result = visitor.result;
-    result.extend(auto_repeals.result.into_iter().map(|r| r.into()));
+    if let Some(auto_repeal) = auto_repeals.get_result(&act.reference())? {
+        result.push(auto_repeal);
+    }
     Ok(result)
 }
 
@@ -147,58 +144,6 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                     // Not a modification
                     SpecialPhrase::EnforcementDate(_) => (),
                 };
-            }
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-struct AutoRepealAccumulator<'a> {
-    ed_set: &'a EnforcementDateSet,
-    date: NaiveDate,
-    act_ref: Reference,
-    result: Vec<Repeal>,
-}
-
-impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
-    fn on_text(
-        &mut self,
-        position: &Reference,
-        _text: &String,
-        semantic_info: &SemanticInfo,
-    ) -> Result<()> {
-        self.repeal_one(position, semantic_info)
-    }
-
-    fn on_enter(
-        &mut self,
-        position: &Reference,
-        _intro: &String,
-        _wrap_up: &Option<String>,
-        semantic_info: &SemanticInfo,
-    ) -> Result<()> {
-        self.repeal_one(position, semantic_info)
-    }
-}
-
-impl<'a> AutoRepealAccumulator<'a> {
-    fn repeal_one(&mut self, position: &Reference, semantic_info: &SemanticInfo) -> Result<()> {
-        if self.ed_set.came_into_force_yesterday(position, self.date)? {
-            if let Some(phrase) = &semantic_info.special_phrase {
-                match phrase {
-                    SpecialPhrase::ArticleTitleAmendment(_)
-                    | SpecialPhrase::BlockAmendment(_)
-                    | SpecialPhrase::Repeal(_)
-                    | SpecialPhrase::TextAmendment(_)
-                    | SpecialPhrase::StructuralBlockAmendment(_)
-                    | SpecialPhrase::StructuralRepeal(_) => self.result.push(Repeal {
-                        positions: vec![position.relative_to(&self.act_ref)?],
-                        texts: Vec::new(),
-                    }),
-                    // Not a modification
-                    SpecialPhrase::EnforcementDate(_) => (),
-                }
             }
         }
         Ok(())

@@ -28,8 +28,6 @@
           number: 1
         article: '1'
         point: a
-  - Repeal:
-      positions:
       - act:
           year: 2012
           number: 1

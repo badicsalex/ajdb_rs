@@ -3,6 +3,7 @@
 // All rights reserved.
 
 pub mod article_title_amendment;
+pub mod auto_repeal;
 pub mod block_amendment;
 pub mod extract;
 pub mod repeal;
