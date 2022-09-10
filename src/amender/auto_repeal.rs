@@ -6,7 +6,7 @@ use anyhow::Result;
 use chrono::NaiveDate;
 use hun_law::{
     reference::Reference,
-    semantic_info::{Repeal, SemanticInfo, SpecialPhrase},
+    semantic_info::{EnforcementDate, Repeal, SemanticInfo, SpecialPhrase},
     util::walker::SAEVisitor,
 };
 
@@ -16,6 +16,7 @@ use super::AppliableModification;
 
 /// Auto-repeal of modifications according to
 /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
+/// Also parses inline repeals
 #[derive(Debug)]
 pub struct AutoRepealAccumulator<'a> {
     ed_set: &'a EnforcementDateSet,
@@ -30,7 +31,8 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         _text: &String,
         semantic_info: &SemanticInfo,
     ) -> Result<()> {
-        self.repeal_one(position, semantic_info)
+        self.repeal_one(position, semantic_info)?;
+        self.parse_inline_repeal(semantic_info)
     }
 
     fn on_enter(
@@ -84,6 +86,19 @@ impl<'a> AutoRepealAccumulator<'a> {
                     // Not a modification
                     SpecialPhrase::EnforcementDate(_) => (),
                 }
+            }
+        }
+        Ok(())
+    }
+
+    fn parse_inline_repeal(&mut self, semantic_info: &SemanticInfo) -> Result<()> {
+        if let Some(SpecialPhrase::EnforcementDate(EnforcementDate {
+            inline_repeal: Some(inline_repeal_date),
+            ..
+        })) = semantic_info.special_phrase
+        {
+            if inline_repeal_date == self.date {
+                self.positions.push(Reference::default());
             }
         }
         Ok(())

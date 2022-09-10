@@ -1,0 +1,43 @@
+2012-01-15:
+  2011. évi XXX. törvény:
+  - TextAmendment:
+      positions:
+      - act:
+          year: 2011
+          number: 30
+        article: 7:43
+        paragraph: '3'
+      replacements:
+      - from: Semmis
+        to: Érvénytelen
+  - TextAmendment:
+      positions:
+      - act:
+          year: 2011
+          number: 30
+        article: '1'
+        paragraph: '3'
+      replacements:
+      - from: Totális
+        to: Megfelelő
+2012-01-16:
+  2012. évi I. törvény:
+  - Repeal:
+      positions:
+      - act:
+          year: 2012
+          number: 1
+        article: '3'
+        point: a
+      - act:
+          year: 2012
+          number: 1
+        article: '3'
+        point: b
+2012-12-01:
+  2012. évi I. törvény:
+  - Repeal:
+      positions:
+      - act:
+          year: 2012
+          number: 1
