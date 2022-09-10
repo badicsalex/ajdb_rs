@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{SemanticInfo, SpecialPhrase},
+    semantic_info::{Repeal, SemanticInfo, SpecialPhrase},
     structure::{
         Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
         SAEBody,
@@ -18,7 +18,8 @@ use crate::enforcement_date_set::EnforcementDateSet;
 
 use super::{
     auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
-    structural_amendment::StructuralBlockAmendmentWithContent, AppliableModification,
+    repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
+    AppliableModification,
 };
 
 /// Return all modifications that comes in force on the specific day
@@ -52,9 +53,7 @@ pub fn extract_modifications_from_act(
         }
     }
     let mut result = visitor.result;
-    if let Some(auto_repeal) = auto_repeals.get_result(&act.reference())? {
-        result.push(auto_repeal);
-    }
+    result.extend(auto_repeals.get_result(&act.reference())?);
     Ok(result)
 }
 
@@ -135,7 +134,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
             if let Some(phrase) = &semantic_info.special_phrase {
                 match phrase {
                     SpecialPhrase::ArticleTitleAmendment(sp) => self.result.push(sp.clone().into()),
-                    SpecialPhrase::Repeal(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::Repeal(sp) => self.handle_repeal(sp),
                     SpecialPhrase::TextAmendment(sp) => self.result.push(sp.clone().into()),
                     SpecialPhrase::StructuralRepeal(sp) => self.result.push(sp.clone().into()),
                     // These are handled specially with get_modifications_for_block_amendment
@@ -147,5 +146,31 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
             }
         }
         Ok(())
+    }
+}
+
+impl<'a> ModificationAccumulator<'a> {
+    fn handle_repeal(&mut self, repeal: &Repeal) {
+        for position in &repeal.positions {
+            if repeal.texts.is_empty() {
+                self.result.push(
+                    SimplifiedRepeal {
+                        position: position.clone(),
+                        text: None,
+                    }
+                    .into(),
+                )
+            } else {
+                for text in &repeal.texts {
+                    self.result.push(
+                        SimplifiedRepeal {
+                            position: position.clone(),
+                            text: Some(text.clone()),
+                        }
+                        .into(),
+                    )
+                }
+            }
+        }
     }
 }

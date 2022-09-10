@@ -1,20 +1,22 @@
 2012-01-02:
   2003. évi I. törvény:
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2003
           number: 1
         article: '1'
         paragraph: '1'
-      - act:
+  - Repeal:
+      position:
+        act:
           year: 2003
           number: 1
         article: '1'
         paragraph: '3'
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2003
           number: 1
         article: '3'
@@ -22,13 +24,15 @@
 2012-01-03:
   2012. évi I. törvény:
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2012
           number: 1
         article: '1'
         point: a
-      - act:
+  - Repeal:
+      position:
+        act:
           year: 2012
           number: 1
         article: '1'
@@ -36,16 +40,16 @@
 2012-02-01:
   2003. évi I. törvény:
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2003
           number: 1
         article: '2'
 2012-02-02:
   2012. évi I. törvény:
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2012
           number: 1
         article: '1'

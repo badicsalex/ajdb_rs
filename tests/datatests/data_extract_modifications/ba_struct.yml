@@ -21,8 +21,8 @@
 2012-01-03:
   2012. évi I. törvény:
   - Repeal:
-      positions:
-      - act:
+      position:
+        act:
           year: 2012
           number: 1
         article: '2'

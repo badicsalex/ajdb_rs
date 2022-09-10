@@ -6,13 +6,13 @@ use anyhow::Result;
 use chrono::NaiveDate;
 use hun_law::{
     reference::Reference,
-    semantic_info::{EnforcementDate, Repeal, SemanticInfo, SpecialPhrase},
+    semantic_info::{EnforcementDate, SemanticInfo, SpecialPhrase},
     util::walker::SAEVisitor,
 };
 
 use crate::enforcement_date_set::EnforcementDateSet;
 
-use super::AppliableModification;
+use super::{repeal::SimplifiedRepeal, AppliableModification};
 
 /// Auto-repeal of modifications according to
 /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
@@ -55,22 +55,17 @@ impl<'a> AutoRepealAccumulator<'a> {
         }
     }
 
-    pub fn get_result(self, act_ref: &Reference) -> Result<Option<AppliableModification>> {
-        Ok(if self.positions.is_empty() {
-            None
-        } else {
-            Some(
-                Repeal {
-                    positions: self
-                        .positions
-                        .into_iter()
-                        .map(|p| p.relative_to(act_ref))
-                        .collect::<Result<Vec<Reference>>>()?,
-                    texts: Vec::new(),
+    pub fn get_result(self, act_ref: &Reference) -> Result<Vec<AppliableModification>> {
+        self.positions
+            .into_iter()
+            .map(|p| {
+                Ok(SimplifiedRepeal {
+                    position: p.relative_to(act_ref)?,
+                    text: None,
                 }
-                .into(),
-            )
-        })
+                .into())
+            })
+            .collect::<Result<Vec<_>>>()
     }
 
     fn repeal_one(&mut self, position: &Reference, semantic_info: &SemanticInfo) -> Result<()> {

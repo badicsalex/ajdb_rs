@@ -16,7 +16,7 @@ use chrono::NaiveDate;
 use from_variants::FromVariants;
 use hun_law::{
     identifier::ActIdentifier,
-    semantic_info::{ArticleTitleAmendment, Repeal, StructuralRepeal, TextAmendment},
+    semantic_info::{ArticleTitleAmendment, StructuralRepeal, TextAmendment},
     structure::Act,
 };
 use multimap::MultiMap;
@@ -26,7 +26,7 @@ use crate::database::DatabaseState;
 
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
-    structural_amendment::StructuralBlockAmendmentWithContent,
+    repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
 };
 
 pub struct AppliableModificationSet {
@@ -82,7 +82,7 @@ trait AffectedAct {
 pub enum AppliableModification {
     ArticleTitleAmendment(ArticleTitleAmendment),
     BlockAmendment(BlockAmendmentWithContent),
-    Repeal(Repeal),
+    Repeal(SimplifiedRepeal),
     TextAmendment(TextAmendment),
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
     StructuralRepeal(StructuralRepeal),
