@@ -5,7 +5,7 @@
 use anyhow::{anyhow, Result};
 use hun_law::{
     identifier::ActIdentifier,
-    semantic_info::StructuralBlockAmendment,
+    reference::structural::StructuralReference,
     structure::{Act, ActChild},
 };
 
@@ -13,7 +13,8 @@ use super::ModifyAct;
 
 #[derive(Debug)]
 pub struct StructuralBlockAmendmentWithContent {
-    pub metadata: StructuralBlockAmendment,
+    pub position: StructuralReference,
+    pub pure_insertion: bool,
     pub content: Vec<ActChild>,
 }
 
@@ -22,9 +23,8 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
         todo!()
     }
     fn affected_act(&self) -> Result<ActIdentifier> {
-        self.metadata
-            .position
-            .act
-            .ok_or_else(|| anyhow!("No act in reference in special phrase"))
+        self.position.act.ok_or_else(|| {
+            anyhow!("No act in reference in special phrase (StructuralBlockAmendmentWithContent))")
+        })
     }
 }

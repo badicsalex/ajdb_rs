@@ -5,7 +5,7 @@
 use anyhow::{anyhow, Result};
 use hun_law::{
     identifier::ActIdentifier,
-    semantic_info::BlockAmendment,
+    reference::Reference,
     structure::{Act, BlockAmendmentChildren},
 };
 
@@ -13,7 +13,8 @@ use super::ModifyAct;
 
 #[derive(Debug)]
 pub struct BlockAmendmentWithContent {
-    pub metadata: BlockAmendment,
+    pub position: Reference,
+    pub pure_insertion: bool,
     pub content: BlockAmendmentChildren,
 }
 
@@ -22,9 +23,8 @@ impl ModifyAct for BlockAmendmentWithContent {
         todo!()
     }
     fn affected_act(&self) -> Result<ActIdentifier> {
-        self.metadata
-            .position
-            .act()
-            .ok_or_else(|| anyhow!("No act in reference in special phrase"))
+        self.position.act().ok_or_else(|| {
+            anyhow!("No act in reference in special phrase (BlockAmendmentWithContent)")
+        })
     }
 }

@@ -92,7 +92,8 @@ fn get_modifications_for_block_amendment(
     match &paragraph.semantic_info.special_phrase {
         Some(SpecialPhrase::BlockAmendment(ba_se)) => visitor.result.push(
             AppliableModification::BlockAmendment(BlockAmendmentWithContent {
-                metadata: ba_se.clone(),
+                position: ba_se.position.clone(),
+                pure_insertion: ba_se.pure_insertion,
                 content: ba_content.children.clone(),
             }),
         ),
@@ -102,7 +103,8 @@ fn get_modifications_for_block_amendment(
                     .result
                     .push(AppliableModification::StructuralBlockAmendment(
                         StructuralBlockAmendmentWithContent {
-                            metadata: ba_se.clone(),
+                            position: ba_se.position.clone(),
+                            pure_insertion: ba_se.pure_insertion,
                             content: content.clone(),
                         },
                     ))
