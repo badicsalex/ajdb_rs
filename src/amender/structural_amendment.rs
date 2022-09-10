@@ -10,7 +10,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::ModifyAct;
+use super::{AffectedAct, ModifyAct};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralBlockAmendmentWithContent {
@@ -23,6 +23,9 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }
+}
+
+impl AffectedAct for StructuralBlockAmendmentWithContent {
     fn affected_act(&self) -> Result<ActIdentifier> {
         self.position.act.ok_or_else(|| {
             anyhow!("No act in reference in special phrase (StructuralBlockAmendmentWithContent))")

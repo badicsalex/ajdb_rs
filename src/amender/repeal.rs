@@ -5,12 +5,15 @@
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{identifier::ActIdentifier, semantic_info::Repeal, structure::Act};
 
-use super::ModifyAct;
+use super::{AffectedAct, ModifyAct};
 
 impl ModifyAct for Repeal {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }
+}
+
+impl AffectedAct for Repeal {
     fn affected_act(&self) -> Result<ActIdentifier> {
         let result = self
             .positions

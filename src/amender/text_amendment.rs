@@ -5,12 +5,15 @@
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{identifier::ActIdentifier, semantic_info::TextAmendment, structure::Act};
 
-use super::ModifyAct;
+use super::{AffectedAct, ModifyAct};
 
 impl ModifyAct for TextAmendment {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }
+}
+
+impl AffectedAct for TextAmendment {
     fn affected_act(&self) -> Result<ActIdentifier> {
         let result = self
             .positions
