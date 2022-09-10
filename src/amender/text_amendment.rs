@@ -15,12 +15,12 @@ impl ModifyAct for TextAmendment {
         let result = self
             .positions
             .first()
-            .ok_or_else(|| anyhow!("No positions in special phrase"))?
+            .ok_or_else(|| anyhow!("No positions in special phrase (TextAmendment)"))?
             .act()
-            .ok_or_else(|| anyhow!("No act in reference in special phrase"))?;
+            .ok_or_else(|| anyhow!("No act in reference in special phrase (TextAmendment)"))?;
         ensure!(
             self.positions.iter().all(|p| p.act() == Some(result)),
-            "The positions didn't correspond to the same act"
+            "The positions didn't correspond to the same act (TextAmendment)"
         );
         Ok(result)
     }

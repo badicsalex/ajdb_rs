@@ -15,6 +15,6 @@ impl ModifyAct for ArticleTitleAmendment {
     fn affected_act(&self) -> Result<ActIdentifier> {
         self.position
             .act()
-            .ok_or_else(|| anyhow!("No act in reference in special phrase"))
+            .ok_or_else(|| anyhow!("No act in reference in special phrase (ArticleTitleAmendment)"))
     }
 }
