@@ -2,29 +2,31 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{anyhow, ensure, Result};
-use hun_law::{identifier::ActIdentifier, semantic_info::TextAmendment, structure::Act};
+use anyhow::{anyhow, Result};
+use hun_law::{
+    identifier::ActIdentifier, reference::Reference, semantic_info::TextAmendmentReplacement,
+    structure::Act,
+};
+use serde::{Deserialize, Serialize};
 
 use super::{AffectedAct, Modify};
 
-impl Modify<Act> for TextAmendment {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SimplifiedTextAmendment {
+    pub position: Reference,
+    pub replacement: TextAmendmentReplacement,
+}
+
+impl Modify<Act> for SimplifiedTextAmendment {
     fn apply(&self, _act: &mut Act) -> Result<()> {
         todo!()
     }
 }
 
-impl AffectedAct for TextAmendment {
+impl AffectedAct for SimplifiedTextAmendment {
     fn affected_act(&self) -> Result<ActIdentifier> {
-        let result = self
-            .positions
-            .first()
-            .ok_or_else(|| anyhow!("No positions in special phrase (TextAmendment)"))?
+        self.position
             .act()
-            .ok_or_else(|| anyhow!("No act in reference in special phrase (TextAmendment)"))?;
-        ensure!(
-            self.positions.iter().all(|p| p.act() == Some(result)),
-            "The positions didn't correspond to the same act (TextAmendment)"
-        );
-        Ok(result)
+            .ok_or_else(|| anyhow!("No act in reference in special phrase (TextAmendment)"))
     }
 }

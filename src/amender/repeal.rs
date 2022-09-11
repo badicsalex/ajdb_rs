@@ -11,8 +11,6 @@ use super::{AffectedAct, Modify};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SimplifiedRepeal {
     pub position: Reference,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
 }
 
 impl Modify<Act> for SimplifiedRepeal {

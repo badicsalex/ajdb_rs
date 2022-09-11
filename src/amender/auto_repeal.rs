@@ -61,7 +61,6 @@ impl<'a> AutoRepealAccumulator<'a> {
             .map(|p| {
                 Ok(SimplifiedRepeal {
                     position: p.relative_to(act_ref)?,
-                    text: None,
                 }
                 .into())
             })

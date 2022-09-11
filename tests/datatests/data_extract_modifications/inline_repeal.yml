@@ -1,24 +1,24 @@
 2012-01-15:
   2011. évi XXX. törvény:
   - TextAmendment:
-      positions:
-      - act:
+      position:
+        act:
           year: 2011
           number: 30
         article: 7:43
         paragraph: '3'
-      replacements:
-      - from: Semmis
+      replacement:
+        from: Semmis
         to: Érvénytelen
   - TextAmendment:
-      positions:
-      - act:
+      position:
+        act:
           year: 2011
           number: 30
         article: '1'
         paragraph: '3'
-      replacements:
-      - from: Totális
+      replacement:
+        from: Totális
         to: Megfelelő
 2012-01-16:
   2012. évi I. törvény:

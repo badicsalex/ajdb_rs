@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{Repeal, SemanticInfo, SpecialPhrase},
+    semantic_info::{Repeal, SemanticInfo, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
     structure::{
         Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
         SAEBody,
@@ -19,7 +19,7 @@ use crate::enforcement_date_set::EnforcementDateSet;
 use super::{
     auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
-    AppliableModification,
+    text_amendment::SimplifiedTextAmendment, AppliableModification,
 };
 
 /// Return all modifications that comes in force on the specific day
@@ -135,7 +135,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                 match phrase {
                     SpecialPhrase::ArticleTitleAmendment(sp) => self.result.push(sp.clone().into()),
                     SpecialPhrase::Repeal(sp) => self.handle_repeal(sp),
-                    SpecialPhrase::TextAmendment(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::TextAmendment(sp) => self.handle_text_amendment(sp),
                     SpecialPhrase::StructuralRepeal(sp) => self.result.push(sp.clone().into()),
                     // These are handled specially with get_modifications_for_block_amendment
                     SpecialPhrase::StructuralBlockAmendment(_) => (),
@@ -156,20 +156,35 @@ impl<'a> ModificationAccumulator<'a> {
                 self.result.push(
                     SimplifiedRepeal {
                         position: position.clone(),
-                        text: None,
                     }
                     .into(),
                 )
             } else {
                 for text in &repeal.texts {
                     self.result.push(
-                        SimplifiedRepeal {
+                        SimplifiedTextAmendment {
                             position: position.clone(),
-                            text: Some(text.clone()),
+                            replacement: TextAmendmentReplacement {
+                                from: text.clone(),
+                                to: "".to_owned(),
+                            },
                         }
                         .into(),
                     )
                 }
+            }
+        }
+    }
+    fn handle_text_amendment(&mut self, text_amendment: &TextAmendment) {
+        for position in &text_amendment.positions {
+            for replacement in &text_amendment.replacements {
+                self.result.push(
+                    SimplifiedTextAmendment {
+                        position: position.clone(),
+                        replacement: replacement.clone(),
+                    }
+                    .into(),
+                )
             }
         }
     }
