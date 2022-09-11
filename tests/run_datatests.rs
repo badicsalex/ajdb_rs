@@ -36,4 +36,4 @@ macro_rules! generate_harness{
     }
 }
 
-generate_harness!(test_extract_modifications,);
+generate_harness!(test_extract_modifications, test_apply_modifications,);

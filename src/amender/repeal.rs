@@ -3,7 +3,12 @@
 // All rights reserved.
 
 use anyhow::{anyhow, Result};
-use hun_law::{identifier::ActIdentifier, reference::Reference, structure::Act};
+use hun_law::{
+    identifier::{ActIdentifier, IdentifierCommon},
+    reference::Reference,
+    structure::{Act, ActChild, SAEBody, SubArticleElement},
+    util::walker::SAEVisitorMut,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{AffectedAct, Modify};
@@ -14,8 +19,42 @@ pub struct SimplifiedRepeal {
 }
 
 impl Modify<Act> for SimplifiedRepeal {
-    fn apply(&self, _act: &mut Act) -> Result<()> {
-        todo!();
+    fn apply(&self, act: &mut Act) -> Result<()> {
+        let mut visitor = RepealerVisitor {
+            position: self.position.clone(),
+        };
+        // TODO: A full act repeal will individually repeal all articles.
+        //       But structural elements stay in place
+        //       This may not be ideal.
+        act.walk_saes_mut(&mut visitor)?;
+        // TODO: This should probably be done after we are done with all Repeals
+        for act_child in &mut act.children {
+            if let ActChild::Article(article) = act_child {
+                if article.children.iter().all(|p| p.is_empty()) {
+                    article.title = None;
+                    article.children = Vec::new();
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+struct RepealerVisitor {
+    position: Reference,
+}
+
+impl SAEVisitorMut for RepealerVisitor {
+    fn on_enter<IT: IdentifierCommon, CT>(
+        &mut self,
+        position: &Reference,
+        element: &mut SubArticleElement<IT, CT>,
+    ) -> Result<()> {
+        if self.position.contains(position) {
+            // TODO: Proper repealing. Maybe a separate SAEBody type
+            element.body = SAEBody::Text("".to_owned())
+        }
+        Ok(())
     }
 }
 

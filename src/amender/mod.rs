@@ -71,7 +71,7 @@ impl AppliableModificationSet {
     }
 }
 
-trait Modify<T> {
+pub trait Modify<T> {
     fn apply(&self, target: &mut T) -> Result<()>;
 }
 
