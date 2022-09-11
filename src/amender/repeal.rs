@@ -28,6 +28,15 @@ impl Modify<Act> for SimplifiedRepeal {
         //       This may not be ideal.
         act.walk_saes_mut(&mut visitor)?;
         // TODO: This should probably be done after we are done with all Repeals
+        Self::collate_repealed_paragraphs(act);
+        Ok(())
+    }
+}
+
+impl SimplifiedRepeal {
+    fn collate_repealed_paragraphs(act: &mut Act) {
+        // TODO: this should probably be done to other SAEs too,
+        //       recursively.
         for act_child in &mut act.children {
             if let ActChild::Article(article) = act_child {
                 if article.children.iter().all(|p| p.is_empty()) {
@@ -36,7 +45,6 @@ impl Modify<Act> for SimplifiedRepeal {
                 }
             }
         }
-        Ok(())
     }
 }
 
