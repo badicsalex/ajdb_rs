@@ -5,11 +5,12 @@
 use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
+    identifier::IdentifierCommon,
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{Repeal, SemanticInfo, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
+    semantic_info::{Repeal, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
     structure::{
         Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
-        SAEBody,
+        SAEBody, SubArticleElement,
     },
     util::walker::{SAEVisitor, WalkSAE},
 };
@@ -124,14 +125,13 @@ struct ModificationAccumulator<'a> {
 }
 
 impl<'a> SAEVisitor for ModificationAccumulator<'a> {
-    fn on_text(
+    fn on_enter<IT: IdentifierCommon, CT>(
         &mut self,
         position: &Reference,
-        _text: &String,
-        semantic_info: &SemanticInfo,
+        element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
         if self.ed_set.came_into_force_today(position, self.date)? {
-            if let Some(phrase) = &semantic_info.special_phrase {
+            if let Some(phrase) = &element.semantic_info.special_phrase {
                 match phrase {
                     SpecialPhrase::ArticleTitleAmendment(sp) => self.result.push(sp.clone().into()),
                     SpecialPhrase::Repeal(sp) => self.handle_repeal(sp),

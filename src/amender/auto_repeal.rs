@@ -5,9 +5,8 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 use hun_law::{
-    reference::Reference,
-    semantic_info::{EnforcementDate, SemanticInfo, SpecialPhrase},
-    util::walker::SAEVisitor,
+    identifier::IdentifierCommon, reference::Reference, semantic_info::SpecialPhrase,
+    structure::SubArticleElement, util::walker::SAEVisitor,
 };
 
 use crate::enforcement_date_set::EnforcementDateSet;
@@ -25,24 +24,32 @@ pub struct AutoRepealAccumulator<'a> {
 }
 
 impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
-    fn on_text(
+    fn on_enter<IT: IdentifierCommon, CT>(
         &mut self,
         position: &Reference,
-        _text: &String,
-        semantic_info: &SemanticInfo,
+        element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        self.repeal_one(position, semantic_info)?;
-        self.parse_inline_repeal(semantic_info)
-    }
-
-    fn on_enter(
-        &mut self,
-        position: &Reference,
-        _intro: &String,
-        _wrap_up: &Option<String>,
-        semantic_info: &SemanticInfo,
-    ) -> Result<()> {
-        self.repeal_one(position, semantic_info)
+        if let Some(phrase) = &element.semantic_info.special_phrase {
+            match phrase {
+                SpecialPhrase::ArticleTitleAmendment(_)
+                | SpecialPhrase::BlockAmendment(_)
+                | SpecialPhrase::Repeal(_)
+                | SpecialPhrase::TextAmendment(_)
+                | SpecialPhrase::StructuralBlockAmendment(_)
+                | SpecialPhrase::StructuralRepeal(_) => {
+                    if self.ed_set.came_into_force_yesterday(position, self.date)? {
+                        self.positions.push(position.clone())
+                    }
+                }
+                // Special handling for inline repeal
+                SpecialPhrase::EnforcementDate(ed) => {
+                    if ed.inline_repeal.map_or(false, |d| d == self.date) {
+                        self.positions.push(Reference::default());
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -65,36 +72,5 @@ impl<'a> AutoRepealAccumulator<'a> {
                 .into())
             })
             .collect::<Result<Vec<_>>>()
-    }
-
-    fn repeal_one(&mut self, position: &Reference, semantic_info: &SemanticInfo) -> Result<()> {
-        if self.ed_set.came_into_force_yesterday(position, self.date)? {
-            if let Some(phrase) = &semantic_info.special_phrase {
-                match phrase {
-                    SpecialPhrase::ArticleTitleAmendment(_)
-                    | SpecialPhrase::BlockAmendment(_)
-                    | SpecialPhrase::Repeal(_)
-                    | SpecialPhrase::TextAmendment(_)
-                    | SpecialPhrase::StructuralBlockAmendment(_)
-                    | SpecialPhrase::StructuralRepeal(_) => self.positions.push(position.clone()),
-                    // Not a modification
-                    SpecialPhrase::EnforcementDate(_) => (),
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn parse_inline_repeal(&mut self, semantic_info: &SemanticInfo) -> Result<()> {
-        if let Some(SpecialPhrase::EnforcementDate(EnforcementDate {
-            inline_repeal: Some(inline_repeal_date),
-            ..
-        })) = semantic_info.special_phrase
-        {
-            if inline_repeal_date == self.date {
-                self.positions.push(Reference::default());
-            }
-        }
-        Ok(())
     }
 }

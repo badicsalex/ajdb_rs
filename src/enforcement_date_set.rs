@@ -5,9 +5,10 @@
 use anyhow::{bail, ensure, Context, Result};
 use chrono::{Datelike, NaiveDate};
 use hun_law::{
+    identifier::IdentifierCommon,
     reference::Reference,
-    semantic_info::{EnforcementDate, SemanticInfo, SpecialPhrase},
-    structure::Act,
+    semantic_info::{EnforcementDate, SpecialPhrase},
+    structure::{Act, SubArticleElement},
     util::walker::SAEVisitor,
 };
 
@@ -116,14 +117,12 @@ struct EnforcementDateAccumulator {
 }
 
 impl SAEVisitor for EnforcementDateAccumulator {
-    // on_enter and on_exit not needed, since EnforcementDates are always in leaf nodes.
-    fn on_text(
+    fn on_enter<IT: IdentifierCommon, CT>(
         &mut self,
         _position: &Reference,
-        _text: &String,
-        semantic_info: &SemanticInfo,
+        element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if let Some(SpecialPhrase::EnforcementDate(ed)) = &semantic_info.special_phrase {
+        if let Some(SpecialPhrase::EnforcementDate(ed)) = &element.semantic_info.special_phrase {
             self.result.push(ed.clone())
         }
         Ok(())
