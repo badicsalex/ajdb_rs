@@ -2,14 +2,33 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{anyhow, Result};
-use hun_law::{identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act};
+use anyhow::{anyhow, ensure, Result};
+use hun_law::{
+    identifier::ActIdentifier, reference::to_element::ReferenceToElement,
+    semantic_info::ArticleTitleAmendment, structure::Act,
+};
 
 use super::{AffectedAct, Modify};
 
 impl Modify<Act> for ArticleTitleAmendment {
-    fn apply(&self, _act: &mut Act) -> Result<()> {
-        todo!()
+    fn apply(&self, act: &mut Act) -> Result<()> {
+        let mut applied = false;
+        let act_ref = act.reference();
+        for article in act.articles_mut() {
+            let article_ref = article.reference().relative_to(&act_ref)?;
+            if self.position.contains(&article_ref) {
+                if let Some(title) = &mut article.title {
+                    applied = applied || title.contains(&self.replacement.from);
+                    *title = title.replace(&self.replacement.from, &self.replacement.to);
+                }
+            }
+        }
+        ensure!(
+            applied,
+            "Article title amendment {:?} did not have an effect",
+            self
+        );
+        Ok(())
     }
 }
 
