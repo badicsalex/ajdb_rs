@@ -1,0 +1,147 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+  - Article:
+      identifier: "2"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+  - Article:
+      identifier: "3"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+        - identifier: "3"
+          body: "Paragraph 3"
+        - identifier: "4"
+          body: "Paragraph 4"
+  - Article:
+      identifier: "4"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+modifications:
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '1/A'
+      pure_insertion: true
+      content:
+        Paragraph:
+        - identifier: "1/A"
+          body: "New paragraph 1/A"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '3'
+      pure_insertion: true
+      content:
+        Paragraph:
+        - identifier: "3"
+          body: "New paragraph 3"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '2'
+        paragraph: '2'
+      pure_insertion: false
+      content:
+        Paragraph:
+        - identifier: "2"
+          body: "Modified paragraph 2"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '3'
+        paragraph:
+          start: '2'
+          end: '4'
+      pure_insertion: false
+      content:
+        Paragraph:
+        - identifier: "2"
+          body: "Modified paragraph 2"
+        - identifier: "3"
+          body: "Modified paragraph 3"
+        - identifier: "4"
+          body: "Modified paragraph 4"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '4'
+        paragraph:
+          start: '2'
+          end: '3'
+      pure_insertion: false
+      content:
+        Paragraph:
+        - identifier: "2"
+          body: "Modified paragraph 2"
+        - identifier: "3"
+          body: "Modified paragraph 3"
+        - identifier: "4"
+          body: "Modified paragraph 4"
+children_expected:
+- Article:
+    identifier: '1'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: 1a
+      body: New paragraph 1/A
+    - identifier: '2'
+      body: Paragraph 2
+    - identifier: '3'
+      body: New paragraph 3
+- Article:
+    identifier: '2'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body: Modified paragraph 2
+- Article:
+    identifier: '3'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body: Modified paragraph 2
+    - identifier: '3'
+      body: Modified paragraph 3
+    - identifier: '4'
+      body: Modified paragraph 4
+- Article:
+    identifier: '4'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body: Modified paragraph 2
+    - identifier: '3'
+      body: Modified paragraph 3
+    - identifier: '4'
+      body: Modified paragraph 4

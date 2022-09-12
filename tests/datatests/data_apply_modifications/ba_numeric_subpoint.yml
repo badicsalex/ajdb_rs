@@ -1,0 +1,65 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body:
+            intro: "The points are"
+            children:
+              AlphabeticPoint:
+                - identifier: "a"
+                  body:
+                    intro: "Subpoints are"
+                    children:
+                      NumericSubpoint:
+                        - identifier: "1"
+                          body: "Subpoint 1"
+                        - identifier: "2"
+                          body: "Subpoint 2"
+                - identifier: "b"
+                  body: "Point b"
+modifications:
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
+        point: a
+        subpoint:
+          start: "2"
+          end: "3"
+      pure_insertion: false
+      content:
+        NumericSubpoint:
+        - identifier: "2"
+          body: "Modified 2"
+        - identifier: "3"
+          body: "Modified 3"
+children_expected:
+- Article:
+    identifier: '1'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body:
+        intro: The points are
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body:
+              intro: Subpoints are
+              children:
+                NumericSubpoint:
+                - identifier: '1'
+                  body: Subpoint 1
+                - identifier: '2'
+                  body: Modified 2
+                - identifier: '3'
+                  body: Modified 3
+          - identifier: b
+            body: Point b

@@ -1,0 +1,69 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body:
+            intro: "The points are"
+            children:
+              NumericPoint:
+                - identifier: "1"
+                  body: "Point 1"
+                - identifier: "2"
+                  body: "Point 2"
+                - identifier: "3"
+                  body: "Point 3"
+modifications:
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
+        point: '1/A'
+      pure_insertion: true
+      content:
+        NumericPoint:
+        - identifier: "1/A"
+          body: "New point 1/A"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
+        point: 
+          start: '3'
+          end: '4'
+      pure_insertion: false
+      content:
+        NumericPoint:
+        - identifier: "3"
+          body: "Modified 3"
+        - identifier: "4"
+          body: "Modified 4"
+children_expected:
+- Article:
+    identifier: '1'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body:
+        intro: The points are
+        children:
+          NumericPoint:
+          - identifier: '1'
+            body: Point 1
+          - identifier: 1a
+            body: New point 1/A
+          - identifier: '2'
+            body: Point 2
+          - identifier: '3'
+            body: Modified 3
+          - identifier: '4'
+            body: Modified 4

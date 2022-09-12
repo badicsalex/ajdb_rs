@@ -1,0 +1,54 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body:
+            intro: "The points are"
+            children:
+              AlphabeticPoint:
+                - identifier: "a"
+                  body: "Point a"
+                - identifier: "b"
+                  body: "Point b"
+                - identifier: "c"
+                  body: "Point c"
+modifications:
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
+        point: 
+          start: 'c'
+          end: 'd'
+      pure_insertion: false
+      content:
+        AlphabeticPoint:
+        - identifier: "c"
+          body: "Modified c"
+        - identifier: "d"
+          body: "Modified d"
+children_expected:
+- Article:
+    identifier: '1'
+    children:
+    - identifier: '1'
+      body: Paragraph 1
+    - identifier: '2'
+      body:
+        intro: The points are
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body: Point a
+          - identifier: b
+            body: Point b
+          - identifier: c
+            body: Modified c
+          - identifier: d
+            body: Modified d
