@@ -1,0 +1,29 @@
+2012-01-02:
+  2013. évi V. törvény:
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2013
+          number: 5
+        structural_element:
+          Article: 3:305
+      pure_insertion: false
+      content:
+      - Article:
+          identifier: 3:305
+          title: Kötvény helyett részvény igénylése és a kötvény részvénnyé történő átváltozása
+          children:
+          - identifier: '1'
+            body: Az átváltoztatható ...
+          - identifier: '2'
+            body: Az átváltoztatható ...
+          - identifier: '3'
+            body: Az (1) bekezdés ...
+2012-01-03:
+  2012. évi I. törvény:
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '2'

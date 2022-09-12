@@ -9,8 +9,7 @@ use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     semantic_info::{Repeal, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
     structure::{
-        Act, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren, SAEBody,
-        SubArticleElement,
+        Act, ActChild, BlockAmendment, Paragraph, ParagraphChildren, SAEBody, SubArticleElement,
     },
     util::walker::{SAEVisitor, WalkSAE},
 };
@@ -64,16 +63,34 @@ fn get_modifications_in_paragraph(
     visitor: &mut ModificationAccumulator,
     auto_repeals: &mut AutoRepealAccumulator,
 ) -> Result<()> {
-    if let SAEBody::Children {
-        children: ParagraphChildren::BlockAmendment(ba_content),
-        ..
-    } = &paragraph.body
-    {
-        if ed_set.came_into_force_today(&paragraph.reference().relative_to(article_ref)?, date)? {
-            get_modifications_for_block_amendment(paragraph, ba_content, visitor)?
+    match &paragraph.body {
+        SAEBody::Children {
+            children: ParagraphChildren::BlockAmendment(ba_content),
+            ..
+        } => {
+            if ed_set
+                .came_into_force_today(&paragraph.reference().relative_to(article_ref)?, date)?
+            {
+                get_modifications_for_block_amendment(paragraph, ba_content, visitor)?
+            }
         }
-    } else {
-        paragraph.walk_saes(article_ref, visitor)?;
+        SAEBody::Children {
+            children: ParagraphChildren::StructuralBlockAmendment(sba_content),
+            ..
+        } => {
+            if ed_set
+                .came_into_force_today(&paragraph.reference().relative_to(article_ref)?, date)?
+            {
+                get_modifications_for_structural_block_amendment(
+                    paragraph,
+                    &sba_content.children,
+                    visitor,
+                )?
+            }
+        }
+        _ => {
+            paragraph.walk_saes(article_ref, visitor)?;
+        }
     }
     paragraph.walk_saes(article_ref, auto_repeals)?;
     Ok(())
@@ -84,28 +101,39 @@ fn get_modifications_for_block_amendment(
     ba_content: &BlockAmendment,
     visitor: &mut ModificationAccumulator,
 ) -> Result<()> {
-    match &paragraph.semantic_info.special_phrase {
-        Some(SpecialPhrase::BlockAmendment(ba_se)) => visitor.result.push(
-            AppliableModification::BlockAmendment(BlockAmendmentWithContent {
+    if let Some(SpecialPhrase::BlockAmendment(ba_se)) = &paragraph.semantic_info.special_phrase {
+        visitor.result.push(AppliableModification::BlockAmendment(
+            BlockAmendmentWithContent {
                 position: ba_se.position.clone(),
                 pure_insertion: ba_se.pure_insertion,
                 content: ba_content.children.clone(),
-            }),
-        ),
+            },
+        ))
+    } else {
+        bail!(
+            "Invalid special phrase for BlockAmendment container: {:?}",
+            paragraph.semantic_info.special_phrase
+        )
+    };
+    Ok(())
+}
+
+fn get_modifications_for_structural_block_amendment(
+    paragraph: &Paragraph,
+    ba_content: &[ActChild],
+    visitor: &mut ModificationAccumulator,
+) -> Result<()> {
+    match &paragraph.semantic_info.special_phrase {
         Some(SpecialPhrase::StructuralBlockAmendment(ba_se)) => {
-            if let BlockAmendmentChildren::StructuralElement(content) = &ba_content.children {
-                visitor
-                    .result
-                    .push(AppliableModification::StructuralBlockAmendment(
-                        StructuralBlockAmendmentWithContent {
-                            position: ba_se.position.clone(),
-                            pure_insertion: ba_se.pure_insertion,
-                            content: content.clone(),
-                        },
-                    ))
-            } else {
-                bail!("Invalid children type for structural block amendment")
-            }
+            visitor
+                .result
+                .push(AppliableModification::StructuralBlockAmendment(
+                    StructuralBlockAmendmentWithContent {
+                        position: ba_se.position.clone(),
+                        pure_insertion: ba_se.pure_insertion,
+                        content: ba_content.into(),
+                    },
+                ))
         }
         _ => bail!(
             "Invalid special phrase for BlockAmendment container: {:?}",
