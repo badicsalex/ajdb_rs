@@ -20,13 +20,11 @@ pub struct SimplifiedRepeal {
 
 impl Modify<Act> for SimplifiedRepeal {
     fn apply(&self, act: &mut Act) -> Result<()> {
-        let mut visitor = RepealerVisitor {
-            position: self.position.clone(),
-        };
         // TODO: A full act repeal will individually repeal all articles.
         //       But structural elements stay in place
         //       This may not be ideal.
-        act.walk_saes_mut(&mut visitor)?;
+        // TODO: Sanity check if it was actually applied
+        act.walk_saes_mut(&mut self.clone())?;
         // TODO: This should probably be done after we are done with all Repeals
         Self::collate_repealed_paragraphs(act);
         Ok(())
@@ -35,8 +33,7 @@ impl Modify<Act> for SimplifiedRepeal {
 
 impl SimplifiedRepeal {
     fn collate_repealed_paragraphs(act: &mut Act) {
-        // TODO: this should probably be done to other SAEs too,
-        //       recursively.
+        // TODO: this should probably be done to other SAEs too, recursively.
         for act_child in &mut act.children {
             if let ActChild::Article(article) = act_child {
                 if article.children.iter().all(|p| p.is_empty()) {
@@ -48,11 +45,7 @@ impl SimplifiedRepeal {
     }
 }
 
-struct RepealerVisitor {
-    position: Reference,
-}
-
-impl SAEVisitorMut for RepealerVisitor {
+impl SAEVisitorMut for SimplifiedRepeal {
     fn on_enter<IT: IdentifierCommon, CT>(
         &mut self,
         position: &Reference,
