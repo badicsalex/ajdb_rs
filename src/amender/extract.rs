@@ -9,8 +9,8 @@ use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     semantic_info::{Repeal, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
     structure::{
-        Act, ActChild, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren,
-        SAEBody, SubArticleElement,
+        Act, BlockAmendment, BlockAmendmentChildren, Paragraph, ParagraphChildren, SAEBody,
+        SubArticleElement,
     },
     util::walker::{SAEVisitor, WalkSAE},
 };
@@ -38,19 +38,17 @@ pub fn extract_modifications_from_act(
         result: Default::default(),
     };
     let mut auto_repeals = AutoRepealAccumulator::new(&ed_set, date);
-    for act_child in &act.children {
-        if let ActChild::Article(article) = act_child {
-            let article_ref = article.reference();
-            for paragraph in &article.children {
-                get_modifications_in_paragraph(
-                    paragraph,
-                    &article_ref,
-                    date,
-                    &ed_set,
-                    &mut visitor,
-                    &mut auto_repeals,
-                )?
-            }
+    for article in act.articles() {
+        let article_ref = article.reference();
+        for paragraph in &article.children {
+            get_modifications_in_paragraph(
+                paragraph,
+                &article_ref,
+                date,
+                &ed_set,
+                &mut visitor,
+                &mut auto_repeals,
+            )?
         }
     }
     let mut result = visitor.result;

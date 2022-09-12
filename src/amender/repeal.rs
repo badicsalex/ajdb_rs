@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
-    structure::{Act, ActChild, SAEBody, SubArticleElement},
+    structure::{Act, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
 use serde::{Deserialize, Serialize};
@@ -34,12 +34,10 @@ impl Modify<Act> for SimplifiedRepeal {
 impl SimplifiedRepeal {
     fn collate_repealed_paragraphs(act: &mut Act) {
         // TODO: this should probably be done to other SAEs too, recursively.
-        for act_child in &mut act.children {
-            if let ActChild::Article(article) = act_child {
-                if article.children.iter().all(|p| p.is_empty()) {
-                    article.title = None;
-                    article.children = Vec::new();
-                }
+        for article in act.articles_mut() {
+            if article.children.iter().all(|p| p.is_empty()) {
+                article.title = None;
+                article.children = Vec::new();
             }
         }
     }
