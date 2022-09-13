@@ -20,7 +20,6 @@ use super::{AffectedAct, Modify};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockAmendmentWithContent {
     pub position: Reference,
-    pub pure_insertion: bool,
     pub content: BlockAmendmentChildren,
 }
 

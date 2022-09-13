@@ -105,7 +105,6 @@ fn get_modifications_for_block_amendment(
         visitor.result.push(AppliableModification::BlockAmendment(
             BlockAmendmentWithContent {
                 position: ba_se.position.clone(),
-                pure_insertion: ba_se.pure_insertion,
                 content: ba_content.children.clone(),
             },
         ))
