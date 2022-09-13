@@ -4,9 +4,9 @@
 
 use anyhow::{anyhow, Context, Result};
 use hun_law::{
-    identifier::{ActIdentifier, NumericIdentifier},
+    identifier::{range::IdentifierRange, ActIdentifier, ArticleIdentifier, NumericIdentifier},
     reference::structural::{StructuralReference, StructuralReferenceElement},
-    structure::{Act, ActChild, StructuralElement, StructuralElementType, Subtitle},
+    structure::{Act, ActChild, Article, StructuralElement, StructuralElementType, Subtitle},
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +45,9 @@ impl Modify<Act> for StructuralBlockAmendmentWithContent {
             StructuralReferenceElement::SubtitleAfterArticle(_) => todo!(),
             StructuralReferenceElement::SubtitleBeforeArticle(_) => todo!(),
             StructuralReferenceElement::SubtitleBeforeArticleInclusive(_) => todo!(),
-            StructuralReferenceElement::Article(_) => todo!(),
+            StructuralReferenceElement::Article(range) => {
+                self.get_cut_points_for_article_range(children_of_the_book, range)
+            }
         }?;
         let cut_start = cut_start + book_offset;
         let cut_end = cut_end + book_offset;
@@ -254,6 +256,40 @@ impl StructuralBlockAmendmentWithContent {
             )
         })
     }
+
+    fn get_cut_points_for_article_range(
+        &self,
+        children: &[ActChild],
+        range: &IdentifierRange<ArticleIdentifier>,
+    ) -> Result<(usize, usize)> {
+        fn article_id(child: &ActChild) -> Option<ArticleIdentifier> {
+            if let ActChild::Article(Article { identifier, .. }) = child {
+                Some(*identifier)
+            } else {
+                None
+            }
+        }
+        if self.pure_insertion {
+            Self::get_insertion_point(
+                children,
+                |child| article_id(child).map_or(false, |id| id < range.first_in_range()),
+                |_child| true,
+            )
+        } else {
+            Self::get_cut_points(
+                children,
+                |child| article_id(child).map_or(false, |id| range.contains(id)),
+                |child| article_id(child).map_or(true, |id| !range.contains(id)),
+            )
+        }
+        .with_context(|| {
+            anyhow!(
+                "Could not find cut points for article range {}-{}",
+                range.first_in_range(),
+                range.last_in_range()
+            )
+        })
+    }
 }
 
 impl AffectedAct for StructuralBlockAmendmentWithContent {
@@ -266,7 +302,7 @@ impl AffectedAct for StructuralBlockAmendmentWithContent {
 
 #[cfg(test)]
 mod tests {
-    use hun_law::structure::Article;
+    use hun_law::{structure::Article, identifier::range::IdentifierRangeFrom};
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -288,15 +324,7 @@ mod tests {
             quick_article("3:2"),
         ];
 
-        let mut test_amendment = StructuralBlockAmendmentWithContent {
-            position: StructuralReference {
-                act: None,
-                book: None,
-                structural_element: StructuralReferenceElement::SubtitleId(1.into()),
-            },
-            pure_insertion: false,
-            content: Vec::new(),
-        };
+        let mut test_amendment = quick_test_amendment(false);
         let (book_start_none, book_children_none) =
             test_amendment.select_relevant_book(children).unwrap();
         assert_eq!(book_start_none, 0);
@@ -350,15 +378,7 @@ mod tests {
             quick_se(8, StructuralElementType::Chapter),
             quick_article("8"),
         ];
-        let mut test_amendment = StructuralBlockAmendmentWithContent {
-            position: StructuralReference {
-                act: None,
-                book: None,
-                structural_element: StructuralReferenceElement::SubtitleId(1.into()),
-            },
-            pure_insertion: false,
-            content: Vec::new(),
-        };
+        let test_amendment = quick_test_amendment(false);
 
         // --- Amendments ---
 
@@ -425,7 +445,7 @@ mod tests {
         );
 
         // --- Insertions ---
-        test_amendment.pure_insertion = true;
+        let test_amendment = quick_test_amendment(true);
         // Beginning
         assert_eq!(
             test_amendment
@@ -527,15 +547,7 @@ mod tests {
             quick_subtitle(4, "ST 4"),
             quick_article("4"),
         ];
-        let mut test_amendment = StructuralBlockAmendmentWithContent {
-            position: StructuralReference {
-                act: None,
-                book: None,
-                structural_element: StructuralReferenceElement::SubtitleId(1.into()),
-            },
-            pure_insertion: false,
-            content: Vec::new(),
-        };
+        let test_amendment = quick_test_amendment(false);
 
         // --- Amendments ---
 
@@ -589,7 +601,7 @@ mod tests {
         );
 
         // --- Insertions ---
-        test_amendment.pure_insertion = true;
+        let test_amendment = quick_test_amendment(true);
         // Beginning
         assert_eq!(
             test_amendment
@@ -613,6 +625,92 @@ mod tests {
                 .unwrap(),
             (10, 10)
         );
+    }
+
+    #[test]
+    fn test_get_cut_points_for_article() {
+        let children: &[ActChild] = &[
+            quick_se(1, StructuralElementType::Chapter),
+            quick_subtitle(1, "ST 1"),
+            quick_article("1"),
+            quick_article("1/A"),
+            quick_article("1/B"),
+            quick_article("2"),
+            quick_article("2/A"),
+            quick_se(2, StructuralElementType::Chapter),
+            quick_subtitle(3, "ST 3"),
+            quick_article("3"),
+            quick_subtitle(4, "ST 4"),
+            quick_article("4"),
+        ];
+        let test_amendment = quick_test_amendment(false);
+
+        // --- Amendments ---
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("1/A".parse().unwrap()))
+                .unwrap(),
+            (3, 4)
+        );
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "1/B".parse().unwrap()))
+                .unwrap(),
+            (3, 5)
+        );
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("4".parse().unwrap()))
+                .unwrap(),
+            (11, 12)
+        );
+
+        // Known limitation: Amendment stops at subtitles and structural elements
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "2/B".parse().unwrap()))
+                .unwrap(),
+            (3, 7)
+        );
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("3".parse().unwrap(), "4".parse().unwrap()))
+                .unwrap(),
+            (9, 10)
+        );
+
+        // --- Insertions ---
+        let test_amendment = quick_test_amendment(true);
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("1/C".parse().unwrap()))
+                .unwrap(),
+            (5, 5)
+        );
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("2/B".parse().unwrap(), "2/G".parse().unwrap()))
+                .unwrap(),
+            (7, 7)
+        );
+        assert_eq!(
+            test_amendment
+                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("5".parse().unwrap()))
+                .unwrap(),
+            (12, 12)
+        );
+    }
+
+    fn quick_test_amendment(pure_insertion: bool) -> StructuralBlockAmendmentWithContent {
+        StructuralBlockAmendmentWithContent {
+            position: StructuralReference {
+                act: None,
+                book: None,
+                structural_element: StructuralReferenceElement::SubtitleId(1.into()),
+            },
+            pure_insertion,
+            content: Vec::new(),
+        }
     }
 
     fn quick_se(id: u16, element_type: StructuralElementType) -> ActChild {
