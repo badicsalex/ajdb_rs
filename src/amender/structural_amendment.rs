@@ -2,7 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use hun_law::{
     identifier::{range::IdentifierRange, ActIdentifier, ArticleIdentifier, NumericIdentifier},
     reference::structural::{StructuralReference, StructuralReferenceElement},
@@ -44,9 +44,22 @@ impl Modify<Act> for StructuralBlockAmendmentWithContent {
             StructuralReferenceElement::SubtitleTitle(title) => {
                 self.handle_subtitle_title(children_of_the_book, title)
             }
-            StructuralReferenceElement::SubtitleAfterArticle(_) => todo!(),
-            StructuralReferenceElement::SubtitleBeforeArticle(_) => todo!(),
-            StructuralReferenceElement::SubtitleBeforeArticleInclusive(_) => todo!(),
+            StructuralReferenceElement::SubtitleAfterArticle(id) => self.handle_article_relative(
+                children_of_the_book,
+                *id,
+                SubtitlePosition::AfterArticle,
+            ),
+            StructuralReferenceElement::SubtitleBeforeArticle(id) => self.handle_article_relative(
+                children_of_the_book,
+                *id,
+                SubtitlePosition::BeforeArticle,
+            ),
+            StructuralReferenceElement::SubtitleBeforeArticleInclusive(id) => self
+                .handle_article_relative(
+                    children_of_the_book,
+                    *id,
+                    SubtitlePosition::BeforeArticleInclusive,
+                ),
             StructuralReferenceElement::Article(range) => {
                 self.handle_article_range(children_of_the_book, range)
             }
@@ -59,6 +72,13 @@ impl Modify<Act> for StructuralBlockAmendmentWithContent {
         act.children.append(&mut tail);
         Ok(())
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SubtitlePosition {
+    AfterArticle,
+    BeforeArticle,
+    BeforeArticleInclusive,
 }
 
 impl StructuralBlockAmendmentWithContent {
@@ -252,6 +272,68 @@ impl StructuralBlockAmendmentWithContent {
                 "Could not find cut points for article range {}-{}",
                 range.first_in_range(),
                 range.last_in_range()
+            )
+        })
+    }
+
+    fn handle_article_relative(
+        &self,
+        children: &[ActChild],
+        article_id: ArticleIdentifier,
+        subtitle_position: SubtitlePosition,
+    ) -> Result<(usize, usize)> {
+        if self.pure_insertion {
+            let article_position = children
+                .iter()
+                .position(|child| get_article_id(child) == Some(article_id));
+            let insertion_point = if let Some(article_position) = article_position {
+                match subtitle_position {
+                    //  "A Btk. IX. Fejezete a 92/A. §-t követően a következő alcímmel egészül ki:"
+                    SubtitlePosition::AfterArticle => article_position + 1,
+                    //  "A Btk. a 300. §-t megelőzően a következő alcímmel egészül ki:"
+                    SubtitlePosition::BeforeArticle => article_position, // This means 'just before it'
+                    SubtitlePosition::BeforeArticleInclusive => {
+                        bail!("Invalid combination: BeforeArticleInclusive on existing article")
+                    }
+                }
+            } else {
+                // Did not find anything, just put it after the last smaller one
+                children
+                    .iter()
+                    .rposition(|child| get_article_id(child).map_or(false, |id| id < article_id))
+                    .ok_or_else(|| anyhow!("Could not find Article {}", article_id))?
+                    + 1
+            };
+            Result::<(usize, usize)>::Ok((insertion_point, insertion_point))
+        } else {
+            let article_position = children
+                .iter()
+                .position(|child| get_article_id(child) == Some(article_id))
+                .ok_or_else(|| anyhow!("Could not find Article {}", article_id))?;
+            let (cut_start, cut_end) = match subtitle_position {
+                SubtitlePosition::AfterArticle => (article_position + 1, article_position + 2),
+                // "A Btk. 83. §-t megelőző alcím helyébe a következő alcím lép:"
+                SubtitlePosition::BeforeArticle => {
+                    (article_position.saturating_sub(1), article_position)
+                }
+                // "A Btk. 349. §-a és a megelőző alcím helyébe a következő rendelkezés és alcím lép:"
+                SubtitlePosition::BeforeArticleInclusive => {
+                    (article_position.saturating_sub(1), article_position + 1)
+                }
+            };
+            ensure!(
+                matches!(children.get(cut_start), Some(ActChild::Subtitle(_))),
+                "Element at Article {} + {:?} was not a subtitle",
+                article_id,
+                subtitle_position
+            );
+            Ok((cut_start, cut_end))
+        }
+        .with_context(|| {
+            anyhow!(
+                "Could not find cut points article-relative amendment {} + {:?}",
+                article_id,
+                subtitle_position,
             )
         })
     }
@@ -728,6 +810,108 @@ mod tests {
                 )
                 .unwrap(),
             (12, 12)
+        );
+    }
+
+    #[test]
+    fn test_handle_article_relative() {
+        let children: &[ActChild] = &[
+            quick_structural_element(1, StructuralElementType::Chapter),
+            quick_subtitle(1, "ST 1"),
+            quick_article("1"),
+            quick_subtitle(2, "ST 2"),
+            quick_article("2"),
+            quick_structural_element(2, StructuralElementType::Chapter),
+            quick_subtitle(3, "ST 3"),
+            quick_article("3"),
+            quick_subtitle(4, "ST 4"),
+            quick_article("4"),
+        ];
+        let test_amendment = quick_test_amendment(false);
+
+        // --- Amendments ---
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "1".parse().unwrap(),
+                    SubtitlePosition::AfterArticle
+                )
+                .unwrap(),
+            (3, 4)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "2".parse().unwrap(),
+                    SubtitlePosition::BeforeArticle
+                )
+                .unwrap(),
+            (3, 4)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "2".parse().unwrap(),
+                    SubtitlePosition::BeforeArticleInclusive
+                )
+                .unwrap(),
+            (3, 5)
+        );
+
+        // --- Insertions ---
+        let test_amendment = quick_test_amendment(true);
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "1".parse().unwrap(),
+                    SubtitlePosition::AfterArticle
+                )
+                .unwrap(),
+            (3, 3)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "2".parse().unwrap(),
+                    SubtitlePosition::BeforeArticle
+                )
+                .unwrap(),
+            (4, 4)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "1/A".parse().unwrap(),
+                    SubtitlePosition::AfterArticle
+                )
+                .unwrap(),
+            (3, 3)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "2/A".parse().unwrap(),
+                    SubtitlePosition::BeforeArticle
+                )
+                .unwrap(),
+            (5, 5)
+        );
+        assert_eq!(
+            test_amendment
+                .handle_article_relative(
+                    children,
+                    "2/A".parse().unwrap(),
+                    SubtitlePosition::BeforeArticleInclusive
+                )
+                .unwrap(),
+            (5, 5)
         );
     }
 
