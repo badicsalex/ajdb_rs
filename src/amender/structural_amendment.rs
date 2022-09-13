@@ -28,9 +28,11 @@ impl Modify<Act> for StructuralBlockAmendmentWithContent {
                 *id,
                 StructuralElementType::Part { is_special: false },
             ),
-            StructuralReferenceElement::Title(id) => {
-                self.handle_structural_element(children_of_the_book, *id, StructuralElementType::Title)
-            }
+            StructuralReferenceElement::Title(id) => self.handle_structural_element(
+                children_of_the_book,
+                *id,
+                StructuralElementType::Title,
+            ),
             StructuralReferenceElement::Chapter(id) => self.handle_structural_element(
                 children_of_the_book,
                 *id,
@@ -101,18 +103,6 @@ impl StructuralBlockAmendmentWithContent {
         children: &'c [ActChild],
     ) -> Result<(usize, &'c [ActChild])> {
         if let Some(book_id) = self.position.book {
-            fn get_book_id(child: &ActChild) -> Option<NumericIdentifier> {
-                if let ActChild::StructuralElement(StructuralElement {
-                    identifier,
-                    element_type: StructuralElementType::Book,
-                    ..
-                }) = child
-                {
-                    Some(*identifier)
-                } else {
-                    None
-                }
-            }
             let (book_start, book_end) = Self::get_cut_points(
                 children,
                 |child| get_book_id(child) == Some(book_id),
@@ -179,21 +169,10 @@ impl StructuralBlockAmendmentWithContent {
         children: &[ActChild],
         expected_id: NumericIdentifier,
     ) -> Result<(usize, usize)> {
-        fn subtitle_id(child: &ActChild) -> Option<NumericIdentifier> {
-            if let ActChild::Subtitle(Subtitle {
-                identifier: Some(identifier),
-                ..
-            }) = child
-            {
-                Some(*identifier)
-            } else {
-                None
-            }
-        }
         if self.pure_insertion {
             Self::get_insertion_point(
                 children,
-                |child| subtitle_id(child).map_or(false, |id| id <= expected_id),
+                |child| get_subtitle_id(child).map_or(false, |id| id <= expected_id),
                 |child| {
                     matches!(
                         child,
@@ -204,7 +183,7 @@ impl StructuralBlockAmendmentWithContent {
         } else {
             Self::get_cut_points(
                 children,
-                |child| subtitle_id(child).map_or(false, |id| id == expected_id),
+                |child| get_subtitle_id(child).map_or(false, |id| id == expected_id),
                 |child| {
                     matches!(
                         child,
@@ -226,13 +205,6 @@ impl StructuralBlockAmendmentWithContent {
         children: &[ActChild],
         expected_title: &str,
     ) -> Result<(usize, usize)> {
-        fn subtitle_title(child: &ActChild) -> Option<&str> {
-            if let ActChild::Subtitle(Subtitle { title, .. }) = child {
-                Some(title)
-            } else {
-                None
-            }
-        }
         if self.pure_insertion {
             Err(anyhow!(
                 "Pure insertions for the SubtitleTitle case are not supported"
@@ -240,7 +212,7 @@ impl StructuralBlockAmendmentWithContent {
         } else {
             Self::get_cut_points(
                 children,
-                |child| subtitle_title(child).map_or(false, |title| title == expected_title),
+                |child| get_subtitle_title(child).map_or(false, |title| title == expected_title),
                 |child| {
                     matches!(
                         child,
@@ -262,24 +234,17 @@ impl StructuralBlockAmendmentWithContent {
         children: &[ActChild],
         range: &IdentifierRange<ArticleIdentifier>,
     ) -> Result<(usize, usize)> {
-        fn article_id(child: &ActChild) -> Option<ArticleIdentifier> {
-            if let ActChild::Article(Article { identifier, .. }) = child {
-                Some(*identifier)
-            } else {
-                None
-            }
-        }
         if self.pure_insertion {
             Self::get_insertion_point(
                 children,
-                |child| article_id(child).map_or(false, |id| id < range.first_in_range()),
+                |child| get_article_id(child).map_or(false, |id| id < range.first_in_range()),
                 |_child| true,
             )
         } else {
             Self::get_cut_points(
                 children,
-                |child| article_id(child).map_or(false, |id| range.contains(id)),
-                |child| article_id(child).map_or(true, |id| !range.contains(id)),
+                |child| get_article_id(child).map_or(false, |id| range.contains(id)),
+                |child| get_article_id(child).map_or(true, |id| !range.contains(id)),
             )
         }
         .with_context(|| {
@@ -289,6 +254,47 @@ impl StructuralBlockAmendmentWithContent {
                 range.last_in_range()
             )
         })
+    }
+}
+
+fn get_book_id(child: &ActChild) -> Option<NumericIdentifier> {
+    if let ActChild::StructuralElement(StructuralElement {
+        identifier,
+        element_type: StructuralElementType::Book,
+        ..
+    }) = child
+    {
+        Some(*identifier)
+    } else {
+        None
+    }
+}
+
+fn get_subtitle_id(child: &ActChild) -> Option<NumericIdentifier> {
+    if let ActChild::Subtitle(Subtitle {
+        identifier: Some(identifier),
+        ..
+    }) = child
+    {
+        Some(*identifier)
+    } else {
+        None
+    }
+}
+
+fn get_subtitle_title(child: &ActChild) -> Option<&str> {
+    if let ActChild::Subtitle(Subtitle { title, .. }) = child {
+        Some(title)
+    } else {
+        None
+    }
+}
+
+fn get_article_id(child: &ActChild) -> Option<ArticleIdentifier> {
+    if let ActChild::Article(Article { identifier, .. }) = child {
+        Some(*identifier)
+    } else {
+        None
     }
 }
 
@@ -302,7 +308,7 @@ impl AffectedAct for StructuralBlockAmendmentWithContent {
 
 #[cfg(test)]
 mod tests {
-    use hun_law::{structure::Article, identifier::range::IdentifierRangeFrom};
+    use hun_law::{identifier::range::IdentifierRangeFrom, structure::Article};
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -648,19 +654,28 @@ mod tests {
         // --- Amendments ---
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_single("1/A".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_single("1/A".parse().unwrap())
+                )
                 .unwrap(),
             (3, 4)
         );
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "1/B".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_range("1/A".parse().unwrap(), "1/B".parse().unwrap())
+                )
                 .unwrap(),
             (3, 5)
         );
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_single("4".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_single("4".parse().unwrap())
+                )
                 .unwrap(),
             (11, 12)
         );
@@ -668,13 +683,19 @@ mod tests {
         // Known limitation: Amendment stops at subtitles and structural elements
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "2/B".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_range("1/A".parse().unwrap(), "2/B".parse().unwrap())
+                )
                 .unwrap(),
             (3, 7)
         );
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_range("3".parse().unwrap(), "4".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_range("3".parse().unwrap(), "4".parse().unwrap())
+                )
                 .unwrap(),
             (9, 10)
         );
@@ -683,19 +704,28 @@ mod tests {
         let test_amendment = quick_test_amendment(true);
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_single("1/C".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_single("1/C".parse().unwrap())
+                )
                 .unwrap(),
             (5, 5)
         );
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_range("2/B".parse().unwrap(), "2/G".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_range("2/B".parse().unwrap(), "2/G".parse().unwrap())
+                )
                 .unwrap(),
             (7, 7)
         );
         assert_eq!(
             test_amendment
-                .handle_article_range(children, &IdentifierRange::from_single("5".parse().unwrap()))
+                .handle_article_range(
+                    children,
+                    &IdentifierRange::from_single("5".parse().unwrap())
+                )
                 .unwrap(),
             (12, 12)
         );
