@@ -23,30 +23,30 @@ impl Modify<Act> for StructuralBlockAmendmentWithContent {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
         let (cut_start, cut_end) = match &self.position.structural_element {
-            StructuralReferenceElement::Part(id) => self.get_cut_points_for_se(
+            StructuralReferenceElement::Part(id) => self.handle_structural_element(
                 children_of_the_book,
                 *id,
                 StructuralElementType::Part { is_special: false },
             ),
             StructuralReferenceElement::Title(id) => {
-                self.get_cut_points_for_se(children_of_the_book, *id, StructuralElementType::Title)
+                self.handle_structural_element(children_of_the_book, *id, StructuralElementType::Title)
             }
-            StructuralReferenceElement::Chapter(id) => self.get_cut_points_for_se(
+            StructuralReferenceElement::Chapter(id) => self.handle_structural_element(
                 children_of_the_book,
                 *id,
                 StructuralElementType::Chapter,
             ),
             StructuralReferenceElement::SubtitleId(id) => {
-                self.get_cut_points_for_subtitle_id(children_of_the_book, *id)
+                self.handle_subtitle_id(children_of_the_book, *id)
             }
             StructuralReferenceElement::SubtitleTitle(title) => {
-                self.get_cut_points_for_subtitle_title(children_of_the_book, title)
+                self.handle_subtitle_title(children_of_the_book, title)
             }
             StructuralReferenceElement::SubtitleAfterArticle(_) => todo!(),
             StructuralReferenceElement::SubtitleBeforeArticle(_) => todo!(),
             StructuralReferenceElement::SubtitleBeforeArticleInclusive(_) => todo!(),
             StructuralReferenceElement::Article(range) => {
-                self.get_cut_points_for_article_range(children_of_the_book, range)
+                self.handle_article_range(children_of_the_book, range)
             }
         }?;
         let cut_start = cut_start + book_offset;
@@ -125,7 +125,7 @@ impl StructuralBlockAmendmentWithContent {
         }
     }
 
-    fn get_cut_points_for_se(
+    fn handle_structural_element(
         &self,
         children: &[ActChild],
         expected_id: NumericIdentifier,
@@ -174,7 +174,7 @@ impl StructuralBlockAmendmentWithContent {
         })
     }
 
-    fn get_cut_points_for_subtitle_id(
+    fn handle_subtitle_id(
         &self,
         children: &[ActChild],
         expected_id: NumericIdentifier,
@@ -221,7 +221,7 @@ impl StructuralBlockAmendmentWithContent {
         })
     }
 
-    fn get_cut_points_for_subtitle_title(
+    fn handle_subtitle_title(
         &self,
         children: &[ActChild],
         expected_title: &str,
@@ -257,7 +257,7 @@ impl StructuralBlockAmendmentWithContent {
         })
     }
 
-    fn get_cut_points_for_article_range(
+    fn handle_article_range(
         &self,
         children: &[ActChild],
         range: &IdentifierRange<ArticleIdentifier>,
@@ -310,16 +310,16 @@ mod tests {
     #[test]
     fn test_select_relevant_book() {
         let children: &[ActChild] = &[
-            quick_se(1, StructuralElementType::Book),
-            quick_se(1, StructuralElementType::Part { is_special: false }),
+            quick_structural_element(1, StructuralElementType::Book),
+            quick_structural_element(1, StructuralElementType::Part { is_special: false }),
             quick_article("1:1"),
             quick_article("1:2"),
-            quick_se(2, StructuralElementType::Book),
-            quick_se(2, StructuralElementType::Part { is_special: false }),
+            quick_structural_element(2, StructuralElementType::Book),
+            quick_structural_element(2, StructuralElementType::Part { is_special: false }),
             quick_article("2:1"),
             quick_article("2:2"),
-            quick_se(3, StructuralElementType::Book),
-            quick_se(3, StructuralElementType::Part { is_special: false }),
+            quick_structural_element(3, StructuralElementType::Book),
+            quick_structural_element(3, StructuralElementType::Part { is_special: false }),
             quick_article("3:1"),
             quick_article("3:2"),
         ];
@@ -353,29 +353,29 @@ mod tests {
     }
 
     #[test]
-    fn test_get_cut_points_for_se() {
+    fn test_handle_structural_element() {
         let children: &[ActChild] = &[
-            quick_se(1, StructuralElementType::Part { is_special: false }),
-            quick_se(1, StructuralElementType::Title),
-            quick_se(1, StructuralElementType::Chapter),
+            quick_structural_element(1, StructuralElementType::Part { is_special: false }),
+            quick_structural_element(1, StructuralElementType::Title),
+            quick_structural_element(1, StructuralElementType::Chapter),
             quick_article("1"),
-            quick_se(2, StructuralElementType::Chapter),
+            quick_structural_element(2, StructuralElementType::Chapter),
             quick_article("2"),
-            quick_se(2, StructuralElementType::Title),
-            quick_se(3, StructuralElementType::Chapter),
+            quick_structural_element(2, StructuralElementType::Title),
+            quick_structural_element(3, StructuralElementType::Chapter),
             quick_article("3"),
-            quick_se(4, StructuralElementType::Chapter),
+            quick_structural_element(4, StructuralElementType::Chapter),
             quick_article("4"),
-            quick_se(2, StructuralElementType::Part { is_special: false }),
-            quick_se(3, StructuralElementType::Title),
-            quick_se(5, StructuralElementType::Chapter),
+            quick_structural_element(2, StructuralElementType::Part { is_special: false }),
+            quick_structural_element(3, StructuralElementType::Title),
+            quick_structural_element(5, StructuralElementType::Chapter),
             quick_article("5"),
-            quick_se(6, StructuralElementType::Chapter),
+            quick_structural_element(6, StructuralElementType::Chapter),
             quick_article("6"),
-            quick_se(4, StructuralElementType::Title),
-            quick_se(7, StructuralElementType::Chapter),
+            quick_structural_element(4, StructuralElementType::Title),
+            quick_structural_element(7, StructuralElementType::Chapter),
             quick_article("7"),
-            quick_se(8, StructuralElementType::Chapter),
+            quick_structural_element(8, StructuralElementType::Chapter),
             quick_article("8"),
         ];
         let test_amendment = quick_test_amendment(false);
@@ -385,7 +385,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     1.into(),
                     StructuralElementType::Part { is_special: false },
@@ -395,13 +395,13 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 1.into(), StructuralElementType::Title,)
+                .handle_structural_element(children, 1.into(), StructuralElementType::Title,)
                 .unwrap(),
             (1, 6)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 1.into(), StructuralElementType::Chapter,)
+                .handle_structural_element(children, 1.into(), StructuralElementType::Chapter,)
                 .unwrap(),
             (2, 4)
         );
@@ -409,13 +409,13 @@ mod tests {
         // End is a parent ref
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 2.into(), StructuralElementType::Chapter,)
+                .handle_structural_element(children, 2.into(), StructuralElementType::Chapter,)
                 .unwrap(),
             (4, 6)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 2.into(), StructuralElementType::Title,)
+                .handle_structural_element(children, 2.into(), StructuralElementType::Title,)
                 .unwrap(),
             (6, 11)
         );
@@ -423,7 +423,7 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     2.into(),
                     StructuralElementType::Part { is_special: false },
@@ -433,13 +433,13 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 4.into(), StructuralElementType::Title,)
+                .handle_structural_element(children, 4.into(), StructuralElementType::Title,)
                 .unwrap(),
             (17, 22)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(children, 8.into(), StructuralElementType::Chapter,)
+                .handle_structural_element(children, 8.into(), StructuralElementType::Chapter,)
                 .unwrap(),
             (20, 22)
         );
@@ -449,7 +449,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "1/A".parse().unwrap(),
                     StructuralElementType::Part { is_special: false },
@@ -459,7 +459,7 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "1/A".parse().unwrap(),
                     StructuralElementType::Title,
@@ -469,7 +469,7 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "1/A".parse().unwrap(),
                     StructuralElementType::Chapter,
@@ -481,7 +481,7 @@ mod tests {
         // End is a parent ref
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "2/A".parse().unwrap(),
                     StructuralElementType::Chapter,
@@ -491,7 +491,7 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "2/A".parse().unwrap(),
                     StructuralElementType::Title,
@@ -503,7 +503,7 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "2/A".parse().unwrap(),
                     StructuralElementType::Part { is_special: false },
@@ -513,7 +513,7 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "4/A".parse().unwrap(),
                     StructuralElementType::Title,
@@ -523,7 +523,7 @@ mod tests {
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_se(
+                .handle_structural_element(
                     children,
                     "8/A".parse().unwrap(),
                     StructuralElementType::Chapter,
@@ -534,14 +534,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_cut_points_for_subtitle() {
+    fn test_handle_subtitle() {
         let children: &[ActChild] = &[
-            quick_se(1, StructuralElementType::Chapter),
+            quick_structural_element(1, StructuralElementType::Chapter),
             quick_subtitle(1, "ST 1"),
             quick_article("1"),
             quick_subtitle(2, "ST 2"),
             quick_article("2"),
-            quick_se(2, StructuralElementType::Chapter),
+            quick_structural_element(2, StructuralElementType::Chapter),
             quick_subtitle(3, "ST 3"),
             quick_article("3"),
             quick_subtitle(4, "ST 4"),
@@ -554,7 +554,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, 1.into())
+                .handle_subtitle_id(children, 1.into())
                 .unwrap(),
             (1, 3)
         );
@@ -562,7 +562,7 @@ mod tests {
         // End is a structural element
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, 2.into())
+                .handle_subtitle_id(children, 2.into())
                 .unwrap(),
             (3, 5)
         );
@@ -570,7 +570,7 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, 4.into())
+                .handle_subtitle_id(children, 4.into())
                 .unwrap(),
             (8, 10)
         );
@@ -579,7 +579,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_title(children, "ST 1")
+                .handle_subtitle_title(children, "ST 1")
                 .unwrap(),
             (1, 3)
         );
@@ -587,7 +587,7 @@ mod tests {
         // End is a structural element
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_title(children, "ST 2")
+                .handle_subtitle_title(children, "ST 2")
                 .unwrap(),
             (3, 5)
         );
@@ -595,7 +595,7 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_title(children, "ST 4")
+                .handle_subtitle_title(children, "ST 4")
                 .unwrap(),
             (8, 10)
         );
@@ -605,7 +605,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, "1/A".parse().unwrap(),)
+                .handle_subtitle_id(children, "1/A".parse().unwrap(),)
                 .unwrap(),
             (3, 3)
         );
@@ -613,7 +613,7 @@ mod tests {
         // End is a structural element
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, "2/A".parse().unwrap(),)
+                .handle_subtitle_id(children, "2/A".parse().unwrap(),)
                 .unwrap(),
             (5, 5)
         );
@@ -621,23 +621,23 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .get_cut_points_for_subtitle_id(children, "4/A".parse().unwrap(),)
+                .handle_subtitle_id(children, "4/A".parse().unwrap(),)
                 .unwrap(),
             (10, 10)
         );
     }
 
     #[test]
-    fn test_get_cut_points_for_article() {
+    fn test_handle_article() {
         let children: &[ActChild] = &[
-            quick_se(1, StructuralElementType::Chapter),
+            quick_structural_element(1, StructuralElementType::Chapter),
             quick_subtitle(1, "ST 1"),
             quick_article("1"),
             quick_article("1/A"),
             quick_article("1/B"),
             quick_article("2"),
             quick_article("2/A"),
-            quick_se(2, StructuralElementType::Chapter),
+            quick_structural_element(2, StructuralElementType::Chapter),
             quick_subtitle(3, "ST 3"),
             quick_article("3"),
             quick_subtitle(4, "ST 4"),
@@ -648,19 +648,19 @@ mod tests {
         // --- Amendments ---
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("1/A".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_single("1/A".parse().unwrap()))
                 .unwrap(),
             (3, 4)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "1/B".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "1/B".parse().unwrap()))
                 .unwrap(),
             (3, 5)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("4".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_single("4".parse().unwrap()))
                 .unwrap(),
             (11, 12)
         );
@@ -668,13 +668,13 @@ mod tests {
         // Known limitation: Amendment stops at subtitles and structural elements
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "2/B".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_range("1/A".parse().unwrap(), "2/B".parse().unwrap()))
                 .unwrap(),
             (3, 7)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("3".parse().unwrap(), "4".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_range("3".parse().unwrap(), "4".parse().unwrap()))
                 .unwrap(),
             (9, 10)
         );
@@ -683,19 +683,19 @@ mod tests {
         let test_amendment = quick_test_amendment(true);
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("1/C".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_single("1/C".parse().unwrap()))
                 .unwrap(),
             (5, 5)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_range("2/B".parse().unwrap(), "2/G".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_range("2/B".parse().unwrap(), "2/G".parse().unwrap()))
                 .unwrap(),
             (7, 7)
         );
         assert_eq!(
             test_amendment
-                .get_cut_points_for_article_range(children, &IdentifierRange::from_single("5".parse().unwrap()))
+                .handle_article_range(children, &IdentifierRange::from_single("5".parse().unwrap()))
                 .unwrap(),
             (12, 12)
         );
@@ -713,7 +713,7 @@ mod tests {
         }
     }
 
-    fn quick_se(id: u16, element_type: StructuralElementType) -> ActChild {
+    fn quick_structural_element(id: u16, element_type: StructuralElementType) -> ActChild {
         StructuralElement {
             identifier: id.into(),
             title: "".into(),
