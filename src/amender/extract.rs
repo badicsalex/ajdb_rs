@@ -7,7 +7,9 @@ use chrono::NaiveDate;
 use hun_law::{
     identifier::IdentifierCommon,
     reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{Repeal, SpecialPhrase, TextAmendment, TextAmendmentReplacement},
+    semantic_info::{
+        Repeal, SpecialPhrase, StructuralRepeal, TextAmendment, TextAmendmentReplacement,
+    },
     structure::{
         Act, ActChild, BlockAmendment, Paragraph, ParagraphChildren, SAEBody, SubArticleElement,
     },
@@ -161,7 +163,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                     SpecialPhrase::ArticleTitleAmendment(sp) => self.result.push(sp.clone().into()),
                     SpecialPhrase::Repeal(sp) => self.handle_repeal(sp),
                     SpecialPhrase::TextAmendment(sp) => self.handle_text_amendment(sp),
-                    SpecialPhrase::StructuralRepeal(sp) => self.result.push(sp.clone().into()),
+                    SpecialPhrase::StructuralRepeal(sp) => self.handle_structural_repeal(sp),
                     // These are handled specially with get_modifications_for_block_amendment
                     SpecialPhrase::StructuralBlockAmendment(_) => (),
                     SpecialPhrase::BlockAmendment(_) => (),
@@ -212,5 +214,15 @@ impl<'a> ModificationAccumulator<'a> {
                 )
             }
         }
+    }
+    fn handle_structural_repeal(&mut self, structural_repeal: &StructuralRepeal) {
+        self.result
+            .push(AppliableModification::StructuralBlockAmendment(
+                StructuralBlockAmendmentWithContent {
+                    position: structural_repeal.position.clone(),
+                    pure_insertion: false,
+                    content: Vec::new(),
+                },
+            ))
     }
 }

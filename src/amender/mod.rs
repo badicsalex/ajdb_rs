@@ -8,17 +8,12 @@ pub mod block_amendment;
 pub mod extract;
 pub mod repeal;
 pub mod structural_amendment;
-pub mod structural_repeal;
 pub mod text_amendment;
 
 use anyhow::Result;
 use chrono::NaiveDate;
 use from_variants::FromVariants;
-use hun_law::{
-    identifier::ActIdentifier,
-    semantic_info::{ArticleTitleAmendment, StructuralRepeal},
-    structure::Act,
-};
+use hun_law::{identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
@@ -86,7 +81,6 @@ pub enum AppliableModification {
     Repeal(SimplifiedRepeal),
     TextAmendment(SimplifiedTextAmendment),
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
-    StructuralRepeal(StructuralRepeal),
 }
 
 impl Modify<Act> for AppliableModification {
@@ -97,7 +91,6 @@ impl Modify<Act> for AppliableModification {
             AppliableModification::Repeal(m) => m.apply(act),
             AppliableModification::TextAmendment(m) => m.apply(act),
             AppliableModification::StructuralBlockAmendment(m) => m.apply(act),
-            AppliableModification::StructuralRepeal(m) => m.apply(act),
         }
     }
 }
@@ -110,7 +103,6 @@ impl AffectedAct for AppliableModification {
             AppliableModification::Repeal(m) => m.affected_act(),
             AppliableModification::TextAmendment(m) => m.affected_act(),
             AppliableModification::StructuralBlockAmendment(m) => m.affected_act(),
-            AppliableModification::StructuralRepeal(m) => m.affected_act(),
         }
     }
 }
