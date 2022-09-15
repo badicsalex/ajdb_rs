@@ -4,6 +4,7 @@
 
 mod add;
 mod recalculate;
+mod show;
 
 use std::io::Write;
 
@@ -11,6 +12,7 @@ use add::{cli_add_raw, AddArgs};
 use anyhow::Result;
 use clap::Parser;
 use recalculate::{cli_recalculate, RecalculateArgs};
+use show::{ShowArgs, cli_show};
 
 /// AJDB command line interface
 ///
@@ -28,6 +30,8 @@ enum AjdbCommand {
     /// Recalculate amendments in the given date range. Be sure that the end date range is the end
     /// of the actual database, or else the db will be inconsistent.
     Recalculate(RecalculateArgs),
+    /// Show a single act at a specific date
+    Show(ShowArgs),
 }
 
 fn main() -> Result<()> {
@@ -41,5 +45,6 @@ fn main() -> Result<()> {
     match args.command {
         AjdbCommand::Add(a) => cli_add_raw(a),
         AjdbCommand::Recalculate(a) => cli_recalculate(a),
+        AjdbCommand::Show(a) => cli_show(a),
     }
 }

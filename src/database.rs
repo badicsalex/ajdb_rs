@@ -142,6 +142,10 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
         self.db.set_state_data(self.date, self.data)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.data.acts.is_empty()
+    }
+
     // XXX: This is a layering violation between Database and DatabaseState
     // only meant to be called by Database.copy_state(), hence why it's not pub
     fn merge_into(&mut self, mut other: StateData) {
