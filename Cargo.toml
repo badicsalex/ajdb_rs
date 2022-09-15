@@ -29,6 +29,9 @@ similar = { version = "2.2" , features = ["inline"] }
 debug = true
 incremental = true
 
+[profile.dev.package.hun_law]
+opt-level = 3
+
 [[test]]
 harness = false
 name = "run_datatests"
