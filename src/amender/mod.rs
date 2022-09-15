@@ -39,6 +39,8 @@ impl AppliableModificationSet {
             for modification in modifications {
                 modification.apply(&mut act)?;
             }
+            act.add_semantic_info()?;
+            act.convert_block_amendments()?;
             state.store_act(act)?;
         }
         Ok(())
