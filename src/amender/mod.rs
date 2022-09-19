@@ -13,7 +13,11 @@ pub mod text_amendment;
 use anyhow::Result;
 use chrono::NaiveDate;
 use from_variants::FromVariants;
-use hun_law::{identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act};
+use hun_law::{
+    identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act,
+    util::debug::WithElemContext,
+};
+use log::{info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
@@ -35,13 +39,29 @@ impl AppliableModificationSet {
     /// references to the DatabaseState are properly exclusive.
     pub fn apply(&self, state: &mut DatabaseState) -> Result<()> {
         for (act_id, modifications) in &self.modifications {
-            let mut act = state.get_act(*act_id)?.act()?;
+            let mut act = match state.get_act(*act_id) {
+                Ok(act_entry) => act_entry.act()?,
+                Err(err) => {
+                    warn!("Error getting act for amending: {:?}", err);
+                    continue;
+                }
+            };
             for modification in modifications {
-                modification.apply(&mut act)?;
+                if let Err(err) = modification
+                    .apply(&mut act)
+                    .with_elem_context("Error applying single amendment", &act)
+                {
+                    warn!("Error during applying amendment: {:?}", err);
+                };
             }
-            act.add_semantic_info()?;
-            act.convert_block_amendments()?;
+            act.add_semantic_info()
+                .with_elem_context("Error recalculating semantic info after amendments", &act)?;
+            act.convert_block_amendments().with_elem_context(
+                "Error recalculating block amendments after amendments",
+                &act,
+            )?;
             state.store_act(act)?;
+            info!("Applied {:?} amendments to {}", modifications.len(), act_id);
         }
         Ok(())
     }
@@ -55,7 +75,9 @@ impl AppliableModificationSet {
     ) -> Result<Self> {
         let mut modifications = MultiMap::default();
         for act in act_entries {
-            for modification in extract_modifications_from_act(act, date)? {
+            let this_acts_modifications = extract_modifications_from_act(act, date)
+                .with_elem_context("Error extracting modifications", act)?;
+            for modification in this_acts_modifications {
                 modifications.insert(modification.affected_act()?, modification);
             }
         }
