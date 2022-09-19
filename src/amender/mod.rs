@@ -21,7 +21,7 @@ use log::{info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
-use crate::database::DatabaseState;
+use crate::{database::DatabaseState, fixups::Fixups};
 
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
@@ -38,8 +38,8 @@ impl AppliableModificationSet {
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
     pub fn apply(&self, state: &mut DatabaseState) -> Result<()> {
-        for (act_id, modifications) in &self.modifications {
-            let mut act = match state.get_act(*act_id) {
+        for (&act_id, modifications) in &self.modifications {
+            let mut act = match state.get_act(act_id) {
                 Ok(act_entry) => act_entry.act()?,
                 Err(err) => {
                     warn!("Error getting act for amending: {:?}", err);
@@ -56,6 +56,7 @@ impl AppliableModificationSet {
             }
             act.add_semantic_info()
                 .with_elem_context("Error recalculating semantic info after amendments", &act)?;
+            Fixups::load(act_id)?.apply(&mut act)?;
             act.convert_block_amendments().with_elem_context(
                 "Error recalculating block amendments after amendments",
                 &act,
