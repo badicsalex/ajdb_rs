@@ -50,10 +50,15 @@ impl Persistence {
             )
         })?;
 
-        let key = match input_key {
-            KeyType::Forced(key) => key,
+        let key = match &input_key {
+            KeyType::Forced(key) => key.clone(),
             KeyType::Calculated(prefix) => Self::compute_key(prefix, &the_json),
         };
+        let file_path = self.path_for(&key);
+
+        if matches!(input_key, KeyType::Calculated(_)) && file_path.exists() {
+            return Ok(key);
+        }
 
         // TODO: Use writers from this part down.
         //       (Note that we caannot use a writer for the json part because we
@@ -68,7 +73,6 @@ impl Persistence {
             .finish()
             .with_context(|| anyhow::anyhow!("Compression finish failed for {}", key))?;
 
-        let file_path = self.path_for(&key);
         if let Some(file_dir) = file_path.parent() {
             fs::create_dir_all(file_dir)
                 .with_context(|| anyhow::anyhow!("Creating directories failed for {}", key))?;
