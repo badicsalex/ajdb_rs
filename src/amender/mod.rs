@@ -17,7 +17,7 @@ use hun_law::{
     identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act,
     util::debug::WithElemContext,
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
@@ -39,13 +39,11 @@ impl AppliableModificationSet {
     /// references to the DatabaseState are properly exclusive.
     pub fn apply(&self, state: &mut DatabaseState) -> Result<()> {
         for (&act_id, modifications) in &self.modifications {
-            let mut act = match state.get_act(act_id) {
-                Ok(act_entry) => act_entry.act()?,
-                Err(err) => {
-                    warn!("Error getting act for amending: {:?}", err);
-                    continue;
-                }
-            };
+            if !state.has_act(act_id) {
+                debug!("Act not in database for amending: {}", act_id);
+                continue;
+            }
+            let mut act = state.get_act(act_id)?.act()?;
             for modification in modifications {
                 if let Err(err) = modification
                     .apply(&mut act)
