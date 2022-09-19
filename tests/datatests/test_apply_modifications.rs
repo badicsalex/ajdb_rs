@@ -33,6 +33,7 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
         subject: "Az AJDB teszteléséről".to_string(),
         publication_date: NaiveDate::from_ymd(2012, 1, 1),
         preamble: "".to_owned(),
+        contained_abbreviations: Default::default(),
         children: test_data.children_original,
     };
 
