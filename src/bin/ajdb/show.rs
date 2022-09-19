@@ -5,7 +5,7 @@
 use std::io::stdout;
 
 use ajdb::{database::Database, persistence::Persistence};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use chrono::{NaiveDate, Utc};
 use hun_law::{
     identifier::ActIdentifier,

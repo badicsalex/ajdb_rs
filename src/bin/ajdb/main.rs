@@ -12,7 +12,7 @@ use add::{cli_add_raw, AddArgs};
 use anyhow::Result;
 use clap::Parser;
 use recalculate::{cli_recalculate, RecalculateArgs};
-use show::{ShowArgs, cli_show};
+use show::{cli_show, ShowArgs};
 
 /// AJDB command line interface
 ///
