@@ -109,6 +109,12 @@ impl EnforcementDateSet {
             .with_context(|| "In came_into_force_today()")?
             == on_date.pred())
     }
+
+    pub fn get_all_dates(&self) -> Vec<NaiveDate> {
+        let mut result: Vec<_> = self.enforcement_dates.iter().map(|ed| ed.date).collect();
+        result.push(self.default_date);
+        result
+    }
 }
 
 #[derive(Debug, Default)]

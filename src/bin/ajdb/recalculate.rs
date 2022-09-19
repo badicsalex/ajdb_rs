@@ -31,6 +31,7 @@ pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
         let acts = state
             .get_acts()?
             .iter()
+            .filter(|ae| ae.is_date_interesting(date))
             .map(|ae| ae.act())
             .collect::<Result<Vec<Act>>>()?;
         // NOTE: this will not handle modifications which modify other

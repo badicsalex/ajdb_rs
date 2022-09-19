@@ -9,7 +9,10 @@ use chrono::NaiveDate;
 use hun_law::{identifier::ActIdentifier, structure::Act};
 use serde::{Deserialize, Serialize};
 
-use crate::persistence::{KeyType, Persistence, PersistenceKey};
+use crate::{
+    enforcement_date_set::EnforcementDateSet,
+    persistence::{KeyType, Persistence, PersistenceKey},
+};
 
 pub struct Database<'p> {
     persistence: &'p mut Persistence,
@@ -68,7 +71,7 @@ impl<'p> Database<'p> {
 /// The actual data that's stored for a state in the persistence module.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct StateData {
-    acts: BTreeMap<String, PersistenceKey>,
+    acts: BTreeMap<String, ActEntryData>,
 }
 
 /// The state of the world at a specific date.
@@ -94,10 +97,10 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     /// Get the database entry for a specific act.
     /// This is a cheap operation and does not load the main act body.
     pub fn get_act(&self, id: ActIdentifier) -> Result<ActEntry> {
-        if let Some(act_key) = self.data.acts.get(&Self::act_key(id)) {
+        if let Some(act_data) = self.data.acts.get(&Self::act_key(id)) {
             Ok(ActEntry {
                 persistence: self.db.persistence,
-                act_key: act_key.clone(),
+                data: act_data.clone(),
             })
         } else {
             Err(anyhow!(
@@ -116,9 +119,9 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
             .data
             .acts
             .values()
-            .map(|act_key| ActEntry {
+            .map(|act_data| ActEntry {
                 persistence: self.db.persistence,
-                act_key: act_key.clone(),
+                data: act_data.clone(),
             })
             .collect())
     }
@@ -131,9 +134,14 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
             .db
             .persistence
             .store(KeyType::Calculated("act"), &act)?;
-        self.data
-            .acts
-            .insert(Self::act_key(act.identifier), act_key);
+        let ed_set = EnforcementDateSet::from_act(&act)?;
+        self.data.acts.insert(
+            Self::act_key(act.identifier),
+            ActEntryData {
+                act_key,
+                enforcement_dates: ed_set.get_all_dates(),
+            },
+        );
         self.get_act(act.identifier)
     }
 
@@ -157,6 +165,18 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     }
 }
 
+/// The actual act metadata that's stored in the state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActEntryData {
+    /// The storage key used for storing the act. Usually the computed hash
+    /// of the act data.
+    act_key: PersistenceKey,
+    /// Cached enforcement dates so that we don't load the act all the time for
+    /// the amendment processing.
+    enforcement_dates: Vec<NaiveDate>,
+    // TODO: Incoming refs in separate structure
+}
+
 /// Proxy object representing a stored act. Creating it is free, the actual
 /// persistence operations are done with methods or through the DatabaseState
 /// object.
@@ -165,18 +185,21 @@ pub struct ActEntry<'a> {
     // Should we start using a backend that needs a mut reference for
     // reading the database, this should be refactored somehow.
     persistence: &'a Persistence,
-    /// The storage key used for storing the act. Usually the computed hash
-    /// of the act data.
-    act_key: PersistenceKey,
-    // TODO: Incoming refs in separate structure
+    data: ActEntryData,
 }
 
 impl<'a> ActEntry<'a> {
     /// Load the act from persistence.
     // TODO: cache
     pub fn act(&self) -> Result<Act> {
-        self.persistence.load(&self.act_key)
+        self.persistence.load(&self.data.act_key)
     }
 
     // TODO: partial loads for snippet support
+
+    /// Returns true if anything comes into force on the date or the day before it.
+    pub fn is_date_interesting(&self, date: NaiveDate) -> bool {
+        self.data.enforcement_dates.contains(&date)
+            || self.data.enforcement_dates.contains(&date.pred())
+    }
 }
