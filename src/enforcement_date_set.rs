@@ -67,14 +67,12 @@ impl EnforcementDateSet {
 
     /// Check the enforcement date of the reference.
     pub fn effective_enforcement_date(&self, position: &Reference) -> Result<NaiveDate> {
-        ensure!(
-            position.act().is_none(),
-            "Reference contained act in effective_enforcement_date"
-        );
+        // TODO: Check the act instead
+        let position = position.without_act();
         let mut result = self.default_date;
         for ed in &self.enforcement_dates {
             for ed_pos in &ed.positions {
-                if ed_pos.contains(position) {
+                if ed_pos.contains(&position) {
                     result = ed.date;
                 }
             }
