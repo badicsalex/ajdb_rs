@@ -23,10 +23,14 @@ impl ModifyAct for SimplifiedRepeal {
         // TODO: A full act repeal will individually repeal all articles.
         //       But structural elements stay in place
         //       This may not be ideal.
-        // TODO: Sanity check if it was actually applied
-        act.walk_saes_mut(&mut self.clone())?;
-        // TODO: This should probably be done after we are done with all Repeals
-        Self::collate_repealed_paragraphs(act);
+        if self.position.is_act_only() {
+            act.children = Vec::new();
+        } else {
+            // TODO: Sanity check if it was actually applied
+            act.walk_saes_mut(&mut self.clone())?;
+            // TODO: This should probably be done after we are done with all Repeals
+            Self::collate_repealed_paragraphs(act);
+        }
         Ok(())
     }
 }

@@ -1,0 +1,97 @@
+children_original:
+  - StructuralElement:
+      identifier: '1'
+      title: BEVEZETŐ RENDELKEZÉSEK
+      element_type: Book
+  - Article:
+      identifier: 1:1
+      children:
+      - body: Dummy article blah blah.
+  - Article:
+      identifier: 1:2
+      children:
+      - body: Dummy article blah blah.
+  - Article:
+      identifier: 1:3
+      children:
+      - body: Dummy article blah blah.
+  - Subtitle:
+      title: Some weird insertion
+  - Article:
+      identifier: 1:3/A
+      children:
+      - body: Inserted article
+  - Article:
+      identifier: 1:3/B
+      children:
+      - body: Inserted article 2
+  - Article:
+      identifier: 1:4
+      children:
+      - body: Dummy article blah blah.
+  - StructuralElement:
+      identifier: '2'
+      title: AZ EMBER MINT JOGALANY
+      element_type: Book
+  - Article:
+      identifier: 2:1
+      children:
+      - body: Dummy article blah blah.
+  - StructuralElement:
+      identifier: '3'
+      title: A JOGI SZEMÉLY
+      element_type: Book
+  - StructuralElement:
+      identifier: '1'
+      title: A JOGI SZEMÉLY ÁLTALÁNOS SZABÁLYAI
+      element_type:
+        Part: {}
+  - StructuralElement:
+      identifier: '1'
+      title: MÓDOSÍTOTT RENDELKEZÉSEK
+      element_type: Title
+  - Article:
+      identifier: 3:1
+      children:
+      - body: Modded
+  - StructuralElement:
+      identifier: '2'
+      title: A JOGI SZEMÉLY LÉTESÍTÉSE
+      element_type: Title
+  - StructuralElement:
+      identifier: '1'
+      title: A létesítés szabadsága
+      element_type: Chapter
+  - Article:
+      identifier: 3:3
+      children:
+      - body: Dummy article blah blah.
+  - StructuralElement:
+      identifier: '2'
+      title: A gazdasági társaság szervezete
+      element_type: Chapter
+  - Subtitle:
+      identifier: '1'
+      title: A gazdasági társaság legfőbb szerve
+  - Article:
+      identifier: 3:5
+      children:
+      - body: Dummy article blah blah.
+  - StructuralElement:
+      identifier: '3'
+      title: Másolat a gazdasági társaság szervezetéről
+      element_type: Chapter
+  - Subtitle:
+      identifier: '2'
+      title: Másolat a gazdasági társaság legfőbb szervéről
+  - Article:
+      identifier: 3:7
+      children:
+      - body: Dummy article blah blah.
+modifications:
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+children_expected: []
