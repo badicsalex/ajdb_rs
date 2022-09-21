@@ -54,7 +54,13 @@
           point: b
 2012-12-01:
   2012. évi I. törvény:
-  - modification:
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '4'
+      paragraph: '1'
+    modification:
       Repeal:
         position:
           act:

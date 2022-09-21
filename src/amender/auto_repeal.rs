@@ -15,7 +15,6 @@ use super::{repeal::SimplifiedRepeal, AppliableModification};
 
 /// Auto-repeal of modifications according to
 /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
-/// Also parses inline repeals
 #[derive(Debug)]
 pub struct AutoRepealAccumulator<'a> {
     ed_set: &'a EnforcementDateSet,
@@ -41,12 +40,8 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
                         self.positions.push(position.clone())
                     }
                 }
-                // Special handling for inline repeal
-                SpecialPhrase::EnforcementDate(ed) => {
-                    if ed.inline_repeal.map_or(false, |d| d == self.date) {
-                        self.positions.push(Reference::default());
-                    }
-                }
+                // Does not need to be auto-repealed
+                SpecialPhrase::EnforcementDate(_) => (),
             }
         }
         Ok(())

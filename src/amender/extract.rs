@@ -6,9 +6,14 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::{to_element::ReferenceToElement, Reference},
+    reference::{
+        builder::{ReferenceBuilder, ReferenceBuilderSetPart},
+        to_element::ReferenceToElement,
+        Reference,
+    },
     semantic_info::{
-        Repeal, SpecialPhrase, StructuralRepeal, TextAmendment, TextAmendmentReplacement,
+        EnforcementDate, Repeal, SpecialPhrase, StructuralRepeal, TextAmendment,
+        TextAmendmentReplacement,
     },
     structure::{
         Act, ActChild, BlockAmendment, Paragraph, ParagraphChildren, SAEBody, SubArticleElement,
@@ -181,6 +186,25 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                     // Not a modification
                     SpecialPhrase::EnforcementDate(_) => (),
                 };
+            }
+        }
+        // Store inline repeals too
+        if let Some(SpecialPhrase::EnforcementDate(EnforcementDate {
+            inline_repeal: Some(inline_repeal),
+            ..
+        })) = &element.semantic_info.special_phrase
+        {
+            if *inline_repeal == self.date {
+                let act_id = position
+                    .act()
+                    .ok_or_else(|| anyhow::anyhow!("No act in reference"))?;
+                self.add(
+                    SimplifiedRepeal {
+                        position: ReferenceBuilder::new().set_part(act_id).build()?,
+                    }
+                    .into(),
+                    position,
+                )
             }
         }
         Ok(())
