@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use ajdb::amender::{AppliableModification, Modify};
+use ajdb::amender::{AppliableModificationType, ModifyAct};
 use chrono::NaiveDate;
 use hun_law::identifier::ActIdentifier;
 use hun_law::structure::ActChild;

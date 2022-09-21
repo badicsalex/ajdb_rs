@@ -8,9 +8,9 @@ use hun_law::{
     semantic_info::ArticleTitleAmendment, structure::Act,
 };
 
-use super::{AffectedAct, Modify};
+use super::{AffectedAct, ModifyAct};
 
-impl Modify<Act> for ArticleTitleAmendment {
+impl ModifyAct for ArticleTitleAmendment {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let mut applied = false;
         let act_ref = act.reference();

@@ -10,7 +10,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, Modify};
+use super::{AffectedAct, ModifyAct};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralBlockAmendmentWithContent {
@@ -19,7 +19,7 @@ pub struct StructuralBlockAmendmentWithContent {
     pub content: Vec<ActChild>,
 }
 
-impl Modify<Act> for StructuralBlockAmendmentWithContent {
+impl ModifyAct for StructuralBlockAmendmentWithContent {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
         let (cut_start, cut_end) = match &self.position.structural_element {

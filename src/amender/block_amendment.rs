@@ -15,7 +15,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, Modify};
+use super::{AffectedAct, ModifyAct};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockAmendmentWithContent {
@@ -23,7 +23,7 @@ pub struct BlockAmendmentWithContent {
     pub content: BlockAmendmentChildren,
 }
 
-impl Modify<Act> for BlockAmendmentWithContent {
+impl ModifyAct for BlockAmendmentWithContent {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let base_ref = act.reference();
         let act_dbg_string = act.debug_ctx();

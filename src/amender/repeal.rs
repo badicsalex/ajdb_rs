@@ -11,14 +11,14 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, Modify};
+use super::{AffectedAct, ModifyAct};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SimplifiedRepeal {
     pub position: Reference,
 }
 
-impl Modify<Act> for SimplifiedRepeal {
+impl ModifyAct for SimplifiedRepeal {
     fn apply(&self, act: &mut Act) -> Result<()> {
         // TODO: A full act repeal will individually repeal all articles.
         //       But structural elements stay in place

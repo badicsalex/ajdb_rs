@@ -12,7 +12,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, Modify};
+use super::{AffectedAct, ModifyAct};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SimplifiedTextAmendment {
@@ -20,7 +20,7 @@ pub struct SimplifiedTextAmendment {
     pub replacement: TextAmendmentReplacement,
 }
 
-impl Modify<Act> for SimplifiedTextAmendment {
+impl ModifyAct for SimplifiedTextAmendment {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let mut visitor = Visitor {
             amendment: self,

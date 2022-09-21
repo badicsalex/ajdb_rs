@@ -89,8 +89,8 @@ impl AppliableModificationSet {
     }
 }
 
-pub trait Modify<T> {
-    fn apply(&self, target: &mut T) -> Result<()>;
+pub trait ModifyAct {
+    fn apply(&self, target: &mut Act) -> Result<()>;
 }
 
 trait AffectedAct {
@@ -106,7 +106,7 @@ pub enum AppliableModification {
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
 }
 
-impl Modify<Act> for AppliableModification {
+impl ModifyAct for AppliableModificationType {
     fn apply(&self, act: &mut Act) -> Result<()> {
         match self {
             AppliableModification::ArticleTitleAmendment(m) => m.apply(act),
