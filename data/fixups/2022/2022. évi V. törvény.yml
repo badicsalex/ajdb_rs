@@ -1,0 +1,9 @@
+- ForceSpecialPhrase:
+    position:
+      article: "118"
+      paragraph: "1"
+    special_phrase:
+      # See 30/2022. (VI. 7.) ME határozat
+      EnforcementDate:
+        date:
+          Date: 2022-06-01
