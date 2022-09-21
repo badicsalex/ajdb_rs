@@ -9,7 +9,7 @@ use hun_law::{
     reference::Reference,
     semantic_info::{EnforcementDate, SpecialPhrase},
     structure::{Act, SubArticleElement},
-    util::walker::SAEVisitor,
+    util::{debug::WithElemContext, walker::SAEVisitor},
 };
 
 #[derive(Debug)]
@@ -27,8 +27,10 @@ pub struct EnforcementDateSet {
 impl EnforcementDateSet {
     pub fn from_act(act: &Act) -> Result<Self> {
         let mut visitor = EnforcementDateAccumulator::default();
-        act.walk_saes(&mut visitor)?;
+        act.walk_saes(&mut visitor)
+            .with_elem_context("Getting enforcement dates failed", act)?;
         Self::from_enforcement_dates(&visitor.result, act.publication_date)
+            .with_elem_context("Calculating enforcement dates failed", act)
     }
     pub fn from_enforcement_dates(
         raw_enforcement_dates: &[EnforcementDate],
