@@ -8,7 +8,7 @@ use hun_law::{
     identifier::IdentifierCommon,
     reference::Reference,
     semantic_info::{EnforcementDate, SpecialPhrase},
-    structure::{Act, SubArticleElement},
+    structure::{Act, ChildrenCommon, SubArticleElement},
     util::{debug::WithElemContext, walker::SAEVisitor},
 };
 
@@ -123,7 +123,7 @@ struct EnforcementDateAccumulator {
 }
 
 impl SAEVisitor for EnforcementDateAccumulator {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         _position: &Reference,
         element: &SubArticleElement<IT, CT>,

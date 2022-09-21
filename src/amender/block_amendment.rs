@@ -8,7 +8,7 @@ use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     structure::{
         Act, AlphabeticPoint, AlphabeticPointChildren, Article, BlockAmendmentChildren,
-        NumericPoint, NumericPointChildren, Paragraph, ParagraphChildren, SAEBody,
+        ChildrenCommon, NumericPoint, NumericPointChildren, Paragraph, ParagraphChildren, SAEBody,
         SubArticleElement,
     },
     util::debug::{DebugContextString, WithElemContext},
@@ -177,7 +177,7 @@ fn modify_multiple<IT, CT>(
 ) -> Result<()>
 where
     IT: IdentifierCommon,
-    CT: std::fmt::Debug + Clone,
+    CT: ChildrenCommon + std::fmt::Debug + Clone,
     SubArticleElement<IT, CT>: DebugContextString,
 {
     elements.retain(|e| !id_to_replace.contains(e.identifier));

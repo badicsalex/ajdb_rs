@@ -6,8 +6,8 @@ use anyhow::{anyhow, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
-    structure::{Act, SAEBody, SubArticleElement},
-    util::walker::SAEVisitorMut,
+    structure::{Act, ChildrenCommon, SAEBody, SubArticleElement},
+    util::walker::{SAEVisitorMut, WalkSAEMut},
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,7 @@ impl SimplifiedRepeal {
 }
 
 impl SAEVisitorMut for SimplifiedRepeal {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
         element: &mut SubArticleElement<IT, CT>,

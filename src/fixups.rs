@@ -9,7 +9,7 @@ use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
     semantic_info::SpecialPhrase,
-    structure::{Act, SubArticleElement},
+    structure::{Act, ChildrenCommon, SubArticleElement},
     util::{singleton_yaml, walker::SAEVisitorMut},
 };
 use log::info;
@@ -70,7 +70,7 @@ impl Fixup {
 }
 
 impl SAEVisitorMut for ForceSpecialPhrase {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
         element: &mut SubArticleElement<IT, CT>,

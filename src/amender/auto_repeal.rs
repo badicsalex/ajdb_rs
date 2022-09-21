@@ -5,8 +5,11 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 use hun_law::{
-    identifier::IdentifierCommon, reference::Reference, semantic_info::SpecialPhrase,
-    structure::SubArticleElement, util::walker::SAEVisitor,
+    identifier::IdentifierCommon,
+    reference::Reference,
+    semantic_info::SpecialPhrase,
+    structure::{ChildrenCommon, SubArticleElement},
+    util::walker::SAEVisitor,
 };
 
 use crate::enforcement_date_set::EnforcementDateSet;
@@ -23,7 +26,7 @@ pub struct AutoRepealAccumulator<'a> {
 }
 
 impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
         element: &SubArticleElement<IT, CT>,

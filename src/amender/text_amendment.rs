@@ -7,7 +7,7 @@ use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
     semantic_info::TextAmendmentReplacement,
-    structure::{Act, SAEBody, SubArticleElement},
+    structure::{Act, ChildrenCommon, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ struct Visitor<'a> {
 }
 
 impl<'a> SAEVisitorMut for Visitor<'a> {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
         element: &mut SubArticleElement<IT, CT>,

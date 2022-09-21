@@ -16,7 +16,8 @@ use hun_law::{
         TextAmendmentReplacement,
     },
     structure::{
-        Act, ActChild, BlockAmendment, Paragraph, ParagraphChildren, SAEBody, SubArticleElement,
+        Act, ActChild, BlockAmendment, ChildrenCommon, Paragraph, ParagraphChildren, SAEBody,
+        SubArticleElement,
     },
     util::walker::{SAEVisitor, WalkSAE},
 };
@@ -164,7 +165,7 @@ struct ModificationAccumulator<'a> {
 }
 
 impl<'a> SAEVisitor for ModificationAccumulator<'a> {
-    fn on_enter<IT: IdentifierCommon, CT>(
+    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
         element: &SubArticleElement<IT, CT>,
