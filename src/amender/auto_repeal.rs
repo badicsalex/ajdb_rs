@@ -66,10 +66,13 @@ impl<'a> AutoRepealAccumulator<'a> {
         self.positions
             .into_iter()
             .map(|p| {
-                Ok(SimplifiedRepeal {
-                    position: p.relative_to(act_ref)?,
-                }
-                .into())
+                Ok(AppliableModification {
+                    modification: SimplifiedRepeal {
+                        position: p.relative_to(act_ref)?,
+                    }
+                    .into(),
+                    source: None,
+                })
             })
             .collect::<Result<Vec<_>>>()
     }

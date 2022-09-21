@@ -19,7 +19,7 @@ declare_test!(dir = "data_apply_modifications", pattern = r"\.yml");
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TestData {
     children_original: Vec<ActChild>,
-    modifications: Vec<AppliableModification>,
+    modifications: Vec<AppliableModificationType>,
     children_expected: Vec<ActChild>,
 }
 

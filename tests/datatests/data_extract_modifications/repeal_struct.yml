@@ -1,19 +1,26 @@
 2012-01-02:
   2003. évi I. törvény:
-  - StructuralBlockAmendment:
-      position:
-        act:
-          year: 2003
-          number: 1
-        structural_element:
-          SubtitleBeforeArticle: '297'
-      pure_insertion: false
-      content: []
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+    modification:
+      StructuralBlockAmendment:
+        position:
+          act:
+            year: 2003
+            number: 1
+          structural_element:
+            SubtitleBeforeArticle: '297'
+        pure_insertion: false
+        content: []
 2012-01-03:
   2012. évi I. törvény:
-  - Repeal:
-      position:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'

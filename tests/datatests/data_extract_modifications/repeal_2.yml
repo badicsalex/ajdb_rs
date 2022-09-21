@@ -1,56 +1,87 @@
 2012-01-02:
   2003. évi I. törvény:
-  - Repeal:
-      position:
-        act:
-          year: 2003
-          number: 1
-        article: '1'
-        paragraph: '1'
-  - Repeal:
-      position:
-        act:
-          year: 2003
-          number: 1
-        article: '1'
-        paragraph: '3'
-  - Repeal:
-      position:
-        act:
-          year: 2003
-          number: 1
-        article: '3'
-        paragraph: '1'
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: a
+    modification:
+      Repeal:
+        position:
+          act:
+            year: 2003
+            number: 1
+          article: '1'
+          paragraph: '1'
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: a
+    modification:
+      Repeal:
+        position:
+          act:
+            year: 2003
+            number: 1
+          article: '1'
+          paragraph: '3'
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: c
+    modification:
+      Repeal:
+        position:
+          act:
+            year: 2003
+            number: 1
+          article: '3'
+          paragraph: '1'
 2012-01-03:
   2012. évi I. törvény:
-  - Repeal:
-      position:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
-        point: a
-  - Repeal:
-      position:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
-        point: c
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: a
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: c
 2012-02-01:
   2003. évi I. törvény:
-  - Repeal:
-      position:
-        act:
-          year: 2003
-          number: 1
-        article: '2'
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: b
+    modification:
+      Repeal:
+        position:
+          act:
+            year: 2003
+            number: 1
+          article: '2'
 2012-02-02:
   2012. évi I. törvény:
-  - Repeal:
-      position:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
-        point: b
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: b

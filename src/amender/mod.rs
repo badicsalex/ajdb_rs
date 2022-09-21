@@ -10,12 +10,12 @@ pub mod repeal;
 pub mod structural_amendment;
 pub mod text_amendment;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::NaiveDate;
 use from_variants::FromVariants;
 use hun_law::{
-    identifier::ActIdentifier, semantic_info::ArticleTitleAmendment, structure::Act,
-    util::debug::WithElemContext,
+    identifier::ActIdentifier, reference::Reference, semantic_info::ArticleTitleAmendment,
+    structure::Act, util::debug::WithElemContext,
 };
 use log::{debug, info, warn};
 use multimap::MultiMap;
@@ -45,11 +45,14 @@ impl AppliableModificationSet {
             }
             let mut act = state.get_act(act_id)?.act()?;
             for modification in modifications {
-                if let Err(err) = modification
-                    .apply(&mut act)
-                    .with_elem_context("Error applying single amendment", &act)
-                {
-                    warn!("Error during applying amendment: {:?}", err);
+                let result = modification.apply(&mut act).with_context(|| {
+                    format!(
+                        "Error applying single amendment to {} (source: {:?})",
+                        act.identifier, modification.source
+                    )
+                });
+                if let Err(err) = result {
+                    warn!("{:?}", err);
                 };
             }
             act.add_semantic_info()
@@ -97,8 +100,15 @@ trait AffectedAct {
     fn affected_act(&self) -> Result<ActIdentifier>;
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AppliableModification {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source: Option<Reference>,
+    modification: AppliableModificationType,
+}
+
 #[derive(Debug, Clone, FromVariants, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AppliableModification {
+pub enum AppliableModificationType {
     ArticleTitleAmendment(ArticleTitleAmendment),
     BlockAmendment(BlockAmendmentWithContent),
     Repeal(SimplifiedRepeal),
@@ -106,26 +116,38 @@ pub enum AppliableModification {
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
 }
 
-impl ModifyAct for AppliableModificationType {
+impl ModifyAct for AppliableModification {
     fn apply(&self, act: &mut Act) -> Result<()> {
-        match self {
-            AppliableModification::ArticleTitleAmendment(m) => m.apply(act),
-            AppliableModification::BlockAmendment(m) => m.apply(act),
-            AppliableModification::Repeal(m) => m.apply(act),
-            AppliableModification::TextAmendment(m) => m.apply(act),
-            AppliableModification::StructuralBlockAmendment(m) => m.apply(act),
-        }
+        self.modification.apply(act)
     }
 }
 
 impl AffectedAct for AppliableModification {
     fn affected_act(&self) -> Result<ActIdentifier> {
+        self.modification.affected_act()
+    }
+}
+
+impl ModifyAct for AppliableModificationType {
+    fn apply(&self, act: &mut Act) -> Result<()> {
         match self {
-            AppliableModification::ArticleTitleAmendment(m) => m.affected_act(),
-            AppliableModification::BlockAmendment(m) => m.affected_act(),
-            AppliableModification::Repeal(m) => m.affected_act(),
-            AppliableModification::TextAmendment(m) => m.affected_act(),
-            AppliableModification::StructuralBlockAmendment(m) => m.affected_act(),
+            AppliableModificationType::ArticleTitleAmendment(m) => m.apply(act),
+            AppliableModificationType::BlockAmendment(m) => m.apply(act),
+            AppliableModificationType::Repeal(m) => m.apply(act),
+            AppliableModificationType::TextAmendment(m) => m.apply(act),
+            AppliableModificationType::StructuralBlockAmendment(m) => m.apply(act),
+        }
+    }
+}
+
+impl AffectedAct for AppliableModificationType {
+    fn affected_act(&self) -> Result<ActIdentifier> {
+        match self {
+            AppliableModificationType::ArticleTitleAmendment(m) => m.affected_act(),
+            AppliableModificationType::BlockAmendment(m) => m.affected_act(),
+            AppliableModificationType::Repeal(m) => m.affected_act(),
+            AppliableModificationType::TextAmendment(m) => m.affected_act(),
+            AppliableModificationType::StructuralBlockAmendment(m) => m.affected_act(),
         }
     }
 }
