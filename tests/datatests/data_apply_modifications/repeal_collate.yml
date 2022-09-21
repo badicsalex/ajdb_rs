@@ -20,6 +20,36 @@ children_original:
       title: "Hello there 2"
       children:
         - body: "Article with a single paragraph"
+  - Article:
+      identifier: "3"
+      children:
+        - identifier: "1"
+          body:
+            intro: "A paragraph with an intro"
+            children:
+              AlphabeticPoint:
+                - identifier: "a"
+                  body: "Point A"
+                - identifier: "b"
+                  body: "Point B"
+            wrap_up: "and wrap_up"
+        - identifier: "2"
+          body: "Sibling paragraph"
+  - Article:
+      identifier: "3a"
+      children:
+        - identifier: "1"
+          body:
+            intro: "A paragraph with an intro"
+            children:
+              AlphabeticPoint:
+                - identifier: "a"
+                  body: "Point A"
+                - identifier: "b"
+                  body: "Point B"
+            wrap_up: "and wrap_up"
+        - identifier: "2"
+          body: "Sibling paragraph"
 modifications:
   - Repeal:
       position:
@@ -42,6 +72,33 @@ modifications:
           number: 1
         article: '1a'
         paragraph: '2'
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '3'
+        paragraph: '2'
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '3'
+        paragraph: '1'
+        point:
+          start: "a"
+          end: "b"
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '3a'
+        paragraph: '1'
+        point:
+          start: "a"
+          end: "b"
 children_expected:
 - Article:
     identifier: '1'
@@ -54,3 +111,13 @@ children_expected:
     title: Hello there 2
     children:
     - body: Article with a single paragraph
+- Article:
+    identifier: '3'
+    children: []
+- Article:
+    identifier: 3/A
+    children:
+    - identifier: '1'
+      body: ''
+    - identifier: '2'
+      body: Sibling paragraph

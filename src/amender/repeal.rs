@@ -7,7 +7,7 @@ use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
     structure::{Act, ChildrenCommon, SAEBody, SubArticleElement},
-    util::walker::{SAEVisitorMut, WalkSAEMut},
+    util::walker::SAEVisitorMut,
 };
 use serde::{Deserialize, Serialize};
 
@@ -29,21 +29,22 @@ impl ModifyAct for SimplifiedRepeal {
             // TODO: Sanity check if it was actually applied
             act.walk_saes_mut(&mut self.clone())?;
             // TODO: This should probably be done after we are done with all Repeals
-            Self::collate_repealed_paragraphs(act);
+            Self::collate_repealed_paragraphs(act)?;
         }
         Ok(())
     }
 }
 
 impl SimplifiedRepeal {
-    fn collate_repealed_paragraphs(act: &mut Act) {
-        // TODO: this should probably be done to other SAEs too, recursively.
+    fn collate_repealed_paragraphs(act: &mut Act) -> Result<()> {
+        act.walk_saes_mut(&mut RepealCollater {})?;
         for article in act.articles_mut() {
             if article.children.iter().all(|p| p.is_empty()) {
                 article.title = None;
                 article.children = Vec::new();
             }
         }
+        Ok(())
     }
 }
 
@@ -66,5 +67,22 @@ impl AffectedAct for SimplifiedRepeal {
         self.position
             .act()
             .ok_or_else(|| anyhow!("No act in reference in special phrase (Repeal)"))
+    }
+}
+
+struct RepealCollater {}
+
+impl SAEVisitorMut for RepealCollater {
+    fn on_exit<IT: IdentifierCommon, CT: ChildrenCommon>(
+        &mut self,
+        _position: &Reference,
+        element: &mut SubArticleElement<IT, CT>,
+    ) -> Result<()> {
+        if let SAEBody::Children { .. } = element.body {
+            if element.is_empty() {
+                element.body = SAEBody::Text("".to_owned())
+            }
+        }
+        Ok(())
     }
 }
