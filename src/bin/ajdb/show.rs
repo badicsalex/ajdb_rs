@@ -23,6 +23,9 @@ pub struct ShowArgs {
     /// Output format
     #[clap(value_enum, long, short = 't', default_value_t)]
     output_format: OutputFormat,
+    /// Width of the word-wrapped text (applies to text output only)
+    #[clap(long, short, default_value = "105")]
+    width: usize,
 }
 
 pub fn cli_show(args: ShowArgs) -> Result<()> {
@@ -33,6 +36,6 @@ pub fn cli_show(args: ShowArgs) -> Result<()> {
         bail!("The database is empty at date {}", args.date);
     }
     let act = state.get_act(args.act)?.act()?;
-    act.cli_output(args.output_format, &mut stdout())?;
+    act.cli_output(args.width, args.output_format, &mut stdout())?;
     Ok(())
 }
