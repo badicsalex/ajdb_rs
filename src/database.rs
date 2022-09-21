@@ -134,12 +134,16 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
             .db
             .persistence
             .store(KeyType::Calculated("act"), &act)?;
-        let ed_set = EnforcementDateSet::from_act(&act)?;
+        let enforcement_dates = if act.children.is_empty() {
+            Vec::new()
+        } else {
+            EnforcementDateSet::from_act(&act)?.get_all_dates()
+        };
         self.data.acts.insert(
             Self::act_key(act.identifier),
             ActEntryData {
                 act_key,
-                enforcement_dates: ed_set.get_all_dates(),
+                enforcement_dates,
             },
         );
         self.get_act(act.identifier)
