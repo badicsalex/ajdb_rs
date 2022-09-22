@@ -60,6 +60,24 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                     *id,
                     SubtitlePosition::BeforeArticleInclusive,
                 ),
+            StructuralReferenceElement::AtTheEndOfPart(id) => self
+                .handle_end_of_structural_element(
+                    children_of_the_book,
+                    *id,
+                    StructuralElementType::Part { is_special: false },
+                ),
+            StructuralReferenceElement::AtTheEndOfTitle(id) => self
+                .handle_end_of_structural_element(
+                    children_of_the_book,
+                    *id,
+                    StructuralElementType::Title,
+                ),
+            StructuralReferenceElement::AtTheEndOfChapter(id) => self
+                .handle_end_of_structural_element(
+                    children_of_the_book,
+                    *id,
+                    StructuralElementType::Chapter,
+                ),
             StructuralReferenceElement::Article(range) => {
                 self.handle_article_range(children_of_the_book, range)
             }
@@ -82,6 +100,9 @@ enum SubtitlePosition {
 }
 
 impl StructuralBlockAmendmentWithContent {
+    /// Get indices of what to cut out in an amendment.
+    /// * `start_fn`: Start of the cut. When this returns true, it's the starting index
+    /// * `end_fn`:  End of the cut. When this returns true, it's the ending index
     fn get_cut_points(
         children: &[ActChild],
         start_fn: impl Fn(&ActChild) -> bool,
@@ -99,12 +120,16 @@ impl StructuralBlockAmendmentWithContent {
         Ok((cut_start, cut_end))
     }
 
+    /// Get index of where to insert the element (in cut points format, but both values are the same)
+    /// * `pre_search_fn`: "Insert after" searcher. Once this returns true, the actual searching for
+    ///                    the insertion point begins
+    /// * `search_fn`: Actual isnertion searcher. Once this returns true, the index is returned.
     fn get_insertion_point(
         children: &[ActChild],
-        start_fn: impl Fn(&ActChild) -> bool,
-        end_fn: impl Fn(&ActChild) -> bool,
+        pre_search_fn: impl Fn(&ActChild) -> bool,
+        search_fn: impl Fn(&ActChild) -> bool,
     ) -> Result<(usize, usize)> {
-        let last_smaller = children.iter().rposition(start_fn).ok_or_else(|| {
+        let last_smaller = children.iter().rposition(pre_search_fn).ok_or_else(|| {
             anyhow!(
                 // NOTE: inserting before everything is not supported
                 "Could not find element to insert after",
@@ -113,7 +138,7 @@ impl StructuralBlockAmendmentWithContent {
         let insertion_point = children
             .iter()
             .skip(last_smaller + 1)
-            .position(end_fn)
+            .position(search_fn)
             .map_or(children.len(), |p| p + last_smaller + 1);
         Ok((insertion_point, insertion_point))
     }
@@ -178,6 +203,45 @@ impl StructuralBlockAmendmentWithContent {
         .with_context(|| {
             anyhow!(
                 "Could not find cut points for element {:?} with id {}",
+                expected_type,
+                expected_id
+            )
+        })
+    }
+
+    fn handle_end_of_structural_element(
+        &self,
+        children: &[ActChild],
+        expected_id: NumericIdentifier,
+        expected_type: StructuralElementType,
+    ) -> Result<(usize, usize)> {
+        fn as_structural_element(child: &ActChild) -> Option<&StructuralElement> {
+            if let ActChild::StructuralElement(se) = child {
+                Some(se)
+            } else {
+                None
+            }
+        }
+        ensure!(
+            self.pure_insertion,
+            "Not pure insertion with a AtTheEndOfX ({:?}, id: {}) reference",
+            expected_type,
+            expected_id
+        );
+        Self::get_insertion_point(
+            children,
+            |child| {
+                as_structural_element(child).map_or(false, |se| {
+                    se.element_type == expected_type && se.identifier == expected_id
+                })
+            },
+            |child| {
+                as_structural_element(child).map_or(false, |se| se.element_type <= expected_type)
+            },
+        )
+        .with_context(|| {
+            anyhow!(
+                "Could not find cut points at the end of element {:?} with id {}",
                 expected_type,
                 expected_id
             )

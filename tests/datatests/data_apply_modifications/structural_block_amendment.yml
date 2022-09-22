@@ -174,6 +174,22 @@ modifications:
             identifier: "3:1"
             children:
               - body: Modded
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2009
+          number: 3
+        book: '3'
+        structural_element:
+          AtTheEndOfChapter: "2"
+      pure_insertion: true
+      content:
+        - Subtitle:
+            title: Addition after Chapter
+        - Article:
+            identifier: "3:5/A"
+            children:
+              - body: Inserted article
 children_expected:
   - StructuralElement:
       identifier: '1'
@@ -253,6 +269,12 @@ children_expected:
       identifier: 3:5
       children:
       - body: Dummy article blah blah.
+  - Subtitle:
+      title: Addition after Chapter
+  - Article:
+      identifier: 3:5/A
+      children:
+      - body: Inserted article
   - StructuralElement:
       identifier: '3'
       title: Másolat a gazdasági társaság szervezetéről
