@@ -1,0 +1,84 @@
+children_original:
+  - Article:
+      identifier: "1"
+      title: "Hello there 1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+        - identifier: "3"
+          body: "This is Paragraph 3"
+  - Article:
+      identifier: "2"
+      title: "Hello there 2"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1 - don't touch me"
+        - identifier: "2"
+          body:
+            intro: "XXX Hmm:"
+            children:
+              AlphabeticPoint:
+                - identifier: a
+                  body: "My little point a"
+                - identifier: b
+                  body: "My little point b"
+            wrap_up: "hmm. XXX"
+modifications:
+  - TextAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+      replacement:
+        from: Paragraph
+        to: ""
+  - TextAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '2'
+        paragraph: '2'
+        point: 'b'
+      replacement:
+        from: "point b"
+        to: ""
+  - TextAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '2'
+      replacement:
+        from: "XXX"
+        to: ""
+children_expected:
+- Article:
+    identifier: '1'
+    title: Hello there 1
+    children:
+    - identifier: '1'
+      body: '1'
+    - identifier: '2'
+      body: '2'
+    - identifier: '3'
+      body: This is 3
+- Article:
+    identifier: '2'
+    title: Hello there 2
+    children:
+    - identifier: '1'
+      body: Paragraph 1 - don't touch me
+    - identifier: '2'
+      body:
+        intro: 'Hmm:'
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body: My little point a
+          - identifier: b
+            body: My little
+        wrap_up: hmm.

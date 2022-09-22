@@ -53,19 +53,29 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
             match &mut element.body {
                 SAEBody::Text(text) => {
                     self.applied = self.applied || text.contains(from);
-                    *text = text.replace(from, to)
+                    *text = normalized_replace(text, from, to)
                 }
                 SAEBody::Children { intro, wrap_up, .. } => {
                     self.applied = self.applied || intro.contains(from);
-                    *intro = intro.replace(from, to);
+                    *intro = normalized_replace(intro, from, to);
                     if let Some(wrap_up) = wrap_up {
                         self.applied = self.applied || wrap_up.contains(from);
-                        *wrap_up = wrap_up.replace(from, to);
+                        *wrap_up = normalized_replace(wrap_up, from, to);
                     }
                 }
             }
         }
         Ok(())
+    }
+}
+
+fn normalized_replace(text: &str, from: &str, to: &str) -> String {
+    let result = text.replace(from, to);
+    if to.is_empty() {
+        // TODO: Maybe only remove spaces around the 'from' text?
+        result.trim().replace("  ", " ")
+    } else {
+        result
     }
 }
 
