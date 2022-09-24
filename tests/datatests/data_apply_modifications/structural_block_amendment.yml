@@ -124,7 +124,14 @@ modifications:
         structural_element:
           SubtitleId: "1a"
       pure_insertion: false
-      content: []
+      content:
+        - Subtitle:
+            identifier: "1a"
+            title: Változtatott ügyvezetés és képviselet
+        - Article:
+            identifier: "3:6"
+            children:
+              - body: Modded dummy article blah blah.
   - StructuralBlockAmendment:
       position:
         act:
@@ -187,7 +194,7 @@ modifications:
         - Subtitle:
             title: Addition after Chapter
         - Article:
-            identifier: "3:5/A"
+            identifier: "3:6/A"
             children:
               - body: Inserted article
 children_expected:
@@ -258,6 +265,9 @@ children_expected:
       identifier: 3:3
       children:
       - body: Dummy article blah blah.
+  - Article:
+      identifier: 3:4
+      children: []
   - StructuralElement:
       identifier: '2'
       title: A gazdasági társaság szervezete
@@ -270,9 +280,16 @@ children_expected:
       children:
       - body: Dummy article blah blah.
   - Subtitle:
+      identifier: 1a
+      title: Változtatott ügyvezetés és képviselet
+  - Article:
+      identifier: 3:6
+      children:
+      - body: Modded dummy article blah blah.
+  - Subtitle:
       title: Addition after Chapter
   - Article:
-      identifier: 3:5/A
+      identifier: 3:6/A
       children:
       - body: Inserted article
   - StructuralElement:
@@ -286,3 +303,6 @@ children_expected:
       identifier: 3:7
       children:
       - body: Dummy article blah blah.
+  - Article:
+      identifier: 3:8
+      children: []

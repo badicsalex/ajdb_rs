@@ -85,8 +85,23 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
         let cut_start = cut_start + book_offset;
         let cut_end = cut_end + book_offset;
         let mut tail = act.children.split_off(cut_end);
-        act.children.truncate(cut_start);
-        act.children.extend(self.content.iter().cloned());
+        if self.content.is_empty() {
+            let cut_out = act.children.split_off(cut_start);
+            act.children.extend(cut_out.into_iter().filter_map(|c| {
+                if let ActChild::Article(a) = c {
+                    Some(ActChild::Article(Article {
+                        identifier: a.identifier,
+                        title: None,
+                        children: Vec::new(),
+                    }))
+                } else {
+                    None
+                }
+            }));
+        } else {
+            act.children.truncate(cut_start);
+            act.children.extend(self.content.iter().cloned());
+        }
         act.children.append(&mut tail);
         Ok(())
     }
