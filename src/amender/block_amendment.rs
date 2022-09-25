@@ -178,7 +178,6 @@ fn modify_multiple<IT, CT>(
 where
     IT: IdentifierCommon,
     CT: ChildrenCommon + std::fmt::Debug + Clone,
-    SubArticleElement<IT, CT>: DebugContextString,
 {
     elements.retain(|e| !id_to_replace.contains(e.identifier));
     let first_replacement_identifier = replacement
