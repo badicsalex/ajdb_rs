@@ -197,13 +197,11 @@ where
     }
 
     // Check element ordering
-    let mut last = elements[0].identifier;
-    for element in &elements[1..] {
-        if element.identifier <= last {
-            return Err(anyhow!("Wrong identifier after: {:?}", last))
-                .with_elem_context("Element ordering error at", element);
+    for (element1, element2) in elements.iter().zip(elements.iter().skip(1)) {
+        if element1.identifier >= element2.identifier {
+            return Err(anyhow!("Wrong identifier after: {:?}", element1))
+                .with_elem_context("Element ordering error at", element2);
         }
-        last = element.identifier;
     }
     Ok(())
 }
