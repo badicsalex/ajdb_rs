@@ -100,6 +100,7 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
         if let Some(act_data) = self.data.acts.get(&Self::act_key(id)) {
             Ok(ActEntry {
                 persistence: self.db.persistence,
+                identifier: id,
                 data: act_data.clone(),
             })
         } else {
@@ -115,15 +116,17 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     /// This is a cheap operation and does not load the main act body.
     // TODO: Return an iterator instead.
     pub fn get_acts(&self) -> Result<Vec<ActEntry>> {
-        Ok(self
-            .data
+        self.data
             .acts
-            .values()
-            .map(|act_data| ActEntry {
-                persistence: self.db.persistence,
-                data: act_data.clone(),
+            .iter()
+            .map(|(act_id, act_data)| {
+                Ok(ActEntry {
+                    persistence: self.db.persistence,
+                    identifier: act_id.parse()?,
+                    data: act_data.clone(),
+                })
             })
-            .collect())
+            .collect()
     }
 
     /// Converts Act to ActEntry, calculating all kinds of cached data,
@@ -189,6 +192,7 @@ pub struct ActEntry<'a> {
     // Should we start using a backend that needs a mut reference for
     // reading the database, this should be refactored somehow.
     persistence: &'a Persistence,
+    identifier: ActIdentifier,
     data: ActEntryData,
 }
 
@@ -205,5 +209,9 @@ impl<'a> ActEntry<'a> {
     pub fn is_date_interesting(&self, date: NaiveDate) -> bool {
         self.data.enforcement_dates.contains(&date)
             || self.data.enforcement_dates.contains(&date.pred())
+    }
+
+    pub fn identifier(&self) -> ActIdentifier {
+        self.identifier
     }
 }
