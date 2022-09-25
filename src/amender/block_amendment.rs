@@ -47,7 +47,7 @@ macro_rules! try_parse {
                     ..
                 } = &mut $base_element.body
                 {
-                    return modify_multiple(original_content, range, content);
+                    return modify_multiple(original_content, range, content, true);
                 } else {
                     bail!(
                         "Wrong original content for {} reference",
@@ -69,7 +69,7 @@ impl BlockAmendmentWithContent {
         let parent_ref = self.position.parent();
         if let Some(range) = self.position.get_last_part().paragraph() {
             if let BlockAmendmentChildren::Paragraph(content) = &self.content {
-                return modify_multiple(&mut article.children, range, content);
+                return modify_multiple(&mut article.children, range, content, false);
             } else {
                 bail!("Wrong amendment content for paragraph reference");
             }
@@ -174,11 +174,29 @@ fn modify_multiple<IT, CT>(
     elements: &mut Vec<SubArticleElement<IT, CT>>,
     id_to_replace: IdentifierRange<IT>,
     replacement: &[SubArticleElement<IT, CT>],
+    fix_punctuation: bool,
 ) -> Result<()>
 where
     IT: IdentifierCommon,
     CT: ChildrenCommon + std::fmt::Debug + Clone,
 {
+    if fix_punctuation {
+        let ending = if replacement.is_empty() {
+            elements.last()
+        } else {
+            elements.first()
+        }
+        .and_then(|e| e.get_ending_punctuation());
+        if let Some(ending) = ending {
+            if let Some(element_to_fix) = elements
+                .iter_mut()
+                .take_while(|e| !id_to_replace.contains(e.identifier))
+                .last()
+            {
+                element_to_fix.fix_ending_punctuation(ending);
+            }
+        }
+    }
     elements.retain(|e| !id_to_replace.contains(e.identifier));
     let first_replacement_identifier = replacement
         .first()
@@ -203,6 +221,49 @@ where
         }
     }
     Ok(())
+}
+
+trait PunctuationFix {
+    fn get_ending_punctuation(&self) -> Option<char>;
+    fn fix_ending_punctuation(&mut self, ending: char);
+}
+
+impl<IT, CT> PunctuationFix for SubArticleElement<IT, CT>
+where
+    IT: IdentifierCommon,
+    CT: ChildrenCommon + std::fmt::Debug + Clone,
+{
+    fn get_ending_punctuation(&self) -> Option<char> {
+        let ending_char = match &self.body {
+            SAEBody::Text(t) => t.chars().last(),
+            SAEBody::Children { wrap_up, .. } => wrap_up.as_ref().and_then(|wu| wu.chars().last()),
+        }?;
+        if ['.', ';', ','].contains(&ending_char) {
+            Some(ending_char)
+        } else {
+            None
+        }
+    }
+
+    fn fix_ending_punctuation(&mut self, ending: char) {
+        let s = match &mut self.body {
+            SAEBody::Text(t) => t,
+            SAEBody::Children {
+                wrap_up: Some(t), ..
+            } => t,
+            _ => return,
+        };
+        if s.ends_with(ending)
+            || s.ends_with("és")
+            || s.ends_with("valamint")
+            || s.ends_with("illetve")
+            || s.ends_with("vagy")
+            || s.ends_with("továbbá")
+        {
+            return;
+        }
+        *s = format!("{}{}", s.trim_end_matches(['.', ';', ',']), ending);
+    }
 }
 
 impl AffectedAct for BlockAmendmentWithContent {

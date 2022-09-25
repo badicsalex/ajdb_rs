@@ -1,0 +1,184 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body:
+            intro: "Insertion"
+            children:
+              AlphabeticPoint:
+              - identifier: "a"
+                body: "elem 1,"
+              - identifier: "b"
+                body: "elem 2, vagy"
+              - identifier: "c"
+                body: "elem 3."
+        - identifier: "2"
+          body:
+            intro: "Deletion"
+            children:
+              AlphabeticPoint:
+              - identifier: "a"
+                body: "elem 1,"
+              - identifier: "b"
+                body: "elem 2,"
+              - identifier: "c"
+                body: "elem 3,"
+              - identifier: "c"
+                body: "elem 4."
+        - identifier: "3"
+          body:
+            intro: "Subpoints"
+            children:
+              AlphabeticPoint:
+              - identifier: "a"
+                body:
+                  intro: "nice"
+                  children:
+                    AlphabeticSubpoint:
+                    - identifier: "aa"
+                      body: "subelem 1,"
+                    - identifier: "ab"
+                      body: "subelem 2"
+                  wrap_up: "exists;"
+              - identifier: "b"
+                body: "elem 2;"
+              - identifier: "c"
+                body:
+                  intro: "nice"
+                  children:
+                    AlphabeticSubpoint:
+                    - identifier: "ca"
+                      body: "subelem 1,"
+                    - identifier: "cb"
+                      body: "subelem 2"
+                  wrap_up: "exists."
+        - identifier: "4"
+          body:
+            intro: "Amendment"
+            children:
+              AlphabeticPoint:
+              - identifier: "a"
+                body: "elem 1,"
+              - identifier: "b"
+                body: "elem 2, vagy"
+              - identifier: "c"
+                body: "elem 3."
+modifications:
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '1'
+        point: 'd'
+      pure_insertion: true
+      content:
+        AlphabeticPoint:
+        - identifier: "d"
+          body: "New point d."
+  - Repeal:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: "2"
+        point: "c"
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '3'
+        point: 'd'
+      pure_insertion: true
+      content:
+        AlphabeticPoint:
+        - identifier: "d"
+          body: "New point d."
+  - BlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '4'
+        point: 'c'
+      pure_insertion: false
+      content:
+        AlphabeticPoint:
+        - identifier: "c"
+          body: "amended point d."
+children_expected:
+- Article:
+    identifier: '1'
+    children:
+    - identifier: '1'
+      body:
+        intro: Insertion
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body: elem 1,
+          - identifier: b
+            body: elem 2, vagy
+          - identifier: c
+            body: elem 3,
+          - identifier: d
+            body: New point d.
+    - identifier: '2'
+      body:
+        intro: Deletion
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body: elem 1,
+          - identifier: b
+            body: elem 2,
+          - identifier: c
+            body: ''
+          - identifier: c
+            body: ''
+    - identifier: '3'
+      body:
+        intro: Subpoints
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body:
+              intro: nice
+              children:
+                AlphabeticSubpoint:
+                - identifier: aa
+                  body: subelem 1,
+                - identifier: ab
+                  body: subelem 2
+              wrap_up: exists;
+          - identifier: b
+            body: elem 2;
+          - identifier: c
+            body:
+              intro: nice
+              children:
+                AlphabeticSubpoint:
+                - identifier: ca
+                  body: subelem 1,
+                - identifier: cb
+                  body: subelem 2
+              wrap_up: exists;
+          - identifier: d
+            body: New point d.
+    - identifier: '4'
+      body:
+        intro: Amendment
+        children:
+          AlphabeticPoint:
+          - identifier: a
+            body: elem 1,
+          - identifier: b
+            body: elem 2, vagy
+          - identifier: c
+            body: amended point d.
