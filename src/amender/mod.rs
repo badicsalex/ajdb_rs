@@ -86,6 +86,10 @@ impl AppliableModificationSet {
         Ok(Self { modifications })
     }
 
+    pub fn affects(&self, act_identifier: ActIdentifier) -> bool {
+        self.modifications.contains_key(&act_identifier)
+    }
+
     /// Used only for testing
     pub fn get_modifications(self) -> MultiMap<ActIdentifier, AppliableModification> {
         self.modifications
