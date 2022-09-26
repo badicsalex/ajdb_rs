@@ -56,6 +56,7 @@ pub fn extract_modifications_from_act(
     }
     let mut result = visitor.result;
     result.extend(auto_repeals.get_result(&act.reference())?);
+    fix_text_amendment_order(&mut result);
     Ok(result)
 }
 
@@ -271,5 +272,34 @@ impl<'a> ModificationAccumulator<'a> {
             .into(),
             source,
         )
+    }
+}
+
+fn fix_text_amendment_order(modifications: &mut [AppliableModification]) {
+    let mut i = 0;
+    while let Some((first, rest)) = modifications[i..].split_first_mut() {
+        if let AppliableModificationType::TextAmendment(first) = &mut first.modification {
+            for second in rest {
+                if let AppliableModificationType::TextAmendment(second) = &mut second.modification {
+                    // Substring case, e.g.
+                    // - from: aaa
+                    //     to: bbb
+                    // - from: aaa xxx
+                    //     to: bbb zzz
+                    //
+                    // Semi-swap case
+                    // -from: a
+                    //    to: b c d
+                    // -from: c
+                    //    to: x
+                    if second.replacement.from.contains(&first.replacement.from)
+                        || first.replacement.to.contains(&second.replacement.from)
+                    {
+                        std::mem::swap(first, second);
+                    }
+                }
+            }
+        }
+        i += 1;
     }
 }

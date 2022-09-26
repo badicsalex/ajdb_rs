@@ -1,0 +1,116 @@
+2012-01-02:
+  2012. évi C. törvény:
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: a
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 100
+          article: 74/A
+          paragraph: '2'
+          point: d
+        replacement:
+          from: gyermekpornográfia
+          to: tizennyolcadik életévét be nem töltött személyt ábrázoló pornográf felvétel kínálása, átadása, hozzáférhetővé tétele, készítése, forgalomba hozatala, azzal való kereskedelem, illetve nagy nyilvánosság számára hozzáférhetővé tétele
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: a
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 100
+          article: 74/A
+          paragraph: '2'
+          point: d
+        replacement:
+          from: (6)
+          to: (2)–(5)
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: a
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 100
+          article: 74/A
+          paragraph: '2'
+          point: d
+        replacement:
+          from: a) és c)
+          to: b) pont és (6) bekezdés], tizennyolcadik életévét be nem töltött személynek vagy személyeknek pornográf műsorban való szerepeltetése vagy ilyen pornográf műsor szervezése [204/A. § (1) bekezdés b)
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: b
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 100
+          article: '420'
+          paragraph: '1'
+        replacement:
+          from: anyag megmunkálása
+          to: fűdarálás
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '1'
+      point: c
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 100
+          article: '420'
+          paragraph: '1'
+        replacement:
+          from: anyag
+          to: fű
+2012-01-03:
+  2012. évi I. törvény:
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: a
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: b
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '1'
+          point: c
