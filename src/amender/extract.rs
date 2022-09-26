@@ -6,11 +6,7 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::{
-        builder::{ReferenceBuilder, ReferenceBuilderSetPart},
-        to_element::ReferenceToElement,
-        Reference,
-    },
+    reference::{to_element::ReferenceToElement, Reference},
     semantic_info::{
         EnforcementDate, Repeal, SpecialPhrase, StructuralRepeal, TextAmendment,
         TextAmendmentReplacement,
@@ -201,7 +197,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                     .ok_or_else(|| anyhow::anyhow!("No act in reference"))?;
                 self.add(
                     SimplifiedRepeal {
-                        position: ReferenceBuilder::new().set_part(act_id).build()?,
+                        position: act_id.into(),
                     }
                     .into(),
                     position,
