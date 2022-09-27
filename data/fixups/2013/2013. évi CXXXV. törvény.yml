@@ -1,0 +1,39 @@
+# E törvény a kihirdetését követő napon lép hatályba.
+- AddEnforcementDate:
+    date:
+      DaysAfterPublication: 1
+# E törvény 15. § (2) bekezdése és 15. § (4) bekezdése 2013. szeptember 1-jén,
+- AddEnforcementDate:
+    positions:
+      - article: '15'
+        paragraph: '2'
+      - article: '15'
+        paragraph: '4'
+    date:
+      Date: "2014-01-01"
+
+# a 15. § (9) bekezdése 2013. november 1-jén lép hatályba.
+- AddEnforcementDate:
+    positions:
+      - article: '15'
+        paragraph: '9'
+    date:
+      Date: "2013-11-01"
+
+# E törvény 15. § (10) bekezdése 2016. július 1-jén,\
+- AddEnforcementDate:
+    positions:
+      - article: '15'
+        paragraph: '10'
+    date:
+      Date: "2016-06-01"
+
+# a 15. § (18) bekezdése 2014. január 1-jén lép hatályba.
+- AddEnforcementDate:
+    positions:
+      - article: '15'
+        paragraph: '18'
+    date:
+      Date: "2014-01-01"
+
+# TODO:A törvény 14. § (1) bekezdés 2. mondata a jelen törvény hatályba lépését követő 45. napon - vagy ha ez munkaszüneti nap - akkor a következő munkanapon lép hatályba.

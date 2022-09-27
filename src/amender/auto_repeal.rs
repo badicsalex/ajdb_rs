@@ -22,6 +22,7 @@ use super::{repeal::SimplifiedRepeal, AppliableModification};
 pub struct AutoRepealAccumulator<'a> {
     ed_set: &'a EnforcementDateSet,
     date: NaiveDate,
+    fixups: &'a [AppliableModification],
     positions: Vec<Reference>,
 }
 
@@ -31,31 +32,48 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         position: &Reference,
         element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if let Some(phrase) = &element.semantic_info.special_phrase {
+        if !self.ed_set.came_into_force_yesterday(position, self.date)? {
+            return Ok(());
+        }
+        let mut add_it = if let Some(phrase) = &element.semantic_info.special_phrase {
+            // Simple match isntead of matches! to make sure all cases are covered
             match phrase {
                 SpecialPhrase::ArticleTitleAmendment(_)
                 | SpecialPhrase::BlockAmendment(_)
                 | SpecialPhrase::Repeal(_)
                 | SpecialPhrase::TextAmendment(_)
                 | SpecialPhrase::StructuralBlockAmendment(_)
-                | SpecialPhrase::StructuralRepeal(_) => {
-                    if self.ed_set.came_into_force_yesterday(position, self.date)? {
-                        self.positions.push(position.clone())
-                    }
-                }
+                | SpecialPhrase::StructuralRepeal(_) => true,
                 // Does not need to be auto-repealed
-                SpecialPhrase::EnforcementDate(_) => (),
+                SpecialPhrase::EnforcementDate(_) => false,
             }
+        } else {
+            false
+        };
+
+        for fixup in self.fixups {
+            if fixup.source.as_ref().map_or(false, |s| s == position) {
+                add_it = true;
+            }
+        }
+
+        if add_it {
+            self.positions.push(position.clone())
         }
         Ok(())
     }
 }
 
 impl<'a> AutoRepealAccumulator<'a> {
-    pub fn new(ed_set: &'a EnforcementDateSet, date: NaiveDate) -> Self {
+    pub fn new(
+        ed_set: &'a EnforcementDateSet,
+        date: NaiveDate,
+        fixups: &'a [AppliableModification],
+    ) -> Self {
         Self {
             ed_set,
             date,
+            fixups,
             positions: Vec::new(),
         }
     }

@@ -20,8 +20,9 @@ use hun_law::{
         walker::{SAEVisitor, WalkSAE},
     },
 };
+use log::info;
 
-use crate::enforcement_date_set::EnforcementDateSet;
+use crate::{enforcement_date_set::EnforcementDateSet, fixups::Fixups};
 
 use super::{
     auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
@@ -38,12 +39,17 @@ pub fn extract_modifications_from_act(
 ) -> Result<Vec<AppliableModification>> {
     // TODO: this should probably be stored in the act_entry
     let ed_set = EnforcementDateSet::from_act(act)?;
+    let fixups = Fixups::load(act.identifier)?.get_additional_modifications();
+    if !fixups.is_empty() {
+        info!("Fixup: Using {} additional modifications", fixups.len());
+    }
     let mut visitor = ModificationAccumulator {
         ed_set: &ed_set,
         date,
+        fixups: &fixups,
         result: Default::default(),
     };
-    let mut auto_repeals = AutoRepealAccumulator::new(&ed_set, date);
+    let mut auto_repeals = AutoRepealAccumulator::new(&ed_set, date, &fixups);
     for article in act.articles() {
         let article_ref = article.reference().relative_to(&act.reference())?;
         for paragraph in &article.children {
@@ -74,37 +80,30 @@ fn get_modifications_in_paragraph(
     auto_repeals: &mut AutoRepealAccumulator,
 ) -> Result<()> {
     let paragraph_ref = paragraph.reference().relative_to(article_ref)?;
-    match &paragraph.body {
-        SAEBody::Children {
-            children: ParagraphChildren::BlockAmendment(ba_content),
-            ..
-        } => {
-            if ed_set.came_into_force_today(&paragraph_ref, date)? {
-                get_modifications_for_block_amendment(
-                    paragraph,
-                    paragraph_ref,
-                    ba_content,
-                    visitor,
-                )?
-            }
-        }
-        SAEBody::Children {
-            children: ParagraphChildren::StructuralBlockAmendment(sba_content),
-            ..
-        } => {
-            if ed_set.came_into_force_today(&paragraph_ref, date)? {
-                get_modifications_for_structural_block_amendment(
-                    paragraph,
-                    paragraph_ref,
-                    &sba_content.children,
-                    visitor,
-                )?
-            }
-        }
-        _ => {
-            paragraph.walk_saes(article_ref, visitor)?;
+    if ed_set.came_into_force_today(&paragraph_ref, date)? {
+        match &paragraph.body {
+            SAEBody::Children {
+                children: ParagraphChildren::BlockAmendment(ba_content),
+                ..
+            } => get_modifications_for_block_amendment(
+                paragraph,
+                paragraph_ref,
+                ba_content,
+                visitor,
+            )?,
+            SAEBody::Children {
+                children: ParagraphChildren::StructuralBlockAmendment(sba_content),
+                ..
+            } => get_modifications_for_structural_block_amendment(
+                paragraph,
+                paragraph_ref,
+                &sba_content.children,
+                visitor,
+            )?,
+            _ => (),
         }
     }
+    paragraph.walk_saes(article_ref, visitor)?;
     paragraph.walk_saes(article_ref, auto_repeals)?;
     Ok(())
 }
@@ -163,6 +162,7 @@ fn get_modifications_for_structural_block_amendment(
 struct ModificationAccumulator<'a> {
     ed_set: &'a EnforcementDateSet,
     date: NaiveDate,
+    fixups: &'a [AppliableModification],
     result: Vec<AppliableModification>,
 }
 
@@ -189,6 +189,11 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                     // Not a modification
                     SpecialPhrase::EnforcementDate(_) => (),
                 };
+            }
+            for fixup in self.fixups {
+                if fixup.source.as_ref().map_or(false, |s| s == position) {
+                    self.result.push(fixup.clone());
+                }
             }
         }
         // Store inline repeals too

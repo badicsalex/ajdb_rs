@@ -5,30 +5,20 @@
 use std::{fs::File, path::PathBuf};
 
 use anyhow::Result;
-use hun_law::{
-    identifier::{ActIdentifier, IdentifierCommon},
-    reference::Reference,
-    semantic_info::SpecialPhrase,
-    structure::{Act, ChildrenCommon, SubArticleElement},
-    util::{singleton_yaml, walker::SAEVisitorMut},
-};
-use log::info;
+use hun_law::{identifier::ActIdentifier, semantic_info::EnforcementDate, util::singleton_yaml};
 use serde::{Deserialize, Serialize};
+
+use crate::amender::AppliableModification;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Fixup {
-    ForceSpecialPhrase(ForceSpecialPhrase),
+    AddModification(AppliableModification),
+    AddEnforcementDate(EnforcementDate),
 }
 
 #[derive(Debug, Clone)]
 pub struct Fixups {
     fixups: Vec<Fixup>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ForceSpecialPhrase {
-    position: Reference,
-    special_phrase: SpecialPhrase,
 }
 
 impl Fixups {
@@ -45,43 +35,32 @@ impl Fixups {
         } else {
             Vec::new()
         };
-        if !fixups.is_empty() {
-            info!("Loaded {:?} fixups for {}", fixups.len(), act_id);
-        }
         Ok(Self { fixups })
     }
 
-    pub fn add(&mut self, f: Fixup) {
-        self.fixups.push(f);
+    pub fn get_additional_modifications(&self) -> Vec<AppliableModification> {
+        self.fixups
+            .iter()
+            .filter_map(|f| {
+                if let Fixup::AddModification(m) = f {
+                    Some(m.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
-    pub fn apply(&self, act: &mut Act) -> Result<()> {
-        self.fixups.iter().try_for_each(|f| f.apply(act))
-    }
-}
-
-impl Fixup {
-    pub fn apply(&self, act: &mut Act) -> Result<()> {
-        match self {
-            // TODO: check if this fixup was actually applied
-            Fixup::ForceSpecialPhrase(fsp) => act.walk_saes_mut(&mut fsp.clone()),
-        }
-    }
-}
-
-impl SAEVisitorMut for ForceSpecialPhrase {
-    fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
-        &mut self,
-        position: &Reference,
-        element: &mut SubArticleElement<IT, CT>,
-    ) -> Result<()> {
-        if position.without_act() == self.position && !element.is_empty() {
-            info!(
-                "Applied fixup to {:?}: {:?}",
-                self.position, self.special_phrase
-            );
-            element.semantic_info.special_phrase = Some(self.special_phrase.clone())
-        }
-        Ok(())
+    pub fn get_additional_enforcement_dates(&self) -> Vec<EnforcementDate> {
+        self.fixups
+            .iter()
+            .filter_map(|f| {
+                if let Fixup::AddEnforcementDate(m) = f {
+                    Some(m.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }

@@ -11,6 +11,9 @@ use hun_law::{
     structure::{Act, ChildrenCommon, SubArticleElement},
     util::{debug::WithElemContext, walker::SAEVisitor},
 };
+use log::info;
+
+use crate::fixups::Fixups;
 
 #[derive(Debug)]
 pub struct ActualEnforcementDate {
@@ -29,6 +32,14 @@ impl EnforcementDateSet {
         let mut visitor = EnforcementDateAccumulator::default();
         act.walk_saes(&mut visitor)
             .with_elem_context("Getting enforcement dates failed", act)?;
+        let additional_eds = Fixups::load(act.identifier)?.get_additional_enforcement_dates();
+        if !additional_eds.is_empty() {
+            info!(
+                "Fixup: Using {} additional enforcement dates",
+                additional_eds.len()
+            );
+            visitor.result.extend(additional_eds);
+        }
         Self::from_enforcement_dates(&visitor.result, act.publication_date)
             .with_elem_context("Calculating enforcement dates failed", act)
     }

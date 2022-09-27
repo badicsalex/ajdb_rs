@@ -21,7 +21,7 @@ use log::{debug, info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::DatabaseState, fixups::Fixups};
+use crate::database::DatabaseState;
 
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
@@ -57,7 +57,6 @@ impl AppliableModificationSet {
             }
             act.add_semantic_info()
                 .with_elem_context("Error recalculating semantic info after amendments", &act)?;
-            Fixups::load(act_id)?.apply(&mut act)?;
             act.convert_block_amendments().with_elem_context(
                 "Error recalculating block amendments after amendments",
                 &act,
