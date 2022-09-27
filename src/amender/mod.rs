@@ -52,7 +52,7 @@ impl AppliableModificationSet {
                     )
                 });
                 if let Err(err) = result {
-                    warn!("{:?}", err);
+                    warn!("{:?}\n\n", err);
                 };
             }
             act.add_semantic_info()
