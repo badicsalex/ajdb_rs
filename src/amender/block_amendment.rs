@@ -216,7 +216,7 @@ where
     // Check element ordering
     for (element1, element2) in elements.iter().zip(elements.iter().skip(1)) {
         if element1.identifier >= element2.identifier {
-            return Err(anyhow!("Wrong identifier after: {:?}", element1))
+            return Err(anyhow!("Wrong identifier after: {:?}", element1.identifier))
                 .with_elem_context("Element ordering error at", element2);
         }
     }
