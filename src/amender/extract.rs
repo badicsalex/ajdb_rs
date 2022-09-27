@@ -15,7 +15,10 @@ use hun_law::{
         Act, ActChild, BlockAmendment, ChildrenCommon, Paragraph, ParagraphChildren, SAEBody,
         SubArticleElement,
     },
-    util::walker::{SAEVisitor, WalkSAE},
+    util::{
+        debug::WithElemContext,
+        walker::{SAEVisitor, WalkSAE},
+    },
 };
 
 use crate::enforcement_date_set::EnforcementDateSet;
@@ -51,7 +54,9 @@ pub fn extract_modifications_from_act(
                 &ed_set,
                 &mut visitor,
                 &mut auto_repeals,
-            )?
+            )
+            .with_elem_context("Could not get modifications", paragraph)
+            .with_elem_context("Could not get modifications", article)?
         }
     }
     let mut result = visitor.result;
