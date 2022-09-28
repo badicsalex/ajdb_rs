@@ -197,6 +197,21 @@ modifications:
             identifier: "3:6/A"
             children:
               - body: Inserted article
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2009
+          number: 3
+        book: '3'
+        structural_element: AtTheEndOfAct
+      pure_insertion: true
+      content:
+        - Subtitle:
+            title: Addition at end
+        - Article:
+            identifier: "3:9"
+            children:
+              - body: Inserted article
 children_expected:
   - StructuralElement:
       identifier: '1'
@@ -306,3 +321,9 @@ children_expected:
   - Article:
       identifier: 3:8
       children: []
+  - Subtitle:
+      title: Addition at end
+  - Article:
+      identifier: 3:9
+      children:
+      - body: Inserted article

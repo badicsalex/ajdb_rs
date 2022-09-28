@@ -78,6 +78,7 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                     *id,
                     StructuralElementType::Chapter,
                 ),
+            StructuralReferenceElement::AtTheEndOfAct => Ok((children_of_the_book.len(), children_of_the_book.len())),
             StructuralReferenceElement::Article(range) => {
                 self.handle_article_range(children_of_the_book, range)
             }
