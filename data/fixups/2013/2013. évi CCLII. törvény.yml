@@ -1,0 +1,20 @@
+# 9. § (3) bekezdés első és második mondatában a „személyhez fűződő jogáról” szövegrész helyébe a „személyiségi jogáról”,
+- AddModification:
+    source:
+      act:
+        year: 2013
+        number: 252
+      article: '175'
+      paragraph: '34'
+      point: 'b'
+    modification:
+      TextAmendment:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '9'
+          paragraph: '3'
+        replacement:
+          from: "személyhez fűződő jogáról"
+          to: "személyiségi jogáról"
