@@ -5,7 +5,7 @@
 use std::path::PathBuf;
 
 use ajdb::{database::Database, persistence::Persistence, util::read_all};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use hun_law::structure::Act;
 use log::info;
 
@@ -15,7 +15,10 @@ pub struct AddArgs {
 }
 
 pub fn cli_add_raw(args: AddArgs) -> Result<()> {
-    let act: Act = hun_law::util::singleton_yaml::from_slice(&read_all(args.path)?)?;
+    let act: Act = hun_law::util::singleton_yaml::from_slice(
+        &read_all(&args.path).with_context(|| anyhow::anyhow!("Error reading {:?}", args.path))?,
+    )
+    .with_context(|| anyhow::anyhow!("Error deserializing {:?}", args.path))?;
     let date = act.publication_date;
     info!("Adding {} to state at {}", act.identifier, date);
     let mut persistence = Persistence::new("db");
