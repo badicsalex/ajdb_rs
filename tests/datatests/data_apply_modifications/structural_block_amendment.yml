@@ -212,6 +212,20 @@ modifications:
             identifier: "3:9"
             children:
               - body: Inserted article
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2009
+          number: 3
+        book: '3'
+        structural_element:
+          SubtitleId: '1'
+        title_only: true
+      pure_insertion: false
+      content:
+        - Subtitle:
+            identifier: '1'
+            title: Only the title is changed
 children_expected:
   - StructuralElement:
       identifier: '1'
@@ -289,7 +303,7 @@ children_expected:
       element_type: Chapter
   - Subtitle:
       identifier: '1'
-      title: A gazdasági társaság legfőbb szerve
+      title: Only the title is changed
   - Article:
       identifier: 3:5
       children:

@@ -22,7 +22,7 @@ pub struct StructuralBlockAmendmentWithContent {
 impl ModifyAct for StructuralBlockAmendmentWithContent {
     fn apply(&self, act: &mut Act) -> Result<()> {
         let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
-        let (cut_start, cut_end) = match &self.position.structural_element {
+        let (mut cut_start, mut cut_end) = match &self.position.structural_element {
             StructuralReferenceElement::Part(id) => self.handle_structural_element(
                 children_of_the_book,
                 *id,
@@ -83,8 +83,14 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                 self.handle_article_range(children_of_the_book, range)
             }
         }?;
-        let cut_start = cut_start + book_offset;
-        let cut_end = cut_end + book_offset;
+        if self.position.title_only {
+            // XXX: what we are doing here is absolutely invalid for some cases (e.g. Article, end of act),
+            //      But that shouldn't happen anyway.
+            ensure!(!self.pure_insertion, "Pure insertion and title only are not supported at the same time");
+            cut_end = cut_start + 1;
+        }
+        cut_start += book_offset;
+        cut_end += book_offset;
         let mut tail = act.children.split_off(cut_end);
         if self.content.is_empty() {
             let cut_out = act.children.split_off(cut_start);
@@ -1001,6 +1007,7 @@ mod tests {
                 act: None,
                 book: None,
                 structural_element: StructuralReferenceElement::SubtitleId(1.into()),
+                title_only: false,
             },
             pure_insertion,
             content: Vec::new(),
