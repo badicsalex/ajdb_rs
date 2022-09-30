@@ -78,7 +78,9 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                     *id,
                     StructuralElementType::Chapter,
                 ),
-            StructuralReferenceElement::AtTheEndOfAct => Ok((children_of_the_book.len(), children_of_the_book.len())),
+            StructuralReferenceElement::AtTheEndOfAct => {
+                Ok((children_of_the_book.len(), children_of_the_book.len()))
+            }
             StructuralReferenceElement::Article(range) => {
                 self.handle_article_range(children_of_the_book, range)
             }
@@ -86,7 +88,10 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
         if self.position.title_only {
             // XXX: what we are doing here is absolutely invalid for some cases (e.g. Article, end of act),
             //      But that shouldn't happen anyway.
-            ensure!(!self.pure_insertion, "Pure insertion and title only are not supported at the same time");
+            ensure!(
+                !self.pure_insertion,
+                "Pure insertion and title only are not supported at the same time"
+            );
             cut_end = cut_start + 1;
         }
         cut_start += book_offset;

@@ -6,10 +6,10 @@ pub mod article_title_amendment;
 pub mod auto_repeal;
 pub mod block_amendment;
 pub mod extract;
+pub mod fix_order;
 pub mod repeal;
 pub mod structural_amendment;
 pub mod text_amendment;
-pub mod fix_order;
 
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
@@ -22,7 +22,7 @@ use log::{debug, info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
-use crate::database::DatabaseState;
+use crate::{amender::fix_order::fix_amendment_order, database::DatabaseState};
 
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
@@ -30,6 +30,7 @@ use self::{
     text_amendment::SimplifiedTextAmendment,
 };
 
+#[derive(Debug, Default)]
 pub struct AppliableModificationSet {
     modifications: MultiMap<ActIdentifier, AppliableModification>,
 }
@@ -38,14 +39,15 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply(&self, state: &mut DatabaseState) -> Result<()> {
-        for (&act_id, modifications) in &self.modifications {
-            if !state.has_act(act_id) {
-                debug!("Act not in database for amending: {}", act_id);
-                continue;
-            }
+    pub fn apply_to_act(&self, act_id: ActIdentifier, state: &mut DatabaseState) -> Result<()> {
+        if !state.has_act(act_id) {
+            debug!("Act not in database for amending: {}", act_id);
+            return Ok(());
+        }
+        if let Some(mut modifications) = self.modifications.get_vec(&act_id).cloned() {
             let mut act = state.get_act(act_id)?.act()?;
-            for modification in modifications {
+            fix_amendment_order(&mut modifications);
+            for modification in &modifications {
                 let result = modification.apply(&mut act).with_context(|| {
                     format!(
                         "Error applying single amendment to {} (source: {:?})",
@@ -68,22 +70,31 @@ impl AppliableModificationSet {
         Ok(())
     }
 
+    pub fn remove_affecting(&mut self, act_id: ActIdentifier) {
+        self.modifications.remove(&act_id);
+    }
+
+    /// Apply the modification list calculated by get_all_modifications
+    /// This function is separate to make sure that immutable and mutable
+    /// references to the DatabaseState are properly exclusive.
+    pub fn apply_rest(&self, state: &mut DatabaseState) -> Result<()> {
+        for act_id in self.modifications.keys() {
+            self.apply_to_act(*act_id, state)?
+        }
+        Ok(())
+    }
+
     /// Extract all modifications that comes in force on the specific day
     /// Include the auto-repeal of said modifications the next day, according to
     /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)
-    pub fn from_acts<'a>(
-        act_entries: impl IntoIterator<Item = &'a Act>,
-        date: NaiveDate,
-    ) -> Result<Self> {
-        let mut modifications = MultiMap::default();
-        for act in act_entries {
-            let this_acts_modifications = extract_modifications_from_act(act, date)
-                .with_elem_context("Error extracting modifications", act)?;
-            for modification in this_acts_modifications {
-                modifications.insert(modification.affected_act()?, modification);
-            }
+    pub fn add(&mut self, act: &Act, date: NaiveDate) -> Result<()> {
+        let this_acts_modifications = extract_modifications_from_act(act, date)
+            .with_elem_context("Error extracting modifications", act)?;
+        for modification in this_acts_modifications {
+            self.modifications
+                .insert(modification.affected_act()?, modification);
         }
-        Ok(Self { modifications })
+        Ok(())
     }
 
     pub fn affects(&self, act_identifier: ActIdentifier) -> bool {
@@ -91,7 +102,10 @@ impl AppliableModificationSet {
     }
 
     /// Used only for testing
-    pub fn get_modifications(self) -> MultiMap<ActIdentifier, AppliableModification> {
+    pub fn get_modifications(mut self) -> MultiMap<ActIdentifier, AppliableModification> {
+        for (_key, vals) in self.modifications.iter_all_mut() {
+            fix_amendment_order(vals);
+        }
         self.modifications
     }
 }

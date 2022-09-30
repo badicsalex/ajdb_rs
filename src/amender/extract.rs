@@ -27,7 +27,7 @@ use crate::{enforcement_date_set::EnforcementDateSet, fixups::Fixups};
 use super::{
     auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
-    text_amendment::SimplifiedTextAmendment, AppliableModification, AppliableModificationType, fix_order::fix_amendment_order,
+    text_amendment::SimplifiedTextAmendment, AppliableModification, AppliableModificationType,
 };
 
 /// Return all modifications that comes in force on the specific day
@@ -67,7 +67,6 @@ pub fn extract_modifications_from_act(
     }
     let mut result = visitor.result;
     result.extend(auto_repeals.get_result(&act.reference())?);
-    fix_amendment_order(&mut result);
     Ok(result)
 }
 

@@ -23,7 +23,10 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
     clean_quoted_blocks(&mut act);
     let mut result: TestData = Default::default();
     for date in act.publication_date.iter_days().take(365) {
-        let modifications = AppliableModificationSet::from_acts([&act], date)?.get_modifications();
+        let mut modification_set = AppliableModificationSet::default();
+        modification_set.add(&act, date)?;
+
+        let modifications = modification_set.get_modifications();
         if !modifications.is_empty() {
             let transformed_modifications = modifications
                 .into_iter()

@@ -6,7 +6,7 @@ use ajdb::{
     amender::AppliableModificationSet, database::Database, persistence::Persistence,
     util::NaiveDateRange,
 };
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
 use log::info;
 
@@ -49,22 +49,18 @@ fn recalculate_one_date(db: &mut Database, date: NaiveDate) -> Result<()> {
     act_ids.reverse();
 
     let mut applied_acts = Vec::new();
-    for act_id in &act_ids {
-        let act = state.get_act(*act_id)?.act()?;
-        let modifications = AppliableModificationSet::from_acts(&[act], date)?;
-        for applied_act in &applied_acts {
-            if modifications.affects(*applied_act) {
-                bail!(
-                        "There is a modification in {} that affects an already applied act {} on date {}",
-                        act_id,
-                        applied_act,
-                        date,
-                    );
-            }
-        }
-        modifications.apply(&mut state)?;
-        applied_acts.push(*act_id);
+    let mut modifications = AppliableModificationSet::default();
+    for act_id in act_ids {
+        // NOTE: And then there's the case where an Act is modified by one Act, and then another,
+        //       Both coming into force at the same time. This is resolved by the internal
+        //       ordering fix in modifications.apply_to_act(...)
+        modifications.apply_to_act(act_id, &mut state)?;
+        modifications.remove_affecting(act_id);
+        let act = state.get_act(act_id)?.act()?;
+        applied_acts.push(act_id);
+        modifications.add(&act, date)?;
     }
+    modifications.apply_rest(&mut state)?;
     state.save()?;
     Ok(())
 }
