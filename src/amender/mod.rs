@@ -9,6 +9,7 @@ pub mod extract;
 pub mod repeal;
 pub mod structural_amendment;
 pub mod text_amendment;
+pub mod fix_order;
 
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
@@ -34,7 +35,7 @@ pub struct AppliableModificationSet {
 }
 
 impl AppliableModificationSet {
-    /// Apply the modification lsit calculated by get_all_modifications
+    /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
     pub fn apply(&self, state: &mut DatabaseState) -> Result<()> {

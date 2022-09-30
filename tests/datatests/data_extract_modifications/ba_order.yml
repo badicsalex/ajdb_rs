@@ -1,0 +1,116 @@
+2012-01-02:
+  2013. évi V. törvény:
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '3'
+    modification:
+      StructuralBlockAmendment:
+        position:
+          act:
+            year: 2013
+            number: 5
+          structural_element:
+            Article: 3:305
+        pure_insertion: false
+        content:
+        - Article:
+            identifier: 3:305
+            title: Kötvény helyett részvény igénylése és a kötvény részvénnyé történő átváltozása
+            children:
+            - identifier: '1'
+              body: Az átváltoztatható ...
+            - identifier: '2'
+              body: Az átváltoztatható ...
+            - identifier: '3'
+              body: Az (1) bekezdés ...
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '2'
+    modification:
+      BlockAmendment:
+        position:
+          act:
+            year: 2013
+            number: 5
+          article: 3:305
+          paragraph: '4'
+        content:
+          Paragraph:
+          - identifier: '4'
+            body: Nice.
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '5'
+    modification:
+      BlockAmendment:
+        position:
+          act:
+            year: 2013
+            number: 5
+          article: 3:400
+          paragraph: '5'
+        content:
+          Paragraph:
+          - identifier: '5'
+            body:
+              intro: Something
+              children:
+                AlphabeticPoint:
+                - identifier: a
+                  body: something
+                - identifier: b
+                  body: something else
+  - source:
+      act:
+        year: 2012
+        number: 1
+      article: '4'
+    modification:
+      BlockAmendment:
+        position:
+          act:
+            year: 2013
+            number: 5
+          article: 3:400
+          paragraph: '5'
+          point: c
+        content:
+          AlphabeticPoint:
+          - identifier: c
+            body: Nice.
+2012-01-03:
+  2012. évi I. törvény:
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '2'
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '3'
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '4'
+  - modification:
+      Repeal:
+        position:
+          act:
+            year: 2012
+            number: 1
+          article: '5'
