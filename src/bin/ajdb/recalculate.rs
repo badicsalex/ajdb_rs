@@ -34,7 +34,7 @@ fn recalculate_one_date(db: &mut Database, date: NaiveDate) -> Result<()> {
     info!("Recalculating {}", date);
     db.copy_state(date.pred(), date)?;
     let mut state = db.get_state(date)?;
-    let act_ids: Vec<_> = state
+    let mut act_ids: Vec<_> = state
         .get_acts()?
         .iter()
         .filter(|ae| ae.is_date_interesting(date))
@@ -45,8 +45,11 @@ fn recalculate_one_date(db: &mut Database, date: NaiveDate) -> Result<()> {
     //       that modify earlier acts on the same enforcement day.
     //       E.g. 2020. évi LXXIV. törvény.yml modifies 2020. évi XLIII. törvény.yml,
     //       both with enforcement dates 2021-01-01, leading to a conflict in Btk.
+    act_ids.sort();
+    act_ids.reverse();
+
     let mut applied_acts = Vec::new();
-    for act_id in act_ids.iter().rev() {
+    for act_id in &act_ids {
         let act = state.get_act(*act_id)?.act()?;
         let modifications = AppliableModificationSet::from_acts(&[act], date)?;
         for applied_act in &applied_acts {
