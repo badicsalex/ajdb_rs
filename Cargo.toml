@@ -30,7 +30,7 @@ debug = true
 incremental = true
 
 [profile.dev.package.hun_law]
-opt-level = 3
+#opt-level = 3
 
 [[test]]
 harness = false
