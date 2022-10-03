@@ -1,0 +1,39 @@
+body {
+    font-family: sans;
+    font-size: 12pt;
+    line-height: 1.5;
+    background: #ddd;
+    padding: 0px;
+    margin: 0px;
+    text-align: center;
+}
+
+a {
+    color: #008;
+}
+
+div {
+    margin: 0px;
+    padding: 0px;
+}
+
+blockquote {
+    margin: 0px 0px 0px 00px;
+    padding: 0px;
+    font-size: 10pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+.index_container{
+    width: 950px;
+    border: 1px solid gray;
+    display: inline-block;
+    background: white;
+    padding: 30px 80px 30px 80px;
+    margin: 30px;
+    text-align: justify;
+    box-shadow: 5px 5px 10px #888888;
+}
