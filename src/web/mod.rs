@@ -11,7 +11,7 @@ mod index;
 pub async fn web_main() {
     let router = axum::Router::new()
         .route("/", axum::routing::get(render_index))
-        .merge(axum_extra::routing::SpaRouter::new("/static", "static"));
+        .merge(axum_extra::routing::SpaRouter::new("/static", "src/web/static"));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     axum::Server::bind(&addr)
