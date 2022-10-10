@@ -4,6 +4,7 @@
 
 mod act;
 mod index;
+mod util;
 
 use std::net::SocketAddr;
 

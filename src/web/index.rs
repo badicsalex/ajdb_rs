@@ -8,6 +8,8 @@ use maud::{html, Markup, DOCTYPE};
 
 use crate::{database::Database, persistence::Persistence};
 
+use super::util::logged_http_error;
+
 fn get_all_acts() -> Result<Vec<String>> {
     let mut persistence = Persistence::new("db");
     let mut db = Database::new(&mut persistence);
@@ -20,10 +22,7 @@ fn get_all_acts() -> Result<Vec<String>> {
 }
 
 pub async fn render_index() -> Result<Markup, StatusCode> {
-    let acts = get_all_acts().map_err(|e| {
-        log::error!("Ayy: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let acts = get_all_acts().map_err(logged_http_error)?;
 
     Ok(html!(
         (DOCTYPE)
