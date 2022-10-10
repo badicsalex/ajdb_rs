@@ -10,6 +10,7 @@ use axum::{
 use chrono::{NaiveDate, Utc};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
+    reference::{to_element::ReferenceToElement, Reference},
     structure::{
         Act, ActChild, AlphabeticPointChildren, AlphabeticSubpointChildren, Article,
         BlockAmendment, BlockAmendmentChildren, ChildrenCommon, NumericPointChildren,
@@ -17,28 +18,65 @@ use hun_law::{
         StructuralBlockAmendment, StructuralElement, StructuralElementType, SubArticleElement,
         Subtitle,
     },
+    util::compact_string::CompactString,
 };
 use maud::{html, Markup, DOCTYPE};
 use serde::Deserialize;
 
 use crate::{database::Database, persistence::Persistence};
 
+use super::util::logged_http_error;
+
+#[derive(Debug, Clone, Default)]
+struct RenderElementContext {
+    current_ref: Option<Reference>,
+}
+
+impl RenderElementContext {
+    fn relative_to(&self, e: &impl ReferenceToElement) -> Result<Self, StatusCode> {
+        if let Some(current_ref) = &self.current_ref {
+            Ok(Self {
+                current_ref: Some(
+                    e.reference()
+                        .relative_to(current_ref)
+                        .map_err(logged_http_error)?,
+                ),
+            })
+        } else {
+            Ok(self.clone())
+        }
+    }
+
+    fn set_current_ref(&self, current_ref: Option<Reference>) -> Self {
+        Self { current_ref }
+    }
+
+    fn anchor_string(&self) -> String {
+        if let Some(r) = &self.current_ref {
+            format!("ref{}", r.without_act().compact_string())
+        } else {
+            String::new()
+        }
+    }
+}
+
 trait RenderElement {
-    fn render(&self) -> Result<Markup, StatusCode>;
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
 }
 
 impl<T: RenderElement> RenderElement for Vec<T> {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         Ok(html!(
             @for child in self {
-                ( child.render()? )
+                ( child.render(context)? )
             }
         ))
     }
 }
 
 impl RenderElement for Act {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        let context = context.set_current_ref(Some(self.reference()));
         Ok(html!(
             .act_title {
                 (self.identifier.to_string())
@@ -46,23 +84,13 @@ impl RenderElement for Act {
                 (self.subject)
             }
             .preamble { (self.preamble) }
-            ( self.children.render()? )
+            ( self.children.render(&context)? )
         ))
     }
 }
 
-impl RenderElement for ActChild {
-    fn render(&self) -> Result<Markup, StatusCode> {
-        match self {
-            ActChild::StructuralElement(x) => x.render(),
-            ActChild::Subtitle(x) => x.render(),
-            ActChild::Article(x) => x.render(),
-        }
-    }
-}
-
 impl RenderElement for StructuralElement {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let class_name = match self.element_type {
             StructuralElementType::Book => "se_book",
             StructuralElementType::Part { .. } => "se_part",
@@ -71,7 +99,7 @@ impl RenderElement for StructuralElement {
         };
         Ok(html!(
             .(class_name) {
-                ( self.header_string().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? )
+                ( self.header_string().map_err(logged_http_error)? )
                 @if !self.title.is_empty() {
                     br;
                     ( self.title )
@@ -82,7 +110,7 @@ impl RenderElement for StructuralElement {
 }
 
 impl RenderElement for Subtitle {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         Ok(html!(
             .se_subtitle {
                 @if let Some(identifier) = self.identifier {
@@ -96,16 +124,17 @@ impl RenderElement for Subtitle {
 }
 
 impl RenderElement for Article {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        let context = context.relative_to(self)?;
         Ok(html!(
-            .article_container {
+            .article_container id=(context.anchor_string()) {
                 .article_identifier { (self.identifier.to_string()) ". §" }
                 .article_body {
                     @if let Some(title) = &self.title {
                         .article_title { "[" (title) "]" }
                     }
                     @for child in &self.children {
-                        ( child.render()? )
+                        ( child.render(&context)? )
                     }
                 }
             }
@@ -115,13 +144,14 @@ impl RenderElement for Article {
 
 impl<IT, CT> RenderElement for SubArticleElement<IT, CT>
 where
-    SubArticleElement<IT, CT>: SAEHeaderString,
+    SubArticleElement<IT, CT>: SAEHeaderString + ReferenceToElement,
     IT: IdentifierCommon,
     CT: ChildrenCommon + RenderElement,
 {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        let context = context.relative_to(self)?;
         Ok(html!(
-            .sae_container {
+            .sae_container id=(context.anchor_string()) {
                 .sae_identifier { (self.header_string()) }
                 .sae_body {
                     @match &self.body {
@@ -130,7 +160,7 @@ where
                         }
                         SAEBody::Children{ intro, children, wrap_up } => {
                             .sae_text { (intro) }
-                            ( children.render()? )
+                            ( children.render(&context)? )
                             @if let Some(wrap_up) = wrap_up {
                                 .sae_text { (wrap_up) }
                             }
@@ -143,7 +173,7 @@ where
 }
 
 impl RenderElement for QuotedBlock {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let min_indent = self
             .lines
             .iter()
@@ -175,13 +205,14 @@ impl RenderElement for QuotedBlock {
 }
 
 impl RenderElement for BlockAmendment {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        let context = context.set_current_ref(None);
         Ok(html!(
             @if let Some(intro) = &self.intro {
                 .blockamendment_text { "(" (intro) ")" }
             }
             .blockamendment_container {
-                ( self.children.render()? )
+                ( self.children.render(&context)? )
             }
             @if let Some(wrap_up) = &self.wrap_up {
                 .blockamendment_text { "(" (wrap_up) ")" }
@@ -191,13 +222,14 @@ impl RenderElement for BlockAmendment {
 }
 
 impl RenderElement for StructuralBlockAmendment {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        let context = context.set_current_ref(None);
         Ok(html!(
             @if let Some(intro) = &self.intro {
                 .blockamendment_text { "(" (intro) ")" }
             }
             .blockamendment_container {
-                ( self.children.render()? )
+                ( self.children.render(&context)? )
             }
             @if let Some(wrap_up) = &self.wrap_up {
                 .blockamendment_text { "(" (wrap_up) ")" }
@@ -206,55 +238,65 @@ impl RenderElement for StructuralBlockAmendment {
     }
 }
 
-impl RenderElement for ParagraphChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+impl RenderElement for ActChild {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
-            ParagraphChildren::AlphabeticPoint(x) => x.render(),
-            ParagraphChildren::NumericPoint(x) => x.render(),
-            ParagraphChildren::QuotedBlock(x) => x.render(),
-            ParagraphChildren::BlockAmendment(x) => x.render(),
-            ParagraphChildren::StructuralBlockAmendment(x) => x.render(),
+            ActChild::StructuralElement(x) => x.render(context),
+            ActChild::Subtitle(x) => x.render(context),
+            ActChild::Article(x) => x.render(context),
+        }
+    }
+}
+
+impl RenderElement for ParagraphChildren {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        match self {
+            ParagraphChildren::AlphabeticPoint(x) => x.render(context),
+            ParagraphChildren::NumericPoint(x) => x.render(context),
+            ParagraphChildren::QuotedBlock(x) => x.render(context),
+            ParagraphChildren::BlockAmendment(x) => x.render(context),
+            ParagraphChildren::StructuralBlockAmendment(x) => x.render(context),
         }
     }
 }
 
 impl RenderElement for AlphabeticPointChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
-            AlphabeticPointChildren::AlphabeticSubpoint(x) => x.render(),
-            AlphabeticPointChildren::NumericSubpoint(x) => x.render(),
+            AlphabeticPointChildren::AlphabeticSubpoint(x) => x.render(context),
+            AlphabeticPointChildren::NumericSubpoint(x) => x.render(context),
         }
     }
 }
 
 impl RenderElement for NumericPointChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
-            NumericPointChildren::AlphabeticSubpoint(x) => x.render(),
+            NumericPointChildren::AlphabeticSubpoint(x) => x.render(context),
         }
     }
 }
 
 impl RenderElement for AlphabeticSubpointChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match *self {}
     }
 }
 
 impl RenderElement for NumericSubpointChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match *self {}
     }
 }
 
 impl RenderElement for BlockAmendmentChildren {
-    fn render(&self) -> Result<Markup, StatusCode> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
-            BlockAmendmentChildren::Paragraph(x) => x.render(),
-            BlockAmendmentChildren::AlphabeticPoint(x) => x.render(),
-            BlockAmendmentChildren::NumericPoint(x) => x.render(),
-            BlockAmendmentChildren::AlphabeticSubpoint(x) => x.render(),
-            BlockAmendmentChildren::NumericSubpoint(x) => x.render(),
+            BlockAmendmentChildren::Paragraph(x) => x.render(context),
+            BlockAmendmentChildren::AlphabeticPoint(x) => x.render(context),
+            BlockAmendmentChildren::NumericPoint(x) => x.render(context),
+            BlockAmendmentChildren::AlphabeticSubpoint(x) => x.render(context),
+            BlockAmendmentChildren::NumericSubpoint(x) => x.render(context),
         }
     }
 }
@@ -287,7 +329,7 @@ pub async fn render_act(
             }
             body {
                 .main_container {
-                    ( act.render()? )
+                    ( act.render(&RenderElementContext::default())? )
                 }
             }
         }
