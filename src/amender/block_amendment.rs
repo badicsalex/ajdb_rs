@@ -4,7 +4,10 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use hun_law::{
-    identifier::{range::IdentifierRange, ActIdentifier, IdentifierCommon},
+    identifier::{
+        range::{IdentifierRange, IdentifierRangeFrom},
+        ActIdentifier, IdentifierCommon,
+    },
     reference::{to_element::ReferenceToElement, Reference},
     structure::{
         Act, AlphabeticPoint, AlphabeticPointChildren, Article, BlockAmendmentChildren,
@@ -69,6 +72,11 @@ impl BlockAmendmentWithContent {
         let parent_ref = self.position.parent();
         if let Some(range) = self.position.get_last_part().paragraph() {
             if let BlockAmendmentChildren::Paragraph(content) = &self.content {
+                // XXX: This is a quick hack. IdentifierRange<ParagraphIdentifier> shouldn't really exist.
+                let range = IdentifierRange::from_range(
+                    range.first_in_range().into(),
+                    range.last_in_range().into(),
+                );
                 return modify_multiple(&mut article.children, range, content, false);
             } else {
                 bail!("Wrong amendment content for paragraph reference");
