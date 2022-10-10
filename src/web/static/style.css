@@ -18,8 +18,9 @@ div {
 }
 
 blockquote {
-    margin: 0px 0px 0px 00px;
-    padding: 0px;
+    margin: 0.5em 0px 0px 0px;
+    padding: 0px 0px 0px 20px;
+    border-left: 3px solid gray;
     font-size: 10pt;
 }
 
@@ -27,7 +28,7 @@ h1 {
     text-align: center;
 }
 
-.index_container{
+.main_container{
     width: 950px;
     border: 1px solid gray;
     display: inline-block;
@@ -36,4 +37,82 @@ h1 {
     margin: 30px;
     text-align: justify;
     box-shadow: 5px 5px 10px #888888;
+}
+
+.act_title, .preamble {
+    margin-bottom: 2em;
+}
+
+.se_book, .se_part, .se_chapter, .se_title, .se_subtitle {
+    margin-top: 2em;
+    margin-bottom: 1.5em;
+    margin-left: 120px;
+}
+
+.act_title {
+    font: 18pt serif;
+    margin: 20px 20px 30px 0px;
+    text-align: left;
+}
+
+.preamble {
+    margin-bottom: 1.5em;
+    text-align: justify;
+}
+
+.se_book {
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: left;
+}
+
+.se_part {
+    font-size: 16pt;
+    text-align: left;
+}
+
+.se_chapter, .se_title {
+    font-size: 14pt;
+    font-style: italic;
+    text-align: left;
+}
+
+.se_subtitle {
+    font-weight: bold;
+}
+
+.article_identifier {
+    font-weight: bold;
+}
+.article_body {
+    margin: -1.5em 0px 1.5em 80px;
+}
+.article_title {
+    font-style: italic;
+    margin: 0px 0px 0px 40px;
+}
+.article_container, .sae_container {
+    width: 100%
+}
+.sae_identifier {
+    min-height: 1.5em;
+}
+.sae_body {
+    margin: -1.5em 0px 0px 40px;
+    min-height: 1.5em;
+}
+
+.blockamendment_text {
+    font-style: italic;
+
+}
+.blockamendment_container {
+    display: inline-block;
+    margin: 0.5em 0px 0px 0px;
+    padding: 0px 0px 0px 20px;
+    border-left: 3px solid lightgray;
+}
+
+.quote_line {
+    font-size: 10pt;
 }

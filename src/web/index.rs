@@ -34,11 +34,11 @@ pub async fn render_index() -> Result<Markup, StatusCode> {
                 link rel="icon" href="static/favicon.png";
             }
             body {
-                .index_container {
+                .main_container {
                     h1 { "Welcome to AJDB" }
                     h3 { "We have the following acts:" }
                     @for act in acts {
-                        li { (act) }
+                        li { a href={"/act/" (act)} { (act) } }
                     }
                 }
             }
