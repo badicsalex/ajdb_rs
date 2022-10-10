@@ -83,7 +83,7 @@ impl RenderElement for Article {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
         Ok(html!(
-            .article_container id=(context.anchor_string()) {
+            .article_container id=(context.current_anchor_string()) {
                 .article_identifier { (self.identifier.to_string()) ". §" }
                 .article_body {
                     @if let Some(title) = &self.title {

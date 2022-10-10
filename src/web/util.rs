@@ -12,7 +12,7 @@ use maud::{html, Markup};
 
 #[derive(Debug, Clone, Default)]
 pub struct RenderElementContext {
-    current_ref: Option<Reference>,
+    pub current_ref: Option<Reference>,
 }
 
 impl RenderElementContext {
@@ -34,9 +34,9 @@ impl RenderElementContext {
         Self { current_ref }
     }
 
-    pub fn anchor_string(&self) -> String {
+    pub fn current_anchor_string(&self) -> String {
         if let Some(r) = &self.current_ref {
-            format!("ref{}", r.without_act().compact_string())
+            anchor_string(r)
         } else {
             String::new()
         }
@@ -60,4 +60,8 @@ impl<T: RenderElement> RenderElement for Vec<T> {
 pub fn logged_http_error(e: Error) -> StatusCode {
     log::error!("Internal error occured: {:?}", e);
     StatusCode::INTERNAL_SERVER_ERROR
+}
+
+pub fn anchor_string(r: &Reference) -> String {
+    format!("ref{}", r.without_act().first_in_range().compact_string())
 }

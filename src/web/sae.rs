@@ -2,11 +2,14 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::Result;
+use std::fmt::Write;
+
+use anyhow::{ensure, Result};
 use axum::http::StatusCode;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::to_element::ReferenceToElement,
+    reference::{to_element::ReferenceToElement, Reference},
+    semantic_info::{OutgoingReference, SemanticInfo},
     structure::{
         AlphabeticPointChildren, AlphabeticSubpointChildren, BlockAmendment,
         BlockAmendmentChildren, ChildrenCommon, NumericPointChildren, NumericSubpointChildren,
@@ -14,7 +17,9 @@ use hun_law::{
         SubArticleElement,
     },
 };
-use maud::{html, Markup};
+use maud::{html, Markup, PreEscaped};
+
+use crate::web::util::{anchor_string, logged_http_error};
 
 use super::util::{RenderElement, RenderElementContext};
 
@@ -27,15 +32,33 @@ where
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
         Ok(html!(
-            .sae_container id=(context.anchor_string()) {
+            .sae_container id=(context.current_anchor_string()) {
                 .sae_identifier { (self.header_string()) }
                 .sae_body {
                     @match &self.body {
                         SAEBody::Text(s) => {
-                            .sae_text { (s) }
+                            .sae_text {
+                                @if let Some(current_ref) = &context.current_ref {
+                                    (
+                                        text_with_semantic_info(s, current_ref, &self.semantic_info)
+                                        .map_err(logged_http_error)?
+                                    )
+                                } @else {
+                                    (s)
+                                }
+                            }
                         }
                         SAEBody::Children{ intro, children, wrap_up } => {
-                            .sae_text { (intro) }
+                            .sae_text {
+                                @if let Some(current_ref) = &context.current_ref {
+                                    (
+                                        text_with_semantic_info(intro, current_ref, &self.semantic_info)
+                                        .map_err(logged_http_error)?
+                                    )
+                                } @else {
+                                    (intro)
+                                }
+                            }
                             ( children.render(&context)? )
                             @if let Some(wrap_up) = wrap_up {
                                 .sae_text { (wrap_up) }
@@ -165,4 +188,35 @@ impl RenderElement for BlockAmendmentChildren {
             BlockAmendmentChildren::NumericSubpoint(x) => x.render(context),
         }
     }
+}
+
+fn text_with_semantic_info(
+    text: &str,
+    current_reference: &Reference,
+    semantic_info: &SemanticInfo,
+) -> Result<PreEscaped<String>> {
+    let mut result = String::new();
+    let mut prev_end = 0;
+    for OutgoingReference {
+        start,
+        end,
+        reference,
+    } in &semantic_info.outgoing_references
+    {
+        ensure!(*start >= prev_end);
+        ensure!(end > start);
+        result.push_str(&text[prev_end..*start]);
+        let href = if let Some(act) = reference.act() {
+            format!("/act/{}#{}", act, anchor_string(reference))
+        } else {
+            format!(
+                "#{}",
+                anchor_string(&reference.relative_to(&current_reference.without_act())?)
+            )
+        };
+        write!(result, "<a href=\"{}\">{}</a>", href, &text[*start..*end])?;
+        prev_end = *end
+    }
+    result.push_str(&text[prev_end..]);
+    Ok(PreEscaped(result))
 }
