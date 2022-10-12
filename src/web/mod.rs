@@ -3,6 +3,7 @@
 // All rights reserved.
 
 mod act;
+mod act_toc;
 mod index;
 mod sae;
 mod util;

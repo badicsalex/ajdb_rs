@@ -16,12 +16,27 @@ use hun_law::{
 use maud::{html, Markup, DOCTYPE};
 use serde::Deserialize;
 
-use crate::{database::Database, persistence::Persistence};
+use crate::{database::Database, persistence::Persistence, web::sae::RenderSAE};
 
-use super::util::{logged_http_error, RenderElement, RenderElementContext};
+use super::{
+    act_toc::generate_toc,
+    util::{logged_http_error, RenderElementContext},
+};
+
+pub trait RenderElement {
+    fn render(
+        &self,
+        context: &RenderElementContext,
+        child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode>;
+}
 
 impl RenderElement for Act {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render(
+        &self,
+        context: &RenderElementContext,
+        _child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode> {
         let context = context.set_current_ref(Some(self.reference()));
         Ok(html!(
             .act_title {
@@ -30,31 +45,46 @@ impl RenderElement for Act {
                 (self.subject)
             }
             .preamble { (self.preamble) }
-            ( self.children.render(&context)? )
+            @for (i, child) in self.children.iter().enumerate() {
+                ( child.render(&context, Some(i))? )
+            }
         ))
     }
 }
 
 impl RenderElement for ActChild {
-    fn render(&self, context: &super::util::RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render(
+        &self,
+        context: &super::util::RenderElementContext,
+        child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode> {
         match self {
-            ActChild::StructuralElement(x) => x.render(context),
-            ActChild::Subtitle(x) => x.render(context),
-            ActChild::Article(x) => x.render(context),
+            ActChild::StructuralElement(x) => x.render(context, child_number),
+            ActChild::Subtitle(x) => x.render(context, child_number),
+            ActChild::Article(x) => x.render(context, child_number),
         }
     }
 }
 
 impl RenderElement for StructuralElement {
-    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render(
+        &self,
+        _context: &RenderElementContext,
+        child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode> {
         let class_name = match self.element_type {
             StructuralElementType::Book => "se_book",
             StructuralElementType::Part { .. } => "se_part",
             StructuralElementType::Title => "se_title",
             StructuralElementType::Chapter => "se_chapter",
         };
+        let id = if let Some(child_number) = child_number {
+            format!("se_{}", child_number)
+        } else {
+            "".to_owned()
+        };
         Ok(html!(
-            .(class_name) {
+            .(class_name) #(id) {
                 ( self.header_string().map_err(logged_http_error)? )
                 @if !self.title.is_empty() {
                     br;
@@ -66,9 +96,18 @@ impl RenderElement for StructuralElement {
 }
 
 impl RenderElement for Subtitle {
-    fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render(
+        &self,
+        _context: &RenderElementContext,
+        child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode> {
+        let id = if let Some(child_number) = child_number {
+            format!("se_{}", child_number)
+        } else {
+            "".to_owned()
+        };
         Ok(html!(
-            .se_subtitle {
+            .se_subtitle  #(id) {
                 @if let Some(identifier) = self.identifier {
                     ( identifier.with_slash().to_string() )
                     ". "
@@ -80,7 +119,11 @@ impl RenderElement for Subtitle {
 }
 
 impl RenderElement for Article {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render(
+        &self,
+        context: &RenderElementContext,
+        _child_number: Option<usize>,
+    ) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
         Ok(html!(
             .article_container id=(context.current_anchor_string()) {
@@ -105,7 +148,7 @@ fn get_single_act(act_id: ActIdentifier, params: RenderActParams) -> Result<Act>
     state.get_act(act_id)?.act()
 }
 
-fn document_layout(title: String, document_body: Markup) -> Markup {
+fn document_layout(title: String, toc: Markup, document_body: Markup) -> Markup {
     html!(
         (DOCTYPE)
         html {
@@ -126,13 +169,7 @@ fn document_layout(title: String, document_body: Markup) -> Markup {
                     h1 { (title) }
                 }
                 .bottom_left {
-                    ul {
-                        li { "TOC placeholder" }
-                        li { "TOC placeholder" }
-                        li { "TOC placeholder" }
-                        li { "TOC placeholder" }
-                        li { "TOC placeholder" }
-                    }
+                    .toc { (toc) }
                 }
                 .bottom_right {
                     .document { (document_body) }
@@ -155,6 +192,7 @@ pub async fn render_act(
     let act = get_single_act(act_id, params.0).map_err(|_| StatusCode::NOT_FOUND)?;
     Ok(document_layout(
         act.identifier.to_string(),
-        act.render(&RenderElementContext::default())?,
+        generate_toc(&act),
+        act.render(&RenderElementContext::default(), None)?,
     ))
 }

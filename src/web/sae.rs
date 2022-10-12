@@ -19,15 +19,32 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
-use crate::web::util::{anchor_string, logged_http_error};
+use crate::web::{
+    act::RenderElement,
+    util::{anchor_string, logged_http_error},
+};
 
-use super::util::{RenderElement, RenderElementContext};
+use super::util::RenderElementContext;
 
-impl<IT, CT> RenderElement for SubArticleElement<IT, CT>
+pub trait RenderSAE {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
+}
+
+impl<T: RenderSAE> RenderSAE for Vec<T> {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+        Ok(html!(
+            @for child in self {
+                ( child.render(context)? )
+            }
+        ))
+    }
+}
+
+impl<IT, CT> RenderSAE for SubArticleElement<IT, CT>
 where
     SubArticleElement<IT, CT>: SAEHeaderString + ReferenceToElement,
     IT: IdentifierCommon,
-    CT: ChildrenCommon + RenderElement,
+    CT: ChildrenCommon + RenderSAE,
 {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
@@ -71,7 +88,7 @@ where
     }
 }
 
-impl RenderElement for QuotedBlock {
+impl RenderSAE for QuotedBlock {
     fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let min_indent = self
             .lines
@@ -103,7 +120,7 @@ impl RenderElement for QuotedBlock {
     }
 }
 
-impl RenderElement for BlockAmendment {
+impl RenderSAE for BlockAmendment {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.set_current_ref(None);
         Ok(html!(
@@ -120,7 +137,7 @@ impl RenderElement for BlockAmendment {
     }
 }
 
-impl RenderElement for StructuralBlockAmendment {
+impl RenderSAE for StructuralBlockAmendment {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.set_current_ref(None);
         Ok(html!(
@@ -128,7 +145,9 @@ impl RenderElement for StructuralBlockAmendment {
                 .blockamendment_text { "(" (intro) ")" }
             }
             .blockamendment_container {
-                ( self.children.render(&context)? )
+                @for child in &self.children {
+                    ( child.render(&context, None)? )
+                }
             }
             @if let Some(wrap_up) = &self.wrap_up {
                 .blockamendment_text { "(" (wrap_up) ")" }
@@ -137,7 +156,7 @@ impl RenderElement for StructuralBlockAmendment {
     }
 }
 
-impl RenderElement for ParagraphChildren {
+impl RenderSAE for ParagraphChildren {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
             ParagraphChildren::AlphabeticPoint(x) => x.render(context),
@@ -149,7 +168,7 @@ impl RenderElement for ParagraphChildren {
     }
 }
 
-impl RenderElement for AlphabeticPointChildren {
+impl RenderSAE for AlphabeticPointChildren {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
             AlphabeticPointChildren::AlphabeticSubpoint(x) => x.render(context),
@@ -158,7 +177,7 @@ impl RenderElement for AlphabeticPointChildren {
     }
 }
 
-impl RenderElement for NumericPointChildren {
+impl RenderSAE for NumericPointChildren {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
             NumericPointChildren::AlphabeticSubpoint(x) => x.render(context),
@@ -166,19 +185,19 @@ impl RenderElement for NumericPointChildren {
     }
 }
 
-impl RenderElement for AlphabeticSubpointChildren {
+impl RenderSAE for AlphabeticSubpointChildren {
     fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match *self {}
     }
 }
 
-impl RenderElement for NumericSubpointChildren {
+impl RenderSAE for NumericSubpointChildren {
     fn render(&self, _context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match *self {}
     }
 }
 
-impl RenderElement for BlockAmendmentChildren {
+impl RenderSAE for BlockAmendmentChildren {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
             BlockAmendmentChildren::Paragraph(x) => x.render(context),

@@ -2,13 +2,11 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::Error;
 use axum::http::StatusCode;
 use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     util::compact_string::CompactString,
 };
-use maud::{html, Markup};
 
 #[derive(Debug, Clone, Default)]
 pub struct RenderElementContext {
@@ -43,21 +41,7 @@ impl RenderElementContext {
     }
 }
 
-pub trait RenderElement {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
-}
-
-impl<T: RenderElement> RenderElement for Vec<T> {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
-        Ok(html!(
-            @for child in self {
-                ( child.render(context)? )
-            }
-        ))
-    }
-}
-
-pub fn logged_http_error(e: Error) -> StatusCode {
+pub fn logged_http_error(e: impl std::fmt::Debug) -> StatusCode {
     log::error!("Internal error occured: {:?}", e);
     StatusCode::INTERNAL_SERVER_ERROR
 }

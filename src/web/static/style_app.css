@@ -23,8 +23,9 @@ body {
 }
 
 .bottom_left {
-    background: gray;
+    background: #aaa;
     border-right: 1px solid black;
+    overflow: auto;
 }
 
 .bottom_right {
@@ -47,6 +48,21 @@ body {
 
 .top_right h1 {
     font: 18pt serif;
+}
+
+/* TOC */
+
+.toc {
+    margin: 0px 10px 1em 0px;
+}
+
+.toc ul {
+    padding-left: 20px;
+}
+
+.toc a {
+    color: black;
+    text-decoration: none;
 }
 
 /*  Document */
@@ -144,4 +160,8 @@ blockquote {
 
 .quote_line {
     font-size: 10pt;
+}
+
+:target {
+   background-color: #ffffc0;
 }
