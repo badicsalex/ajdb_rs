@@ -105,11 +105,6 @@ fn get_single_act(act_id: ActIdentifier, params: RenderActParams) -> Result<Act>
     state.get_act(act_id)?.act()
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct RenderActParams {
-    date: Option<NaiveDate>,
-}
-
 fn document_layout(title: String, document_body: Markup) -> Markup {
     html!(
         (DOCTYPE)
@@ -145,6 +140,11 @@ fn document_layout(title: String, document_body: Markup) -> Markup {
             }
         }
     )
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RenderActParams {
+    date: Option<NaiveDate>,
 }
 
 pub async fn render_act(
