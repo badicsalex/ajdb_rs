@@ -35,10 +35,33 @@ pub async fn render_index() -> Result<Markup, StatusCode> {
             }
             body {
                 .main_container {
-                    h1 { "Welcome to AJDB" }
-                    h3 { "We have the following acts:" }
-                    @for act in acts {
-                        li { a href={"/act/" (act)} { (act) } }
+                    .title {
+                        "Alex Jogi Adatbázisa"
+                    }
+                    .inner_container {
+                        p {
+                            "Egy fejlesztés alatt lévő, a "
+                            a href="https://github.com/badicsalex/hun_law_rs" { "hun_law keretrendszerre"}
+                            " épülő jogtár (és egyéb) projekt."
+                            br;
+                            "Használata csak saját felelősségre."
+                        }
+                        h3 { "Fontos elérhető törvények:" }
+                        a href="/act/2012-100" .important_act {
+                            "Btk."
+                        }
+                        a href="/act/2012-1" .important_act {
+                            "Mt."
+                        }
+                        a href="/act/2013-5" .important_act {
+                            "Ptk."
+                        }
+                        h3 { "Egyéb törvények:" }
+                        ul {
+                            @for act in acts {
+                                li { a href={"/act/" (act)} { (act) } }
+                            }
+                        }
                     }
                 }
             }
