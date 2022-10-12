@@ -110,25 +110,51 @@ pub struct RenderActParams {
     date: Option<NaiveDate>,
 }
 
+fn document_layout(title: String, document_body: Markup) -> Markup {
+    html!(
+        (DOCTYPE)
+        html {
+            head {
+                title { (title) " - AJDB" }
+                link rel="stylesheet" href="/static/style_common.css";
+                link rel="stylesheet" href="/static/style_app.css";
+                link rel="icon" href="/static/favicon.png";
+            }
+            body {
+                .top_left {
+                    a href="/" {
+                        .ajdb_logo { "AJDB" }
+                    }
+                    "Alex Jogi Adatbázisa"
+                }
+                .top_right {
+                    h1 { (title) }
+                }
+                .bottom_left {
+                    ul {
+                        li { "TOC placeholder" }
+                        li { "TOC placeholder" }
+                        li { "TOC placeholder" }
+                        li { "TOC placeholder" }
+                        li { "TOC placeholder" }
+                    }
+                }
+                .bottom_right {
+                    .document { (document_body) }
+                }
+            }
+        }
+    )
+}
+
 pub async fn render_act(
     Path(act_id_str): Path<String>,
     params: Query<RenderActParams>,
 ) -> Result<Markup, StatusCode> {
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
     let act = get_single_act(act_id, params.0).map_err(|_| StatusCode::NOT_FOUND)?;
-    Ok(html!(
-        (DOCTYPE)
-        html {
-            head {
-                title { "AJDB" }
-                link rel="stylesheet" href="/static/style.css";
-                link rel="icon" href="/static/favicon.png";
-            }
-            body {
-                .main_container {
-                    ( act.render(&RenderElementContext::default())? )
-                }
-            }
-        }
+    Ok(document_layout(
+        act.identifier.to_string(),
+        act.render(&RenderElementContext::default())?,
     ))
 }

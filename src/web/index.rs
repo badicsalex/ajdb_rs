@@ -29,8 +29,9 @@ pub async fn render_index() -> Result<Markup, StatusCode> {
         html {
             head {
                 title { "AJDB" }
-                link rel="stylesheet" href="static/style.css";
-                link rel="icon" href="static/favicon.png";
+                link rel="stylesheet" href="/static/style_common.css";
+                link rel="stylesheet" href="/static/style_portal.css";
+                link rel="icon" href="/static/favicon.png";
             }
             body {
                 .main_container {
