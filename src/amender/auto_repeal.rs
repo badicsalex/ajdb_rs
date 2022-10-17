@@ -12,9 +12,8 @@ use hun_law::{
     util::walker::SAEVisitor,
 };
 
-use crate::enforcement_date_set::EnforcementDateSet;
-
 use super::{repeal::SimplifiedRepeal, AppliableModification};
+use crate::enforcement_date_set::EnforcementDateSet;
 
 /// Auto-repeal of modifications according to
 /// "2010. évi CXXX. törvény a jogalkotásról", 12/A. § (1)

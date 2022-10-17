@@ -19,12 +19,11 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
+use super::util::RenderElementContext;
 use crate::web::{
     act::RenderElement,
     util::{anchor_string, logged_http_error},
 };
-
-use super::util::RenderElementContext;
 
 pub trait RenderSAE {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;

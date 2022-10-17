@@ -22,13 +22,12 @@ use hun_law::{
 };
 use log::info;
 
-use crate::{enforcement_date_set::EnforcementDateSet, fixups::Fixups};
-
 use super::{
     auto_repeal::AutoRepealAccumulator, block_amendment::BlockAmendmentWithContent,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
     text_amendment::SimplifiedTextAmendment, AppliableModification, AppliableModificationType,
 };
+use crate::{enforcement_date_set::EnforcementDateSet, fixups::Fixups};
 
 /// Return all modifications that comes in force on the specific day
 /// Include the auto-repeal of said modifications the next day, according to

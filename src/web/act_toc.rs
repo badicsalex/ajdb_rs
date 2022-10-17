@@ -2,10 +2,10 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::fmt::Write;
+
 use hun_law::structure::{Act, ActChild, StructuralElementType};
 use maud::{Markup, PreEscaped};
-
-use std::fmt::Write;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum ActChildLevelHelper {
