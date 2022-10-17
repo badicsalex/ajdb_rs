@@ -14,82 +14,52 @@ use crate::{
     persistence::{KeyType, Persistence, PersistenceKey},
 };
 
-pub struct Database<'p> {
-    persistence: &'p mut Persistence,
+/// The state of all acts at a specific date.
+pub struct ActSet<'p> {
+    persistence: &'p Persistence,
+    date: NaiveDate,
+    data: ActSetData,
 }
 
-impl<'p> Database<'p> {
-    pub fn new(persistence: &'p mut Persistence) -> Self {
-        Self { persistence }
-    }
+/// The actual data that's stored for the act set.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+struct ActSetData {
+    acts: BTreeMap<String, ActEntryData>,
+}
 
-    /// Load state metadata from persistence.
-    /// This state can then be mutated, but don't forget to save it wafterwards.
-    pub fn get_state(&mut self, date: NaiveDate) -> Result<DatabaseState<'p, '_>> {
-        let key = Self::state_key(date);
-        let data = if self.persistence.exists(&key)? {
-            self.persistence
+impl<'p> ActSet<'p> {
+    /// Load act set metadata from persistence.
+    /// This act set can then be mutated, but don't forget to save it afterwards.
+    pub fn load(persistence: &'p Persistence, date: NaiveDate) -> Result<ActSet<'p>> {
+        let key = ActSet::persistence_key(date);
+        let data = if persistence.exists(&key)? {
+            persistence
                 .load(&key)
-                .with_context(|| anyhow!("Could not load state with key {}", key))?
+                .with_context(|| anyhow!("Could not load act set with key {}", key))?
         } else {
-            StateData::default()
+            ActSetData::default()
         };
-        Ok(DatabaseState {
-            db: self,
+        Ok(ActSet {
+            persistence,
             date,
             data,
         })
     }
 
-    // XXX: This is a layering violation between Database and DatabaseState
-    // only meant to be called by DatabaseState.save(), hence why it's not pub
-    fn set_state_data(&mut self, date: NaiveDate, state: StateData) -> Result<()> {
-        let key = Self::state_key(date);
-        self.persistence
-            .store(KeyType::Forced(key.clone()), &state)
-            .with_context(|| anyhow!("Could save state with key {}", key))?;
-        Ok(())
-    }
-
-    /// Copy acts from old_date state to new_date state,
+    /// Copy acts from old_date act set to new_date act set,
     /// overwriting exisitng acts and keeping new ones.
-    pub fn copy_state(&mut self, old_date: NaiveDate, new_date: NaiveDate) -> Result<()> {
-        let old_data = self.get_state(old_date)?.data;
-        let mut state = self.get_state(new_date)?;
-        state.merge_into(old_data);
-        state.save()?;
+    pub fn copy(
+        persistence: &'p Persistence,
+        old_date: NaiveDate,
+        new_date: NaiveDate,
+    ) -> Result<()> {
+        let mut old_data = Self::load(persistence, old_date)?.data;
+        let mut new = Self::load(persistence, new_date)?;
+        new.data.acts.append(&mut old_data.acts);
+        new.save()?;
         Ok(())
     }
 
-    fn state_key(date: NaiveDate) -> PersistenceKey {
-        date.format("state/%Y/%m/%d").to_string()
-    }
-
-    // TODO: Garbage collection
-}
-
-/// The actual data that's stored for a state in the persistence module.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct StateData {
-    acts: BTreeMap<String, ActEntryData>,
-}
-
-/// The state of the world at a specific date.
-/// Conceptually it is a reference to a specific "item" in the Database,
-/// so it has to be destroyed before the Database object is usable again.
-
-// TODO: Actually states were meant to be independent of the Database, and
-//       on save it should first write everything down and then hopefully
-//       atomically set the state id in the correct db entry. Much like git.
-//       This is not really guaranteed right now, so we protect against this
-//       by putting &mut's everywhere, even though that wouldn't be needed.
-pub struct DatabaseState<'p, 'db> {
-    db: &'db mut Database<'p>,
-    date: NaiveDate,
-    data: StateData,
-}
-
-impl<'p, 'db> DatabaseState<'p, 'db> {
     pub fn has_act(&self, id: ActIdentifier) -> bool {
         self.data.acts.contains_key(&Self::act_key(id))
     }
@@ -99,7 +69,7 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     pub fn get_act(&self, id: ActIdentifier) -> Result<ActEntry> {
         if let Some(act_data) = self.data.acts.get(&Self::act_key(id)) {
             Ok(ActEntry {
-                persistence: self.db.persistence,
+                persistence: self.persistence,
                 identifier: id,
                 data: act_data.clone(),
             })
@@ -121,7 +91,7 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
             .iter()
             .map(|(act_id, act_data)| {
                 Ok(ActEntry {
-                    persistence: self.db.persistence,
+                    persistence: self.persistence,
                     identifier: act_id.parse()?,
                     data: act_data.clone(),
                 })
@@ -130,13 +100,10 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     }
 
     /// Converts Act to ActEntry, calculating all kinds of cached data,
-    /// and storing it as a blob. Keep in mind that the DatabaseState
+    /// and storing it as a blob. Keep in mind that the ActSet
     /// object itself should be saved, or else the act will dangle.
     pub fn store_act(&mut self, act: Act) -> Result<ActEntry> {
-        let act_key = self
-            .db
-            .persistence
-            .store(KeyType::Calculated("act"), &act)?;
+        let act_key = self.persistence.store(KeyType::Calculated("act"), &act)?;
         let enforcement_dates = if act.children.is_empty() {
             Vec::new()
         } else {
@@ -152,19 +119,21 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
         self.get_act(act.identifier)
     }
 
-    /// Save the state itself into the database it came from.
+    /// Save the act list itself (acts are already stored at this point)
     pub fn save(self) -> Result<()> {
-        self.db.set_state_data(self.date, self.data)
+        let key = Self::persistence_key(self.date);
+        self.persistence
+            .store(KeyType::Forced(key.clone()), &self.data)
+            .with_context(|| anyhow!("Could save act set with key {}", key))?;
+        Ok(())
     }
 
     pub fn is_empty(&self) -> bool {
         self.data.acts.is_empty()
     }
 
-    // XXX: This is a layering violation between Database and DatabaseState
-    // only meant to be called by Database.copy_state(), hence why it's not pub
-    fn merge_into(&mut self, mut other: StateData) {
-        self.data.acts.append(&mut other.acts);
+    fn persistence_key(date: NaiveDate) -> PersistenceKey {
+        date.format("state/%Y/%m/%d").to_string()
     }
 
     fn act_key(id: ActIdentifier) -> String {
@@ -172,7 +141,7 @@ impl<'p, 'db> DatabaseState<'p, 'db> {
     }
 }
 
-/// The actual act metadata that's stored in the state
+/// The actual act metadata that's stored in the ActSet object
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActEntryData {
     /// The storage key used for storing the act. Usually the computed hash
@@ -185,12 +154,8 @@ pub struct ActEntryData {
 }
 
 /// Proxy object representing a stored act. Creating it is free, the actual
-/// persistence operations are done with methods or through the DatabaseState
-/// object.
+/// persistence operations are done with further method calls.
 pub struct ActEntry<'a> {
-    // This being immutable signifies that we only read from it.
-    // Should we start using a backend that needs a mut reference for
-    // reading the database, this should be refactored somehow.
     persistence: &'a Persistence,
     identifier: ActIdentifier,
     data: ActEntryData,
@@ -214,4 +179,5 @@ impl<'a> ActEntry<'a> {
     pub fn identifier(&self) -> ActIdentifier {
         self.identifier
     }
+
 }

@@ -6,14 +6,12 @@ use anyhow::Result;
 use axum::http::StatusCode;
 use maud::{html, Markup, DOCTYPE};
 
-use crate::{database::Database, persistence::Persistence};
-
 use super::util::logged_http_error;
+use crate::{database::ActSet, persistence::Persistence};
 
 fn get_all_acts() -> Result<Vec<String>> {
-    let mut persistence = Persistence::new("db");
-    let mut db = Database::new(&mut persistence);
-    let state = db.get_state("2022-09-30".parse()?)?;
+    let persistence = Persistence::new("db");
+    let state = ActSet::load(&persistence, "2022-09-30".parse()?)?;
     let acts = state.get_acts()?;
     Ok(acts
         .into_iter()

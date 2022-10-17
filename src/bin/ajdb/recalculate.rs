@@ -3,7 +3,7 @@
 // All rights reserved.
 
 use ajdb::{
-    amender::AppliableModificationSet, database::Database, persistence::Persistence,
+    amender::AppliableModificationSet, database::ActSet, persistence::Persistence,
     util::NaiveDateRange,
 };
 use anyhow::{anyhow, Context, Result};
@@ -21,19 +21,18 @@ pub struct RecalculateArgs {
 }
 
 pub fn cli_recalculate(args: RecalculateArgs) -> Result<()> {
-    let mut persistence = Persistence::new("db");
-    let mut db = Database::new(&mut persistence);
+    let persistence = Persistence::new("db");
     for date in NaiveDateRange::new(args.from.succ(), args.to) {
-        recalculate_one_date(&mut db, date)
+        recalculate_one_date(&persistence, date)
             .with_context(|| anyhow!("Recalculating date {} failed", date))?;
     }
     Ok(())
 }
 
-fn recalculate_one_date(db: &mut Database, date: NaiveDate) -> Result<()> {
+fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()> {
     info!("Recalculating {}", date);
-    db.copy_state(date.pred(), date)?;
-    let mut state = db.get_state(date)?;
+    ActSet::copy(persistence, date.pred(), date)?;
+    let mut state = ActSet::load(persistence, date)?;
     let mut act_ids: Vec<_> = state
         .get_acts()?
         .iter()

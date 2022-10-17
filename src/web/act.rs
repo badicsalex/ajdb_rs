@@ -16,12 +16,11 @@ use hun_law::{
 use maud::{html, Markup, DOCTYPE};
 use serde::Deserialize;
 
-use crate::{database::Database, persistence::Persistence, web::sae::RenderSAE};
-
 use super::{
     act_toc::generate_toc,
     util::{logged_http_error, RenderElementContext},
 };
+use crate::{database::ActSet, persistence::Persistence, web::sae::RenderSAE};
 
 pub trait RenderElement {
     fn render(
@@ -142,9 +141,11 @@ impl RenderElement for Article {
 }
 
 fn get_single_act(act_id: ActIdentifier, params: RenderActParams) -> Result<Act> {
-    let mut persistence = Persistence::new("db");
-    let mut db = Database::new(&mut persistence);
-    let state = db.get_state(params.date.unwrap_or_else(|| Utc::today().naive_utc()))?;
+    let persistence = Persistence::new("db");
+    let state = ActSet::load(
+        &persistence,
+        params.date.unwrap_or_else(|| Utc::today().naive_utc()),
+    )?;
     state.get_act(act_id)?.act()
 }
 

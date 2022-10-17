@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use ajdb::{database::Database, persistence::Persistence, util::read_all};
+use ajdb::{database::ActSet, persistence::Persistence, util::read_all};
 use anyhow::{Context, Result};
 use hun_law::structure::Act;
 use log::info;
@@ -21,9 +21,8 @@ pub fn cli_add_raw(args: AddArgs) -> Result<()> {
     .with_context(|| anyhow::anyhow!("Error deserializing {:?}", args.path))?;
     let date = act.publication_date;
     info!("Adding {} to state at {}", act.identifier, date);
-    let mut persistence = Persistence::new("db");
-    let mut db = Database::new(&mut persistence);
-    let mut state = db.get_state(date)?;
+    let persistence = Persistence::new("db");
+    let mut state = ActSet::load(&persistence, date)?;
     state.store_act(act)?;
     state.save()?;
     Ok(())

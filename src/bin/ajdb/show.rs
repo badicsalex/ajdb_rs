@@ -4,7 +4,7 @@
 
 use std::io::stdout;
 
-use ajdb::{database::Database, persistence::Persistence};
+use ajdb::{database::ActSet, persistence::Persistence};
 use anyhow::{bail, Result};
 use chrono::{NaiveDate, Utc};
 use hun_law::{
@@ -29,9 +29,8 @@ pub struct ShowArgs {
 }
 
 pub fn cli_show(args: ShowArgs) -> Result<()> {
-    let mut persistence = Persistence::new("db");
-    let mut db = Database::new(&mut persistence);
-    let state = db.get_state(args.date)?;
+    let persistence = Persistence::new("db");
+    let state = ActSet::load(&persistence, args.date)?;
     if state.is_empty() {
         bail!("The database is empty at date {}", args.date);
     }

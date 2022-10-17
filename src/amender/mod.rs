@@ -22,13 +22,12 @@ use log::{debug, info, warn};
 use multimap::MultiMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{amender::fix_order::fix_amendment_order, database::DatabaseState};
-
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
     text_amendment::SimplifiedTextAmendment,
 };
+use crate::{amender::fix_order::fix_amendment_order, database::ActSet};
 
 #[derive(Debug, Default)]
 pub struct AppliableModificationSet {
@@ -39,7 +38,7 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_to_act(&self, act_id: ActIdentifier, state: &mut DatabaseState) -> Result<()> {
+    pub fn apply_to_act(&self, act_id: ActIdentifier, state: &mut ActSet) -> Result<()> {
         if !state.has_act(act_id) {
             debug!("Act not in database for amending: {}", act_id);
             return Ok(());
@@ -77,7 +76,7 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_rest(&self, state: &mut DatabaseState) -> Result<()> {
+    pub fn apply_rest(&self, state: &mut ActSet) -> Result<()> {
         for act_id in self.modifications.keys() {
             self.apply_to_act(*act_id, state)?
         }
