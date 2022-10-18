@@ -56,7 +56,8 @@ impl SAEVisitorMut for SimplifiedRepeal {
     ) -> Result<()> {
         if self.position.contains(position) {
             // TODO: Proper repealing. Maybe a separate SAEBody type
-            element.body = SAEBody::Text("".to_owned())
+            element.body = SAEBody::Text("".to_owned());
+            element.semantic_info = Default::default();
         }
         Ok(())
     }
@@ -80,7 +81,8 @@ impl SAEVisitorMut for RepealCollater {
     ) -> Result<()> {
         if let SAEBody::Children { .. } = element.body {
             if element.is_empty() {
-                element.body = SAEBody::Text("".to_owned())
+                element.body = SAEBody::Text("".to_owned());
+                element.semantic_info = Default::default();
             }
         }
         Ok(())

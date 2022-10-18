@@ -4,9 +4,9 @@ children_original:
       title: "Hello there 1"
       children:
         - identifier: "1"
-          body: "Paragraph 1"
+          body: "Paragraph 1 (ref test: 15. §)"
         - identifier: "2"
-          body: "Paragraph 2"
+          body: "Paragraph 2 (ref test: 15. §)"
   - Article:
       identifier: "1/A"
       title: "Hello there 1"
@@ -28,11 +28,11 @@ children_original:
           body: "Paragraph 1 - don't touch me"
         - identifier: "2"
           body:
-            intro: "Hmm:"
+            intro: "Hmm (ref test: 15. §):"
             children:
               AlphabeticPoint:
                 - identifier: a
-                  body: "My little point a"
+                  body: "My little point a (ref test: 15. §)"
                 - identifier: b
                   body: "My little point b"
             wrap_up: "hmm."
