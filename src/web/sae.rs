@@ -8,7 +8,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use axum::http::StatusCode;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::{to_element::ReferenceToElement, Reference},
+    reference::to_element::ReferenceToElement,
     semantic_info::{OutgoingReference, SemanticInfo},
     structure::{
         AlphabeticPointChildren, AlphabeticSubpointChildren, BlockAmendment,
@@ -53,30 +53,18 @@ where
                 .sae_body {
                     @match &self.body {
                         SAEBody::Text(s) => {
-                            .sae_text {
-                                @if let Some(current_ref) = &context.current_ref {
-                                    (
-                                        text_with_semantic_info(s, current_ref, &self.semantic_info)
-                                        .with_context(|| anyhow!("Error rendering semantic text at ref {:?}", context.current_ref))
-                                        .map_err(logged_http_error)?
-                                    )
-                                } @else {
-                                    (s)
-                                }
-                            }
+                            .sae_text { (
+                                text_with_semantic_info(s, &context, &self.semantic_info)
+                                    .with_context(|| anyhow!("Error rendering semantic text at ref {:?}", context.current_ref))
+                                    .map_err(logged_http_error)?
+                            ) }
                         }
                         SAEBody::Children{ intro, children, wrap_up } => {
-                            .sae_text {
-                                @if let Some(current_ref) = &context.current_ref {
-                                    (
-                                        text_with_semantic_info(intro, current_ref, &self.semantic_info)
-                                        .with_context(|| anyhow!("Error rendering semantic intro ref {:?}", context.current_ref))
-                                        .map_err(logged_http_error)?
-                                    )
-                                } @else {
-                                    (intro)
-                                }
-                            }
+                            .sae_text { (
+                                text_with_semantic_info(intro, &context, &self.semantic_info)
+                                    .with_context(|| anyhow!("Error rendering semantic intro ref {:?}", context.current_ref))
+                                    .map_err(logged_http_error)?
+                            ) }
                             ( children.render(&context)? )
                             @if let Some(wrap_up) = wrap_up {
                                 .sae_text { (wrap_up) }
@@ -212,9 +200,14 @@ impl RenderSAE for BlockAmendmentChildren {
 
 fn text_with_semantic_info(
     text: &str,
-    current_reference: &Reference,
+    context: &RenderElementContext,
     semantic_info: &SemanticInfo,
 ) -> Result<PreEscaped<String>> {
+    let current_reference = if let Some(r) = &context.current_ref {
+        r
+    } else {
+        return Ok(PreEscaped(text.to_string()));
+    };
     let mut result = String::new();
     let mut prev_end = 0;
     for OutgoingReference {
