@@ -5,6 +5,7 @@
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use hun_law::{
+    identifier::ActIdentifier,
     reference::{to_element::ReferenceToElement, Reference},
     util::compact_string::CompactString,
 };
@@ -54,4 +55,16 @@ pub fn logged_http_error(e: impl std::fmt::Debug) -> StatusCode {
 
 pub fn anchor_string(r: &Reference) -> String {
     format!("ref{}", r.without_act().first_in_range().compact_string())
+}
+
+pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
+    format!(
+        "/act/{}{}",
+        act_id,
+        if let Some(date) = date {
+            format!("?date={}", date)
+        } else {
+            String::new()
+        },
+    )
 }

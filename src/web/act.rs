@@ -18,7 +18,7 @@ use serde::Deserialize;
 
 use super::{
     act_toc::generate_toc,
-    util::{logged_http_error, RenderElementContext},
+    util::{act_link, logged_http_error, RenderElementContext},
 };
 use crate::{
     database::{ActMetadata, ActSet},
@@ -166,9 +166,11 @@ fn render_act_menu(
     modification_dates.push(NaiveDate::from_ymd(3000, 12, 31));
     for modification_date in modification_dates {
         let to = modification_date.pred();
+        let mut entry_is_today = false;
         let special = if from == publication_date {
             " (Közlönyállapot)"
         } else if today >= from && today <= to {
+            entry_is_today = true;
             " (Hatályos állapot)"
         } else {
             ""
@@ -187,7 +189,11 @@ fn render_act_menu(
             dropdown_current = Some(entry.clone());
             entry = format!("<b>{}</b>", entry);
         }
-        entry = format!("<a href=\"/act/{}?date={}\">{}</a>", act_id, from, entry);
+        entry = format!(
+            "<a href=\"{}\">{}</a>",
+            act_link(act_id, if entry_is_today { None } else { Some(from) }),
+            entry
+        );
         dropdown_contents.insert_str(0, &entry);
         if to.year() < 3000 {
             dropdown_contents.insert_str(0, "<br>");

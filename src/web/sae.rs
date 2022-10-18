@@ -22,7 +22,7 @@ use maud::{html, Markup, PreEscaped};
 use super::util::RenderElementContext;
 use crate::web::{
     act::RenderElement,
-    util::{anchor_string, logged_http_error},
+    util::{act_link, anchor_string, logged_http_error},
 };
 
 pub trait RenderSAE {
@@ -228,13 +228,8 @@ fn text_with_semantic_info(
         })?);
         let href = if let Some(act) = reference.act() {
             format!(
-                "/act/{}{}#{}",
-                act,
-                if let Some(date) = context.date {
-                    format!("?date={}", date)
-                } else {
-                    String::new()
-                },
+                "{}#{}",
+                act_link(act, context.date),
                 anchor_string(reference)
             )
         } else {
