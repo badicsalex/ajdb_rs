@@ -227,7 +227,16 @@ fn text_with_semantic_info(
             )
         })?);
         let href = if let Some(act) = reference.act() {
-            format!("/act/{}#{}", act, anchor_string(reference))
+            format!(
+                "/act/{}{}#{}",
+                act,
+                if let Some(date) = context.date {
+                    format!("?date={}", date)
+                } else {
+                    String::new()
+                },
+                anchor_string(reference)
+            )
         } else {
             format!(
                 "#{}",

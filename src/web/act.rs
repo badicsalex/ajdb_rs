@@ -251,9 +251,14 @@ pub async fn render_act(
     params: Query<RenderActParams>,
 ) -> Result<Markup, StatusCode> {
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
-    let date = params.date.unwrap_or_else(|| Utc::today().naive_utc());
+    let today = Utc::today().naive_utc();
+    let date = params.date.unwrap_or(today);
     let (act, modification_dates) =
         get_single_act(act_id, date).map_err(|_| StatusCode::NOT_FOUND)?;
+    let act_render_context = RenderElementContext {
+        current_ref: None,
+        date: if date == today { None } else { Some(date) },
+    };
     Ok(document_layout(
         act.identifier.to_string(),
         generate_toc(&act),
@@ -263,6 +268,6 @@ pub async fn render_act(
             act.publication_date,
             modification_dates,
         ),
-        act.render(&RenderElementContext::default(), None)?,
+        act.render(&act_render_context, None)?,
     ))
 }

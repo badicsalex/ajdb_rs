@@ -3,6 +3,7 @@
 // All rights reserved.
 
 use axum::http::StatusCode;
+use chrono::NaiveDate;
 use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     util::compact_string::CompactString,
@@ -11,6 +12,7 @@ use hun_law::{
 #[derive(Debug, Clone, Default)]
 pub struct RenderElementContext {
     pub current_ref: Option<Reference>,
+    pub date: Option<NaiveDate>,
 }
 
 impl RenderElementContext {
@@ -22,6 +24,7 @@ impl RenderElementContext {
                         .relative_to(current_ref)
                         .map_err(logged_http_error)?,
                 ),
+                date: self.date,
             })
         } else {
             Ok(self.clone())
@@ -29,7 +32,10 @@ impl RenderElementContext {
     }
 
     pub fn set_current_ref(&self, current_ref: Option<Reference>) -> Self {
-        Self { current_ref }
+        Self {
+            current_ref,
+            date: self.date,
+        }
     }
 
     pub fn current_anchor_string(&self) -> String {
