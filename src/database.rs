@@ -2,7 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
@@ -18,28 +18,28 @@ use crate::{
 pub struct ActSet<'p> {
     persistence: &'p Persistence,
     date: NaiveDate,
-    data: ActSetData,
+    data: ActSetSerialized,
 }
 
 /// The actual data that's stored for the act set.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct ActSetData {
-    acts: BTreeMap<String, ActEntryData>,
+struct ActSetSerialized {
+    acts: BTreeMap<String, ActEntrySerialized>,
 }
 
 impl<'p> ActSet<'p> {
     /// Load act set metadata from persistence.
     /// This act set can then be mutated, but don't forget to save it afterwards.
-    pub fn load(persistence: &'p Persistence, date: NaiveDate) -> Result<ActSet<'p>> {
-        let key = ActSet::persistence_key(date);
+    pub fn load(persistence: &'p Persistence, date: NaiveDate) -> Result<Self> {
+        let key = Self::persistence_key(date);
         let data = if persistence.exists(&key)? {
             persistence
                 .load(&key)
                 .with_context(|| anyhow!("Could not load act set with key {}", key))?
         } else {
-            ActSetData::default()
+            ActSetSerialized::default()
         };
-        Ok(ActSet {
+        Ok(Self {
             persistence,
             date,
             data,
@@ -111,7 +111,7 @@ impl<'p> ActSet<'p> {
         };
         self.data.acts.insert(
             Self::act_key(act.identifier),
-            ActEntryData {
+            ActEntrySerialized {
                 act_key,
                 enforcement_dates,
             },
@@ -143,7 +143,7 @@ impl<'p> ActSet<'p> {
 
 /// The actual act metadata that's stored in the ActSet object
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActEntryData {
+pub struct ActEntrySerialized {
     /// The storage key used for storing the act. Usually the computed hash
     /// of the act data.
     act_key: PersistenceKey,
@@ -158,7 +158,7 @@ pub struct ActEntryData {
 pub struct ActEntry<'a> {
     persistence: &'a Persistence,
     identifier: ActIdentifier,
-    data: ActEntryData,
+    data: ActEntrySerialized,
 }
 
 impl<'a> ActEntry<'a> {
@@ -178,5 +178,56 @@ impl<'a> ActEntry<'a> {
 
     pub fn identifier(&self) -> ActIdentifier {
         self.identifier
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct ActMetadataSerialized {
+    /// Contains both modifiactions by others, and enforcement dates
+    modification_dates: BTreeSet<NaiveDate>,
+}
+
+pub struct ActMetadata<'a> {
+    persistence: &'a Persistence,
+    act_id: ActIdentifier,
+    data: ActMetadataSerialized,
+}
+
+impl<'p> ActMetadata<'p> {
+    /// Load act metadata from persistence.
+    pub fn load(persistence: &'p Persistence, act_id: ActIdentifier) -> Result<Self> {
+        let key = Self::persistence_key(act_id);
+        let data = if persistence.exists(&key)? {
+            persistence
+                .load(&key)
+                .with_context(|| anyhow!("Could not load act set with key {}", key))?
+        } else {
+            ActMetadataSerialized::default()
+        };
+        Ok(Self {
+            persistence,
+            act_id,
+            data,
+        })
+    }
+
+    pub fn save(self) -> Result<()> {
+        let key = Self::persistence_key(self.act_id);
+        self.persistence
+            .store(KeyType::Forced(key.clone()), &self.data)
+            .with_context(|| anyhow!("Could save act set with key {}", key))?;
+        Ok(())
+    }
+
+    pub fn add_modification_date(&mut self, date: NaiveDate) {
+        self.data.modification_dates.insert(date);
+    }
+
+    pub fn modification_dates(&self) -> Vec<NaiveDate> {
+        self.data.modification_dates.iter().copied().collect()
+    }
+
+    fn persistence_key(act_id: ActIdentifier) -> PersistenceKey {
+        format!("act_metadata/{}/{}", act_id.year, act_id.number)
     }
 }

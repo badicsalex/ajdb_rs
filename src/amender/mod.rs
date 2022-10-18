@@ -112,6 +112,10 @@ impl AppliableModificationSet {
         self.modifications.contains_key(&act_identifier)
     }
 
+    pub fn affected_acts(&self) -> Vec<ActIdentifier> {
+        self.modifications.keys().copied().collect()
+    }
+
     /// Used only for testing
     pub fn get_modifications(mut self) -> MultiMap<ActIdentifier, AppliableModification> {
         for (_key, vals) in self.modifications.iter_all_mut() {

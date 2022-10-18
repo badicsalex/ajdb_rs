@@ -3,7 +3,9 @@
 // All rights reserved.
 
 use ajdb::{
-    amender::AppliableModificationSet, database::ActSet, persistence::Persistence,
+    amender::AppliableModificationSet,
+    database::{ActMetadata, ActSet},
+    persistence::Persistence,
     util::NaiveDateRange,
 };
 use anyhow::{anyhow, Context, Result};
@@ -47,18 +49,27 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
     act_ids.sort();
     act_ids.reverse();
 
-    let mut applied_acts = Vec::new();
     let mut modifications = AppliableModificationSet::default();
-    for act_id in act_ids {
+    for act_id in &act_ids {
         // NOTE: And then there's the case where an Act is modified by one Act, and then another,
         //       Both coming into force at the same time. This is resolved by the internal
         //       ordering fix in modifications.apply_to_act(...)
-        modifications.apply_to_act_in_state(act_id, &mut state)?;
-        modifications.remove_affecting(act_id);
-        let act = state.get_act(act_id)?.act()?;
-        applied_acts.push(act_id);
+        modifications.apply_to_act_in_state(*act_id, &mut state)?;
+        modifications.remove_affecting(*act_id);
+        let act = state.get_act(*act_id)?.act()?;
         modifications.add(&act, date)?;
     }
+
+    let mut modified_acts = act_ids; //no clone necessary
+    modified_acts.append(&mut modifications.affected_acts());
+    for act_id in modified_acts {
+        if state.has_act(act_id) {
+            let mut act_metadata = ActMetadata::load(persistence, act_id)?;
+            act_metadata.add_modification_date(date);
+            act_metadata.save()?;
+        }
+    }
+
     modifications.apply_rest(&mut state)?;
     state.save()?;
     Ok(())
