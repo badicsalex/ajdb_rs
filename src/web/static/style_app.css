@@ -19,7 +19,9 @@ body {
     background: linear-gradient(to right, purple , indigo);
     color: white;
     border-bottom: 1px solid black;
-    text-align: center;
+    display: flex;
+    justify-content:center;
+    align-items: center;
 }
 
 .bottom_left {
@@ -46,8 +48,55 @@ body {
     font: 25px serif;
 }
 
-.top_right h1 {
-    font: 18pt serif;
+.menu_container {
+    width: 750px;
+    display: flex;
+    align-items: baseline;
+    gap: 30px;
+}
+
+.menu_act_title {
+    display: inline-block;
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+.menu_date {
+    display: inline-block;
+    font-size: 14pt;
+}
+
+.date_flex {
+    display:flex;
+    cursor: pointer;
+    border: 1px solid #666;
+    border-radius: 5px;
+}
+
+.date_current {
+    padding: 5px 10px 5px 10px;
+}
+
+.date_icon {
+    border-left: 1px solid gray;
+    padding: 5px 10px 5px 10px;
+}
+
+.date_dropdown_content {
+    display: none;
+    position: absolute;
+    background: indigo;
+    border: 1px solid #666;
+    border-radius: 0px 0px 5px 5px;
+    padding: 5px 10px 5px 10px;
+    box-shadow: 2px 2px 5px #888888;
+    max-height: 400px;
+    overflow: auto;
+}
+
+.date_dropdown_content a{
+    color: white;
+    text-decoration: none;
 }
 
 /* TOC */

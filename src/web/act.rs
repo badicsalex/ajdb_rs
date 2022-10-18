@@ -7,20 +7,24 @@ use axum::{
     extract::{Path, Query},
     http::StatusCode,
 };
-use chrono::{NaiveDate, Utc};
+use chrono::{Datelike, NaiveDate, Utc};
 use hun_law::{
     identifier::ActIdentifier,
     reference::to_element::ReferenceToElement,
     structure::{Act, ActChild, Article, StructuralElement, StructuralElementType, Subtitle},
 };
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup, PreEscaped, DOCTYPE};
 use serde::Deserialize;
 
 use super::{
     act_toc::generate_toc,
     util::{logged_http_error, RenderElementContext},
 };
-use crate::{database::ActSet, persistence::Persistence, web::sae::RenderSAE};
+use crate::{
+    database::{ActMetadata, ActSet},
+    persistence::Persistence,
+    web::sae::RenderSAE,
+};
 
 pub trait RenderElement {
     fn render(
@@ -140,16 +144,72 @@ impl RenderElement for Article {
     }
 }
 
-fn get_single_act(act_id: ActIdentifier, params: RenderActParams) -> Result<Act> {
+fn get_single_act(act_id: ActIdentifier, date: NaiveDate) -> Result<(Act, Vec<NaiveDate>)> {
     let persistence = Persistence::new("db");
-    let state = ActSet::load(
-        &persistence,
-        params.date.unwrap_or_else(|| Utc::today().naive_utc()),
-    )?;
-    state.get_act(act_id)?.act()
+    let state = ActSet::load(&persistence, date)?;
+    let act = state.get_act(act_id)?.act()?;
+    let act_metadata = ActMetadata::load(&persistence, act_id)?;
+    let modification_dates = act_metadata.modification_dates();
+    Ok((act, modification_dates))
 }
 
-fn document_layout(title: String, toc: Markup, document_body: Markup) -> Markup {
+fn render_act_menu(
+    act_id: ActIdentifier,
+    date: NaiveDate,
+    publication_date: NaiveDate,
+    mut modification_dates: Vec<NaiveDate>,
+) -> Markup {
+    let mut from = publication_date;
+    let today = Utc::today().naive_utc();
+    let mut dropdown_contents = String::new();
+    let mut dropdown_current = None;
+    modification_dates.push(NaiveDate::from_ymd(3000, 12, 31));
+    for modification_date in modification_dates {
+        let to = modification_date.pred();
+        let special = if from == publication_date {
+            " (Közlönyállapot)"
+        } else if today >= from && today <= to {
+            " (Hatályos állapot)"
+        } else {
+            ""
+        };
+        let mut entry = format!(
+            "{} – {}{}",
+            from.format("%Y.%m.%d."),
+            if to.year() == 3000 {
+                String::new()
+            } else {
+                to.format("%Y.%m.%d.").to_string()
+            },
+            special
+        );
+        if date >= from && date <= to {
+            dropdown_current = Some(entry.clone());
+            entry = format!("<b>{}</b>", entry);
+        }
+        entry = format!("<a href=\"/act/{}?date={}\">{}</a>", act_id, from, entry);
+        dropdown_contents.insert_str(0, &entry);
+        if to.year() < 3000 {
+            dropdown_contents.insert_str(0, "<br>");
+        }
+        from = modification_date;
+    }
+
+    let dropdown_current = dropdown_current.unwrap_or_else(|| date.format("%Y.%m.%d.").to_string());
+
+    html!(
+        .menu_act_title { ( act_id.to_string() ) }
+        .menu_date {
+            .date_flex onclick="toggle_on(event, 'date_dropdown')"{
+                .date_current { (dropdown_current) }
+                .date_icon { "▾" }
+            }
+            #date_dropdown .date_dropdown_content { ( PreEscaped(dropdown_contents) ) }
+        }
+    )
+}
+
+fn document_layout(title: String, toc: Markup, menu: Markup, document_body: Markup) -> Markup {
     html!(
         (DOCTYPE)
         html {
@@ -158,6 +218,7 @@ fn document_layout(title: String, toc: Markup, document_body: Markup) -> Markup 
                 link rel="stylesheet" href="/static/style_common.css";
                 link rel="stylesheet" href="/static/style_app.css";
                 link rel="icon" href="/static/favicon.png";
+                script type="text/javascript" src="/static/scripts_app.js" {}
             }
             body {
                 .top_left {
@@ -167,7 +228,7 @@ fn document_layout(title: String, toc: Markup, document_body: Markup) -> Markup 
                     "Alex Jogi Adatbázisa"
                 }
                 .top_right {
-                    h1 { (title) }
+                    .menu_container { (menu) }
                 }
                 .bottom_left {
                     .toc { (toc) }
@@ -190,10 +251,18 @@ pub async fn render_act(
     params: Query<RenderActParams>,
 ) -> Result<Markup, StatusCode> {
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
-    let act = get_single_act(act_id, params.0).map_err(|_| StatusCode::NOT_FOUND)?;
+    let date = params.date.unwrap_or_else(|| Utc::today().naive_utc());
+    let (act, modification_dates) =
+        get_single_act(act_id, date).map_err(|_| StatusCode::NOT_FOUND)?;
     Ok(document_layout(
         act.identifier.to_string(),
         generate_toc(&act),
+        render_act_menu(
+            act.identifier,
+            date,
+            act.publication_date,
+            modification_dates,
+        ),
         act.render(&RenderElementContext::default(), None)?,
     ))
 }
