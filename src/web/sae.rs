@@ -233,10 +233,10 @@ fn text_with_semantic_info(
                 anchor_string(reference)
             )
         } else {
-            format!(
-                "#{}",
-                anchor_string(&reference.relative_to(&current_reference.without_act())?)
-            )
+            match reference.relative_to(&current_reference.without_act()) {
+                Ok(r) => format!("#{}", anchor_string(&r)),
+                Err(_) => "#".into(),
+            }
         };
         write!(
             result,
