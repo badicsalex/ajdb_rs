@@ -4,7 +4,7 @@
 
 use std::fmt::Write;
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use axum::http::StatusCode;
 use hun_law::{
     identifier::IdentifierCommon,
@@ -57,6 +57,7 @@ where
                                 @if let Some(current_ref) = &context.current_ref {
                                     (
                                         text_with_semantic_info(s, current_ref, &self.semantic_info)
+                                        .with_context(|| anyhow!("Error rendering semantic text at ref {:?}", context.current_ref))
                                         .map_err(logged_http_error)?
                                     )
                                 } @else {
@@ -69,6 +70,7 @@ where
                                 @if let Some(current_ref) = &context.current_ref {
                                     (
                                         text_with_semantic_info(intro, current_ref, &self.semantic_info)
+                                        .with_context(|| anyhow!("Error rendering semantic intro ref {:?}", context.current_ref))
                                         .map_err(logged_http_error)?
                                     )
                                 } @else {
@@ -223,7 +225,14 @@ fn text_with_semantic_info(
     {
         ensure!(*start >= prev_end);
         ensure!(end > start);
-        result.push_str(&text[prev_end..*start]);
+        result.push_str(text.get(prev_end..*start).ok_or_else(|| {
+            anyhow!(
+                "Semantic info index out of bounds: {}..{} for '{}'",
+                prev_end,
+                start,
+                text
+            )
+        })?);
         let href = if let Some(act) = reference.act() {
             format!("/act/{}#{}", act, anchor_string(reference))
         } else {
@@ -232,7 +241,19 @@ fn text_with_semantic_info(
                 anchor_string(&reference.relative_to(&current_reference.without_act())?)
             )
         };
-        write!(result, "<a href=\"{}\">{}</a>", href, &text[*start..*end])?;
+        write!(
+            result,
+            "<a href=\"{}\">{}</a>",
+            href,
+            text.get(*start..*end).ok_or_else(|| {
+                anyhow!(
+                    "Semantic info index out of bounds: {}..{} for '{}'",
+                    prev_end,
+                    start,
+                    text
+                )
+            })?
+        )?;
         prev_end = *end
     }
     result.push_str(&text[prev_end..]);
