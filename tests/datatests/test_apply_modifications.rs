@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use ajdb::amender::{AppliableModificationType, ModifyAct};
+use ajdb::amender::{AppliableModification, AppliableModificationSet, AppliableModificationType};
 use chrono::NaiveDate;
 use hun_law::identifier::ActIdentifier;
 use hun_law::structure::ActChild;
@@ -36,11 +36,16 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
         contained_abbreviations: Default::default(),
         children: test_data.children_original,
     };
-
-    for modification in test_data.modifications {
-        modification.apply(&mut act)?;
-    }
-
+    act.add_semantic_info()?;
+    let modifications = test_data
+        .modifications
+        .into_iter()
+        .map(|modification| AppliableModification {
+            source: None,
+            modification,
+        })
+        .collect();
+    AppliableModificationSet::apply_to_act(&mut act, modifications)?;
     ensure_eq(
         &test_data.children_expected,
         &act.children,

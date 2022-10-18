@@ -18,7 +18,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockAmendmentWithContent {
@@ -27,15 +27,19 @@ pub struct BlockAmendmentWithContent {
 }
 
 impl ModifyAct for BlockAmendmentWithContent {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         let base_ref = act.reference();
         let act_dbg_string = act.debug_ctx();
         let article =
             find_containing_element(act.articles_mut(), &base_ref, &self.position.parent())
                 .with_context(|| anyhow!("Could not find article in {}", act_dbg_string))?;
+        let article_id = article.identifier;
         self.apply_to_article(article, &base_ref)
             .with_elem_context("Could not apply amendment", article)
-            .with_elem_context("Could not apply amendment", act)
+            .with_elem_context("Could not apply amendment", act)?;
+
+        let abbrevs_changed = act.add_semantic_info_to_article(article_id)?;
+        Ok(abbrevs_changed.into())
     }
 }
 

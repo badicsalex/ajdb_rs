@@ -12,7 +12,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SimplifiedTextAmendment {
@@ -21,7 +21,7 @@ pub struct SimplifiedTextAmendment {
 }
 
 impl ModifyAct for SimplifiedTextAmendment {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         let mut visitor = Visitor {
             amendment: self,
             applied: false,
@@ -32,7 +32,18 @@ impl ModifyAct for SimplifiedTextAmendment {
             "Text replacement {:?} did not have an effect",
             self
         );
-        Ok(())
+        let article_ids = self
+            .position
+            .article()
+            .ok_or_else(|| anyhow!("No article in text amendment position"))?;
+        if !article_ids.is_range() {
+            let abbrevs_changed = act.add_semantic_info_to_article(article_ids.first_in_range())?;
+            Ok(abbrevs_changed.into())
+        } else {
+            // TODO: Maybe not ask for a full reparse but handle this ourselves.
+            //       Then again, this is just an optimization for very common cases.
+            Ok(NeedsFullReparse::Yes)
+        }
     }
 }
 

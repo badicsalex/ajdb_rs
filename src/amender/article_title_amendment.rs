@@ -8,10 +8,10 @@ use hun_law::{
     semantic_info::ArticleTitleAmendment, structure::Act,
 };
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 impl ModifyAct for ArticleTitleAmendment {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         let mut applied = false;
         let act_ref = act.reference();
         for article in act.articles_mut() {
@@ -28,7 +28,7 @@ impl ModifyAct for ArticleTitleAmendment {
             "Article title amendment {:?} did not have an effect",
             self
         );
-        Ok(())
+        Ok(NeedsFullReparse::No)
     }
 }
 

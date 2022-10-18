@@ -15,8 +15,8 @@ use anyhow::{Context, Result};
 use chrono::NaiveDate;
 use from_variants::FromVariants;
 use hun_law::{
-    identifier::ActIdentifier, reference::Reference, semantic_info::ArticleTitleAmendment,
-    structure::Act, util::debug::WithElemContext,
+    identifier::ActIdentifier, parser::semantic_info::AbbreviationsChanged, reference::Reference,
+    semantic_info::ArticleTitleAmendment, structure::Act, util::debug::WithElemContext,
 };
 use log::{debug, info, warn};
 use multimap::MultiMap;
@@ -38,34 +38,46 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_to_act(&self, act_id: ActIdentifier, state: &mut ActSet) -> Result<()> {
+    pub fn apply_to_act_in_state(&self, act_id: ActIdentifier, state: &mut ActSet) -> Result<()> {
         if !state.has_act(act_id) {
             debug!("Act not in database for amending: {}", act_id);
             return Ok(());
         }
-        if let Some(mut modifications) = self.modifications.get_vec(&act_id).cloned() {
+        if let Some(modifications) = self.modifications.get_vec(&act_id).cloned() {
             let mut act = state.get_act(act_id)?.act()?;
-            fix_amendment_order(&mut modifications);
-            for modification in &modifications {
-                let result = modification.apply(&mut act).with_context(|| {
-                    format!(
-                        "Error applying single amendment to {} (source: {:?})",
-                        act.identifier, modification.source
-                    )
-                });
-                if let Err(err) = result {
-                    warn!("{:?}\n\n", err);
-                };
-            }
-            act.add_semantic_info()
-                .with_elem_context("Error recalculating semantic info after amendments", &act)?;
-            act.convert_block_amendments().with_elem_context(
-                "Error recalculating block amendments after amendments",
-                &act,
-            )?;
+            let modifications_len = modifications.len();
+            Self::apply_to_act(&mut act, modifications)?;
             state.store_act(act)?;
-            info!("Applied {:?} amendments to {}", modifications.len(), act_id);
+            info!("Applied {:?} amendments to {}", modifications_len, act_id);
         }
+        Ok(())
+    }
+
+    pub fn apply_to_act(
+        act: &mut Act,
+        mut modifications: Vec<AppliableModification>,
+    ) -> Result<()> {
+        fix_amendment_order(&mut modifications);
+        let mut do_full_reparse = false;
+        for modification in &modifications {
+            let result = modification.apply(act).with_context(|| {
+                format!(
+                    "Error applying single amendment to {} (source: {:?})",
+                    act.identifier, modification.source
+                )
+            });
+            match result {
+                Ok(NeedsFullReparse::No) => (),
+                Ok(NeedsFullReparse::Yes) => do_full_reparse = true,
+                Err(err) => warn!("{:?}\n\n", err),
+            }
+        }
+        if do_full_reparse {
+            act.add_semantic_info()
+                .with_elem_context("Error recalculating semantic info after amendments", act)?;
+        }
+        act.convert_block_amendments()
+            .with_elem_context("Error recalculating block amendments after amendments", act)?;
         Ok(())
     }
 
@@ -78,7 +90,7 @@ impl AppliableModificationSet {
     /// references to the DatabaseState are properly exclusive.
     pub fn apply_rest(&self, state: &mut ActSet) -> Result<()> {
         for act_id in self.modifications.keys() {
-            self.apply_to_act(*act_id, state)?
+            self.apply_to_act_in_state(*act_id, state)?
         }
         Ok(())
     }
@@ -109,8 +121,23 @@ impl AppliableModificationSet {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NeedsFullReparse {
+    No,
+    Yes,
+}
+
+impl From<AbbreviationsChanged> for NeedsFullReparse {
+    fn from(ac: AbbreviationsChanged) -> Self {
+        match ac {
+            AbbreviationsChanged::No => Self::No,
+            AbbreviationsChanged::Yes => Self::Yes,
+        }
+    }
+}
+
 pub trait ModifyAct {
-    fn apply(&self, target: &mut Act) -> Result<()>;
+    fn apply(&self, target: &mut Act) -> Result<NeedsFullReparse>;
 }
 
 trait AffectedAct {
@@ -120,8 +147,8 @@ trait AffectedAct {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AppliableModification {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    source: Option<Reference>,
-    modification: AppliableModificationType,
+    pub source: Option<Reference>,
+    pub modification: AppliableModificationType,
 }
 
 #[derive(Debug, Clone, FromVariants, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,7 +161,7 @@ pub enum AppliableModificationType {
 }
 
 impl ModifyAct for AppliableModification {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         self.modification.apply(act)
     }
 }
@@ -146,7 +173,7 @@ impl AffectedAct for AppliableModification {
 }
 
 impl ModifyAct for AppliableModificationType {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         match self {
             AppliableModificationType::ArticleTitleAmendment(m) => m.apply(act),
             AppliableModificationType::BlockAmendment(m) => m.apply(act),

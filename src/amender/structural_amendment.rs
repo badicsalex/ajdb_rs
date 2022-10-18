@@ -10,7 +10,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralBlockAmendmentWithContent {
@@ -20,7 +20,7 @@ pub struct StructuralBlockAmendmentWithContent {
 }
 
 impl ModifyAct for StructuralBlockAmendmentWithContent {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
         let (mut cut_start, mut cut_end) = match &self.position.structural_element {
             StructuralReferenceElement::Part(id) => self.handle_structural_element(
@@ -115,7 +115,14 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
             act.children.extend(self.content.iter().cloned());
         }
         act.children.append(&mut tail);
-        Ok(())
+        if let StructuralReferenceElement::Article(article_ids) = self.position.structural_element {
+            if !article_ids.is_range() {
+                let abbrevs_changed =
+                    act.add_semantic_info_to_article(article_ids.first_in_range())?;
+                return Ok(abbrevs_changed.into());
+            }
+        }
+        Ok(NeedsFullReparse::Yes)
     }
 }
 

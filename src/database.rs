@@ -179,5 +179,4 @@ impl<'a> ActEntry<'a> {
     pub fn identifier(&self) -> ActIdentifier {
         self.identifier
     }
-
 }

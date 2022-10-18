@@ -11,7 +11,7 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{AffectedAct, ModifyAct};
+use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SimplifiedRepeal {
@@ -19,7 +19,7 @@ pub struct SimplifiedRepeal {
 }
 
 impl ModifyAct for SimplifiedRepeal {
-    fn apply(&self, act: &mut Act) -> Result<()> {
+    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
         // TODO: A full act repeal will individually repeal all articles.
         //       But structural elements stay in place
         //       This may not be ideal.
@@ -31,7 +31,7 @@ impl ModifyAct for SimplifiedRepeal {
             // TODO: This should probably be done after we are done with all Repeals
             Self::collate_repealed_paragraphs(act)?;
         }
-        Ok(())
+        Ok(NeedsFullReparse::No)
     }
 }
 

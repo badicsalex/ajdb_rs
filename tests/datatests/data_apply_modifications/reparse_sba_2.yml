@@ -1,0 +1,62 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Létezik a tesztelésről szóló 2042. évi XLV. törvény (a továbbiakban Tv.)."
+        - identifier: "2"
+          body: "Lásd a Tv. 74/A. § (2) bekezdését."
+  - Article:
+      identifier: "2"
+      children:
+        - body: "A Tv. 1. §-a nem lép hatályba."
+modifications:
+  - StructuralBlockAmendment:
+      position:
+        act:
+          year: 2012
+          number: 1
+        structural_element:
+          Article: "1"
+      pure_insertion: false
+      content:
+        - Article:
+            identifier: "1"
+            children:
+              - body: "Létezik a tesztelésről szóló 2069. évi XLV. törvény (a továbbiakban Tv.)."
+children_expected:
+  - Article:
+      identifier: '1'
+      children:
+      - body: Létezik a tesztelésről szóló 2069. évi XLV. törvény (a továbbiakban Tv.).
+        semantic_info:
+          outgoing_references:
+          - start: 34
+            end: 59
+            reference:
+              act:
+                year: 2069
+                number: 45
+          new_abbreviations:
+            Tv.:
+              year: 2069
+              number: 45
+  - Article:
+      identifier: '2'
+      children:
+      - body: A Tv. 1. §-a nem lép hatályba.
+        semantic_info:
+          outgoing_references:
+          - start: 2
+            end: 5
+            reference:
+              act:
+                year: 2069
+                number: 45
+          - start: 6
+            end: 13
+            reference:
+              act:
+                year: 2069
+                number: 45
+              article: '1'
