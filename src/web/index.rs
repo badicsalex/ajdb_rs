@@ -42,7 +42,15 @@ pub async fn render_index() -> Result<Markup, StatusCode> {
                             a href="https://github.com/badicsalex/hun_law_rs" { "hun_law keretrendszerre"}
                             " épülő jogtár (és egyéb) projekt."
                             br;
-                            "Használata csak saját felelősségre."
+                            "Használata csak saját felelősségre (kezelje úgy, mintha az itt lévő adatok 100%-a hibás lenne)."
+                            br;
+                            br;
+                            "Ha kérdése, észrevétele, ötlete van, midnenképpen küldjön egy levelet a"
+                            br;
+                            a href="mailto:info@ajdb.hu" { "info@ajdb.hu" }
+                            " vagy "
+                            a href="mailto:admin@stickman.hu" { "admin@stickman.hu" }
+                            " címre."
                         }
                         h3 { "Fontos elérhető törvények:" }
                         a href="/act/2012-100" .important_act {
