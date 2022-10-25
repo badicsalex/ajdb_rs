@@ -6,6 +6,7 @@ default-run = "ajdb"
 
 [dependencies]
 anyhow = "1.0"
+async-once-cell = "0.4.2"
 axum = "0.5.16"
 axum-extra = { version="0.3.7", features = ["spa"] }
 chrono = { version = "0.4" }
@@ -15,6 +16,7 @@ flate2 = "1.0"
 from_variants = "1.0"
 hun_law = { path = "../hun_law" }
 log = "0.4.14"
+lru = "0.8.1"
 maud = { version = "0.24.0", features = [ "axum" ] }
 multimap = "0.8.3"
 seahash = "4.1"

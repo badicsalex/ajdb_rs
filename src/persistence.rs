@@ -2,7 +2,10 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::any::Any;
+use std::num::NonZeroUsize;
 use std::path::Path;
+use std::sync::Arc;
 use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Result;
@@ -11,9 +14,12 @@ use flate2::write::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
+use crate::cache_backend::CacheBackend;
+
 /// Gzipped JSON-based persistence module
 pub struct Persistence {
     persistence_dir: PathBuf,
+    cache: CacheBackend<PersistenceKey, Arc<dyn Any + Send + Sync>>,
 }
 
 pub type PersistenceKey = String;
@@ -31,6 +37,7 @@ impl Persistence {
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Persistence {
             persistence_dir: path.into(),
+            cache: CacheBackend::new(NonZeroUsize::new(1024).unwrap()),
         }
     }
 
@@ -40,6 +47,7 @@ impl Persistence {
         input_key: KeyType,
         data: &T,
     ) -> Result<PersistenceKey> {
+        // TODO: Use cache
         let the_json = serde_json::to_vec_pretty(data).with_context(|| {
             anyhow!(
                 "Encoding to JSON failed for {:?}, value type={}",
@@ -80,8 +88,8 @@ impl Persistence {
         Ok(key)
     }
 
-    // TODO: Caching, probably the deserialized struct. Or at least the decompressed json.
     pub fn load<T: serde::de::DeserializeOwned>(&self, key: &PersistenceKey) -> Result<T> {
+        // TODO: Use cache
         // TODO: Use readers throughout the body instead of buffers
         let file_path = self.path_for(key);
         let gz_encoded_data = fs::read(file_path)?;
@@ -93,8 +101,29 @@ impl Persistence {
         Ok(serde_json::from_slice(&the_json)?)
     }
 
+    /// Load the data and cache it. Important: the cache is not updated on
+    /// store() calls, by design.
+    pub async fn load_cached<T>(&self, key: &PersistenceKey) -> Result<Arc<T>>
+    where
+        T: serde::de::DeserializeOwned + Send + Sync + Any,
+    {
+        let result = self
+            .cache
+            .get_or_try_init::<anyhow::Error>(key.clone(), async move {
+                let loaded = self.load::<T>(key)?;
+                let the_arc: Arc<dyn Any + Send + Sync> = Arc::new(loaded);
+                Ok(the_arc)
+            })
+            .await?;
+        result
+            .downcast()
+            .map_err(|_| anyhow!("Invalid type in cache at key {key}"))
+    }
+
     pub fn exists(&self, key: &PersistenceKey) -> Result<bool> {
-        Ok(self.path_for(key).exists())
+        // The self.cache.contains() call assumes that files are not
+        // deleted at runtime, because load() may fail in that case.
+        Ok(self.cache.contains(key) || self.path_for(key).exists())
     }
 
     fn path_for(&self, key: &str) -> PathBuf {

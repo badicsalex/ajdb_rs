@@ -3,6 +3,7 @@
 // All rights reserved.
 
 pub mod amender;
+pub mod cache_backend;
 pub mod database;
 pub mod enforcement_date_set;
 pub mod fixups;
