@@ -31,11 +31,13 @@ pretty_assertions = "1"
 similar = { version = "2.2" , features = ["inline"] }
 
 [profile.release]
+strip = true
+lto = "thin"
+
+[profile.dev-fast]
+inherits = "release"
 debug = true
 incremental = true
-
-[profile.dev.package.hun_law]
-#opt-level = 3
 
 [[test]]
 harness = false
