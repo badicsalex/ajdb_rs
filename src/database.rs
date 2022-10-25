@@ -2,7 +2,13 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    any::{type_name, Any},
+    collections::{BTreeMap, BTreeSet},
+    fmt::Display,
+    future::Future,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDate;
@@ -14,38 +20,27 @@ use crate::{
     persistence::{KeyType, Persistence, PersistenceKey},
 };
 
-/// The state of all acts at a specific date.
-pub struct ActSet<'p> {
-    persistence: &'p Persistence,
-    date: NaiveDate,
-    data: ActSetSerialized,
-}
-
 /// The actual data that's stored for the act set.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct ActSetSerialized {
+pub struct ActSetSerialized {
     acts: BTreeMap<String, ActEntrySerialized>,
 }
 
-impl<'p> ActSet<'p> {
-    /// Load act set metadata from persistence.
-    /// This act set can then be mutated, but don't forget to save it afterwards.
-    pub fn load(persistence: &'p Persistence, date: NaiveDate) -> Result<Self> {
-        let key = Self::persistence_key(date);
-        let data = if persistence.exists(&key)? {
-            persistence
-                .load(&key)
-                .with_context(|| anyhow!("Could not load act set with key {}", key))?
-        } else {
-            ActSetSerialized::default()
-        };
-        Ok(Self {
-            persistence,
-            date,
-            data,
-        })
-    }
+/// The state of all acts at a specific date.
+pub type ActSet<'p> = DirectObjectHandle<'p, ActSetSpecifics>;
 
+pub struct ActSetSpecifics;
+
+impl DirectObjectSpecifics for ActSetSpecifics {
+    type Key = NaiveDate;
+    type Data = ActSetSerialized;
+
+    fn persistence_key(key: Self::Key) -> PersistenceKey {
+        key.format("state/%Y/%m/%d").to_string()
+    }
+}
+
+impl<'p> ActSet<'p> {
     /// Copy acts from old_date act set to new_date act set,
     /// overwriting exisitng acts and keeping new ones.
     pub fn copy(
@@ -55,7 +50,9 @@ impl<'p> ActSet<'p> {
     ) -> Result<()> {
         let mut old_data = Self::load(persistence, old_date)?.data;
         let mut new = Self::load(persistence, new_date)?;
-        new.data.acts.append(&mut old_data.acts);
+        Arc::make_mut(&mut new.data)
+            .acts
+            .append(&mut Arc::make_mut(&mut old_data).acts);
         new.save()?;
         Ok(())
     }
@@ -77,7 +74,7 @@ impl<'p> ActSet<'p> {
             Err(anyhow!(
                 "Could not find act {} in the database at date {}",
                 id,
-                self.date
+                self.key
             ))
         }
     }
@@ -109,7 +106,7 @@ impl<'p> ActSet<'p> {
         } else {
             EnforcementDateSet::from_act(&act)?.get_all_dates()
         };
-        self.data.acts.insert(
+        self.data_mut()?.acts.insert(
             Self::act_key(act.identifier),
             ActEntrySerialized {
                 act_key,
@@ -119,21 +116,8 @@ impl<'p> ActSet<'p> {
         self.get_act(act.identifier)
     }
 
-    /// Save the act list itself (acts are already stored at this point)
-    pub fn save(self) -> Result<()> {
-        let key = Self::persistence_key(self.date);
-        self.persistence
-            .store(KeyType::Forced(key.clone()), &self.data)
-            .with_context(|| anyhow!("Could save act set with key {}", key))?;
-        Ok(())
-    }
-
     pub fn is_empty(&self) -> bool {
         self.data.acts.is_empty()
-    }
-
-    fn persistence_key(date: NaiveDate) -> PersistenceKey {
-        date.format("state/%Y/%m/%d").to_string()
     }
 
     fn act_key(id: ActIdentifier) -> String {
@@ -163,9 +147,12 @@ pub struct ActEntry<'a> {
 
 impl<'a> ActEntry<'a> {
     /// Load the act from persistence.
-    // TODO: cache
     pub fn act(&self) -> Result<Act> {
         self.persistence.load(&self.data.act_key)
+    }
+
+    pub fn act_cached(&'a self) -> impl Future<Output = Result<Arc<Act>>> + 'a {
+        self.persistence.load_cached(&self.data.act_key)
     }
 
     // TODO: partial loads for snippet support
@@ -182,52 +169,96 @@ impl<'a> ActEntry<'a> {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-struct ActMetadataSerialized {
+pub struct ActMetadataSerialized {
     /// Contains both modifiactions by others, and enforcement dates
     modification_dates: BTreeSet<NaiveDate>,
 }
 
-pub struct ActMetadata<'a> {
-    persistence: &'a Persistence,
-    act_id: ActIdentifier,
-    data: ActMetadataSerialized,
+pub type ActMetadata<'p> = DirectObjectHandle<'p, ActMetadataSpecifics>;
+
+pub struct ActMetadataSpecifics;
+
+impl DirectObjectSpecifics for ActMetadataSpecifics {
+    type Key = ActIdentifier;
+    type Data = ActMetadataSerialized;
+
+    fn persistence_key(key: Self::Key) -> PersistenceKey {
+        format!("act_metadata/{}/{}", key.year, key.number)
+    }
 }
 
 impl<'p> ActMetadata<'p> {
-    /// Load act metadata from persistence.
-    pub fn load(persistence: &'p Persistence, act_id: ActIdentifier) -> Result<Self> {
-        let key = Self::persistence_key(act_id);
-        let data = if persistence.exists(&key)? {
-            persistence
-                .load(&key)
-                .with_context(|| anyhow!("Could not load act set with key {}", key))?
-        } else {
-            ActMetadataSerialized::default()
-        };
-        Ok(Self {
-            persistence,
-            act_id,
-            data,
-        })
-    }
-
-    pub fn save(self) -> Result<()> {
-        let key = Self::persistence_key(self.act_id);
-        self.persistence
-            .store(KeyType::Forced(key.clone()), &self.data)
-            .with_context(|| anyhow!("Could save act set with key {}", key))?;
+    pub fn add_modification_date(&mut self, date: NaiveDate) -> Result<()> {
+        self.data_mut()?.modification_dates.insert(date);
         Ok(())
-    }
-
-    pub fn add_modification_date(&mut self, date: NaiveDate) {
-        self.data.modification_dates.insert(date);
     }
 
     pub fn modification_dates(&self) -> Vec<NaiveDate> {
         self.data.modification_dates.iter().copied().collect()
     }
+}
 
-    fn persistence_key(act_id: ActIdentifier) -> PersistenceKey {
-        format!("act_metadata/{}/{}", act_id.year, act_id.number)
+pub trait DirectObjectSpecifics {
+    type Key: Display + Copy;
+    type Data: Default + serde::de::DeserializeOwned + serde::Serialize + Send + Sync + Any;
+    fn persistence_key(key: Self::Key) -> PersistenceKey;
+}
+
+pub struct DirectObjectHandle<'p, S: DirectObjectSpecifics> {
+    persistence: &'p Persistence,
+    key: S::Key,
+    data: Arc<S::Data>,
+}
+
+impl<'p, S: DirectObjectSpecifics> DirectObjectHandle<'p, S> {
+    /// Load act set metadata from persistence.
+    /// This act set can then be mutated, but don't forget to save it afterwards.
+    pub fn load(persistence: &'p Persistence, key: S::Key) -> Result<Self> {
+        let persistence_key = S::persistence_key(key);
+        let data = if persistence.exists(&persistence_key)? {
+            persistence
+                .load(&persistence_key)
+                .with_context(|| anyhow!("Could not load {} with key {key}", type_name::<S>()))?
+        } else {
+            Default::default()
+        };
+        Ok(Self {
+            persistence,
+            key,
+            data: Arc::new(data),
+        })
+    }
+
+    /// Load act set metadata from persistence (async, cached edition).
+    pub async fn load_cached(
+        persistence: &'p Persistence,
+        key: S::Key,
+    ) -> Result<DirectObjectHandle<'p, S>> {
+        let persistence_key = S::persistence_key(key);
+        let data = if persistence.exists(&persistence_key)? {
+            persistence
+                .load_cached(&persistence_key)
+                .await
+                .with_context(|| anyhow!("Could not load act set with key {}", persistence_key))?
+        } else {
+            Arc::new(Default::default())
+        };
+        Ok(Self {
+            persistence,
+            key,
+            data,
+        })
+    }
+
+    pub fn save(self) -> Result<()> {
+        let persistence_key = S::persistence_key(self.key);
+        self.persistence
+            .store(KeyType::Forced(persistence_key.clone()), &*self.data)
+            .with_context(|| anyhow!("Could save act set with key {}", persistence_key))?;
+        Ok(())
+    }
+
+    fn data_mut(&mut self) -> Result<&mut S::Data> {
+        Arc::get_mut(&mut self.data).ok_or_else(|| anyhow!("Concurrent write access to Database"))
     }
 }

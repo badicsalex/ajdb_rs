@@ -2,10 +2,13 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use axum::{
     extract::{Path, Query},
     http::StatusCode,
+    Extension,
 };
 use chrono::{Datelike, NaiveDate, Utc};
 use hun_law::{
@@ -144,11 +147,14 @@ impl RenderElement for Article {
     }
 }
 
-fn get_single_act(act_id: ActIdentifier, date: NaiveDate) -> Result<(Act, Vec<NaiveDate>)> {
-    let persistence = Persistence::new("db");
-    let state = ActSet::load(&persistence, date)?;
-    let act = state.get_act(act_id)?.act()?;
-    let act_metadata = ActMetadata::load(&persistence, act_id)?;
+async fn get_single_act(
+    persistence: &Persistence,
+    act_id: ActIdentifier,
+    date: NaiveDate,
+) -> Result<(Arc<Act>, Vec<NaiveDate>)> {
+    let state = ActSet::load_cached(persistence, date).await?;
+    let act = state.get_act(act_id)?.act_cached().await?;
+    let act_metadata = ActMetadata::load_cached(persistence, act_id).await?;
     let modification_dates = act_metadata.modification_dates();
     Ok((act, modification_dates))
 }
@@ -255,12 +261,14 @@ pub struct RenderActParams {
 pub async fn render_act(
     Path(act_id_str): Path<String>,
     params: Query<RenderActParams>,
+    Extension(persistence): Extension<Arc<Persistence>>,
 ) -> Result<Markup, StatusCode> {
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
     let today = Utc::today().naive_utc();
     let date = params.date.unwrap_or(today);
-    let (act, modification_dates) =
-        get_single_act(act_id, date).map_err(|_| StatusCode::NOT_FOUND)?;
+    let (act, modification_dates) = get_single_act(&persistence, act_id, date)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
     let act_render_context = RenderElementContext {
         current_ref: None,
         date: if date == today { None } else { Some(date) },

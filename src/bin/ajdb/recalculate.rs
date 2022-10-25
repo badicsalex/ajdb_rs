@@ -65,7 +65,7 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
     for act_id in modified_acts {
         if state.has_act(act_id) {
             let mut act_metadata = ActMetadata::load(persistence, act_id)?;
-            act_metadata.add_modification_date(date);
+            act_metadata.add_modification_date(date)?;
             act_metadata.save()?;
         }
     }

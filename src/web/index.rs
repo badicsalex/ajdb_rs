@@ -2,16 +2,17 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::sync::Arc;
+
 use anyhow::Result;
-use axum::http::StatusCode;
+use axum::{http::StatusCode, Extension};
 use maud::{html, Markup, DOCTYPE};
 
 use super::util::logged_http_error;
 use crate::{database::ActSet, persistence::Persistence};
 
-fn get_all_acts() -> Result<Vec<String>> {
-    let persistence = Persistence::new("db");
-    let state = ActSet::load(&persistence, "2022-09-30".parse()?)?;
+async fn get_all_acts(persistence: &Persistence) -> Result<Vec<String>> {
+    let state = ActSet::load_cached(persistence, "2022-09-30".parse()?).await?;
     let acts = state.get_acts()?;
     Ok(acts
         .into_iter()
@@ -19,8 +20,12 @@ fn get_all_acts() -> Result<Vec<String>> {
         .collect())
 }
 
-pub async fn render_index() -> Result<Markup, StatusCode> {
-    let acts = get_all_acts().map_err(logged_http_error)?;
+pub async fn render_index(
+    Extension(persistence): Extension<Arc<Persistence>>,
+) -> Result<Markup, StatusCode> {
+    let acts = get_all_acts(&persistence)
+        .await
+        .map_err(logged_http_error)?;
 
     Ok(html!(
         (DOCTYPE)
