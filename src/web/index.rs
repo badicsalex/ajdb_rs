@@ -45,11 +45,8 @@ pub async fn render_index() -> Result<Markup, StatusCode> {
                             "Használata csak saját felelősségre (kezelje úgy, mintha az itt lévő adatok 100%-a hibás lenne)."
                             br;
                             br;
-                            "Ha kérdése, észrevétele, ötlete van, midnenképpen küldjön egy levelet a"
-                            br;
-                            a href="mailto:info@ajdb.hu" { "info@ajdb.hu" }
-                            " vagy "
-                            a href="mailto:admin@stickman.hu" { "admin@stickman.hu" }
+                            "Ha kérdése, észrevétele, ötlete van, mindenképpen küldjön egy levelet az "
+                            a style="font-weight: bold" href="mailto:info@ajdb.hu" { "info@ajdb.hu" }
                             " címre."
                         }
                         h3 { "Fontos elérhető törvények:" }
