@@ -234,7 +234,9 @@ fn document_layout(title: String, toc: Markup, menu: Markup, document_body: Mark
                     .toc { (toc) }
                 }
                 .bottom_right {
-                    .document { (document_body) }
+                    .bottom_right_scrolled {
+                        .document { (document_body) }
+                    }
                 }
             }
         }

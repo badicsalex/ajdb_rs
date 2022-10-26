@@ -35,8 +35,14 @@ body {
 }
 
 .bottom_right {
-    background: #ddd;
     overflow: auto;
+}
+
+.bottom_right_scrolled {
+    height: auto;
+    width: auto;
+    position: relative; /* so that child absolute works */
+    background: #ddd;
     text-align: center;
 }
 
