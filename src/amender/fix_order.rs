@@ -3,7 +3,6 @@
 // All rights reserved.
 
 use hun_law::reference::{
-    builder::{ReferenceBuilder, ReferenceBuilderSetPart},
     structural::{StructuralReference, StructuralReferenceElement},
     Reference,
 };
@@ -71,11 +70,7 @@ fn structural_ref_to_ref_maybe(sr: &StructuralReference) -> Option<Reference> {
         ..
     } = sr
     {
-        ReferenceBuilder::new()
-            .set_part(*act)
-            .set_part(*article_id)
-            .build()
-            .ok()
+        Some((*act, *article_id).into())
     } else {
         None
     }
