@@ -22,7 +22,7 @@ use maud::{html, Markup, PreEscaped};
 use super::util::RenderElementContext;
 use crate::web::{
     act::RenderElement,
-    util::{act_link, anchor_string, logged_http_error},
+    util::{act_link, anchor_string, logged_http_error, snippet_link},
 };
 
 pub trait RenderSAE {
@@ -47,6 +47,14 @@ where
 {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
+        if let Some(snippet_range) = &context.snippet_range {
+            if let Some(current_ref) = &context.current_ref {
+                if !snippet_range.contains(current_ref) && !current_ref.contains(snippet_range) {
+                    // TODO: this may be done more optimally
+                    return Ok(PreEscaped(String::new()));
+                }
+            }
+        }
         Ok(html!(
             .sae_container id=(context.current_anchor_string()) {
                 .sae_identifier { (self.header_string()) }
@@ -226,6 +234,7 @@ fn text_with_semantic_info(
                 text
             )
         })?);
+        let absolute_reference = reference.relative_to(current_reference).unwrap_or_default();
         let href = if let Some(act) = reference.act() {
             format!(
                 "{}#{}",
@@ -233,15 +242,17 @@ fn text_with_semantic_info(
                 anchor_string(reference)
             )
         } else {
-            match reference.relative_to(&current_reference.without_act()) {
-                Ok(r) => format!("#{}", anchor_string(&r)),
-                Err(_) => "#".into(),
-            }
+            format!("#{}", anchor_string(&absolute_reference))
+        };
+        let snippet_attribute = if reference.article().is_some() {
+            let url = snippet_link(&absolute_reference, context.date);
+            format!("data-snippet=\"{url}\"")
+        } else {
+            String::new()
         };
         write!(
             result,
-            "<a href=\"{}\">{}</a>",
-            href,
+            "<a href=\"{href}\" {snippet_attribute}>{}</a>",
             text.get(*start..*end).ok_or_else(|| {
                 anyhow!(
                     "Semantic info index out of bounds: {}..{} for '{}'",

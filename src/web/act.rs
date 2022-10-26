@@ -267,6 +267,7 @@ pub async fn render_existing_act<'a>(
     let modification_dates = act_metadata.modification_dates();
     let act_render_context = RenderElementContext {
         current_ref: None,
+        snippet_range: None,
         date: if date == today { None } else { Some(date) },
     };
     Ok(document_layout(

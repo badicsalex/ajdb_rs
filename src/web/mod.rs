@@ -6,19 +6,21 @@ mod act;
 mod act_toc;
 mod index;
 mod sae;
+mod snippet;
 mod util;
 
 use std::{net::SocketAddr, sync::Arc};
 
 use crate::persistence::Persistence;
 
-use self::{act::render_act, index::render_index};
+use self::{act::render_act, index::render_index, snippet::render_snippet};
 
 pub async fn web_main() {
     let persistence = Persistence::new("db");
     let router = axum::Router::new()
         .route("/", axum::routing::get(render_index))
         .route("/act/:act_id", axum::routing::get(render_act))
+        .route("/snippet/:snippet_ref", axum::routing::get(render_snippet))
         .merge(axum_extra::routing::SpaRouter::new(
             "/static",
             "src/web/static",

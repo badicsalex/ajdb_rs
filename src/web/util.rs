@@ -13,6 +13,7 @@ use hun_law::{
 #[derive(Debug, Clone, Default)]
 pub struct RenderElementContext {
     pub current_ref: Option<Reference>,
+    pub snippet_range: Option<Reference>,
     pub date: Option<NaiveDate>,
 }
 
@@ -25,7 +26,7 @@ impl RenderElementContext {
                         .relative_to(current_ref)
                         .map_err(logged_http_error)?,
                 ),
-                date: self.date,
+                ..self.clone()
             })
         } else {
             Ok(self.clone())
@@ -35,7 +36,7 @@ impl RenderElementContext {
     pub fn set_current_ref(&self, current_ref: Option<Reference>) -> Self {
         Self {
             current_ref,
-            date: self.date,
+            ..self.clone()
         }
     }
 
@@ -61,6 +62,18 @@ pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     format!(
         "/act/{}{}",
         act_id,
+        if let Some(date) = date {
+            format!("?date={}", date)
+        } else {
+            String::new()
+        },
+    )
+}
+
+pub fn snippet_link(r: &Reference, date: Option<NaiveDate>) -> String {
+    format!(
+        "/snippet/{}{}",
+        r.compact_string(),
         if let Some(date) = date {
             format!("?date={}", date)
         } else {
