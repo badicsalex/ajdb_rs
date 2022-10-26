@@ -11,11 +11,15 @@ use axum::{
     Extension,
 };
 use chrono::{NaiveDate, Utc};
-use hun_law::{reference::Reference, util::compact_string::CompactString};
-use maud::Markup;
+use hun_law::{
+    identifier::range::{IdentifierRange, IdentifierRangeFrom},
+    reference::Reference,
+    util::compact_string::CompactString,
+};
+use maud::{Markup, PreEscaped};
 use serde::Deserialize;
 
-use super::util::RenderElementContext;
+use super::{act::RenderElement, util::RenderElementContext};
 use crate::{database::ActSet, persistence::Persistence, web::sae::RenderSAE};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -44,13 +48,41 @@ pub async fn render_snippet(
         .act_cached()
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
-    let article = act
-        .article(article_range.first_in_range())
-        .ok_or(StatusCode::NOT_FOUND)?;
 
-    article.children.render(&RenderElementContext {
-        current_ref: Some((act_id, article_range).into()),
-        snippet_range: Some(reference),
-        date: if date == today { None } else { Some(date) },
-    })
+    let result = if article_range.is_range() {
+        let rendered_articles = act
+            .articles()
+            .filter(|article| article_range.contains(article.identifier))
+            .map(|article| {
+                article
+                    .render(
+                        &RenderElementContext {
+                            current_ref: Some(
+                                (act_id, IdentifierRange::from_single(article.identifier)).into(),
+                            ),
+                            snippet_range: Some(reference.clone()),
+                            date: if date == today { None } else { Some(date) },
+                        },
+                        None,
+                    )
+                    .map(|r| r.0)
+            })
+            .collect::<Result<String, StatusCode>>()?;
+        PreEscaped(rendered_articles)
+    } else {
+        let article = act
+            .article(article_range.first_in_range())
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        article.children.render(&RenderElementContext {
+            current_ref: Some((act_id, IdentifierRange::from_single(article.identifier)).into()),
+            snippet_range: Some(reference),
+            date: if date == today { None } else { Some(date) },
+        })?
+    };
+    if result.0.is_empty() {
+        Err(StatusCode::NOT_FOUND)
+    } else {
+        Ok(result)
+    }
 }
