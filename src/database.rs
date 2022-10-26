@@ -152,7 +152,7 @@ impl<'a> ActEntry<'a> {
     }
 
     pub fn act_cached(&'a self) -> impl Future<Output = Result<Arc<Act>>> + 'a {
-        self.persistence.load_cached(&self.data.act_key)
+        self.persistence.load_async(&self.data.act_key)
     }
 
     // TODO: partial loads for snippet support
@@ -200,10 +200,11 @@ impl<'p> ActMetadata<'p> {
 
 pub trait DirectObjectSpecifics {
     type Key: Display + Copy;
-    type Data: Default + serde::de::DeserializeOwned + serde::Serialize + Send + Sync + Any;
+    type Data: Default + serde::de::DeserializeOwned + serde::Serialize + Send + Sync + Any + Clone;
     fn persistence_key(key: Self::Key) -> PersistenceKey;
 }
 
+#[derive(Debug, Clone)]
 pub struct DirectObjectHandle<'p, S: DirectObjectSpecifics> {
     persistence: &'p Persistence,
     key: S::Key,
@@ -230,14 +231,14 @@ impl<'p, S: DirectObjectSpecifics> DirectObjectHandle<'p, S> {
     }
 
     /// Load act set metadata from persistence (async, cached edition).
-    pub async fn load_cached(
+    pub async fn load_async(
         persistence: &'p Persistence,
         key: S::Key,
     ) -> Result<DirectObjectHandle<'p, S>> {
         let persistence_key = S::persistence_key(key);
         let data = if persistence.exists(&persistence_key)? {
             persistence
-                .load_cached(&persistence_key)
+                .load_async(&persistence_key)
                 .await
                 .with_context(|| anyhow!("Could not load act set with key {}", persistence_key))?
         } else {

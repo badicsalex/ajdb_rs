@@ -22,6 +22,14 @@ pub struct Persistence {
     cache: CacheBackend<PersistenceKey, Arc<dyn Any + Send + Sync>>,
 }
 
+impl std::fmt::Debug for Persistence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Persistence")
+            .field("persistence_dir", &self.persistence_dir)
+            .finish()
+    }
+}
+
 pub type PersistenceKey = String;
 
 #[derive(Debug)]
@@ -42,12 +50,10 @@ impl Persistence {
     }
 
     /// Atomically store data at key. Reentrant, but order between concurrent saves is not guaranteed.
-    pub fn store<T: serde::Serialize>(
-        &self,
-        input_key: KeyType,
-        data: &T,
-    ) -> Result<PersistenceKey> {
-        // TODO: Use cache
+    pub fn store<T>(&self, input_key: KeyType, data: &T) -> Result<PersistenceKey>
+    where
+        T: serde::Serialize + Clone + Send + Sync + Any,
+    {
         let the_json = serde_json::to_vec_pretty(data).with_context(|| {
             anyhow!(
                 "Encoding to JSON failed for {:?}, value type={}",
@@ -60,6 +66,9 @@ impl Persistence {
             KeyType::Forced(key) => key.clone(),
             KeyType::Calculated(prefix) => Self::compute_key(prefix, &the_json),
         };
+
+        self.cache.set(key.clone(), Arc::new(data.clone()));
+
         let file_path = self.path_for(&key);
 
         if matches!(input_key, KeyType::Calculated(_)) && file_path.exists() {
@@ -88,8 +97,10 @@ impl Persistence {
         Ok(key)
     }
 
-    pub fn load<T: serde::de::DeserializeOwned>(&self, key: &PersistenceKey) -> Result<T> {
-        // TODO: Use cache
+    fn load_from_disk<T>(&self, key: &PersistenceKey) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         // TODO: Use readers throughout the body instead of buffers
         let file_path = self.path_for(key);
         let gz_encoded_data = fs::read(file_path)?;
@@ -101,16 +112,27 @@ impl Persistence {
         Ok(serde_json::from_slice(&the_json)?)
     }
 
-    /// Load the data and cache it. Important: the cache is not updated on
-    /// store() calls, by design.
-    pub async fn load_cached<T>(&self, key: &PersistenceKey) -> Result<Arc<T>>
+    pub fn load<T>(&self, key: &PersistenceKey) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Clone + Send + Sync + 'static,
+    {
+        if let Some(result) = self.cache.get(key) {
+            if let Ok(result) = result.downcast::<T>() {
+                return Ok((*result).clone());
+            }
+        }
+        self.load_from_disk(key)
+    }
+
+    /// The efficient version of load()
+    pub async fn load_async<T>(&self, key: &PersistenceKey) -> Result<Arc<T>>
     where
         T: serde::de::DeserializeOwned + Send + Sync + Any,
     {
         let result = self
             .cache
             .get_or_try_init::<anyhow::Error>(key.clone(), async move {
-                let loaded = self.load::<T>(key)?;
+                let loaded = self.load_from_disk::<T>(key)?;
                 let the_arc: Arc<dyn Any + Send + Sync> = Arc::new(loaded);
                 Ok(the_arc)
             })
@@ -121,8 +143,6 @@ impl Persistence {
     }
 
     pub fn exists(&self, key: &PersistenceKey) -> Result<bool> {
-        // The self.cache.contains() call assumes that files are not
-        // deleted at runtime, because load() may fail in that case.
         Ok(self.cache.contains(key) || self.path_for(key).exists())
     }
 

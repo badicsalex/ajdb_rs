@@ -12,7 +12,7 @@ use super::util::logged_http_error;
 use crate::{database::ActSet, persistence::Persistence};
 
 async fn get_all_acts(persistence: &Persistence) -> Result<Vec<String>> {
-    let state = ActSet::load_cached(persistence, "2022-09-30".parse()?).await?;
+    let state = ActSet::load_async(persistence, "2022-09-30".parse()?).await?;
     let acts = state.get_acts()?;
     Ok(acts
         .into_iter()

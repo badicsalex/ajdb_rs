@@ -152,9 +152,9 @@ async fn get_single_act(
     act_id: ActIdentifier,
     date: NaiveDate,
 ) -> Result<(Arc<Act>, Vec<NaiveDate>)> {
-    let state = ActSet::load_cached(persistence, date).await?;
+    let state = ActSet::load_async(persistence, date).await?;
     let act = state.get_act(act_id)?.act_cached().await?;
-    let act_metadata = ActMetadata::load_cached(persistence, act_id).await?;
+    let act_metadata = ActMetadata::load_async(persistence, act_id).await?;
     let modification_dates = act_metadata.modification_dates();
     Ok((act, modification_dates))
 }

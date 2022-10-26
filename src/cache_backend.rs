@@ -84,6 +84,22 @@ impl<K: Hash + Eq, T: Clone> CacheBackend<K, T> {
             .contains(k)
     }
 
+    pub fn get(&self, k: &K) -> Option<T> {
+        self.data
+            .lock()
+            .expect("Cache lock was poisoned")
+            .get(k)
+            .and_then(|v| v.get())
+            .cloned()
+    }
+
+    pub fn set(&self, k: K, v: T) {
+        self.data
+            .lock()
+            .expect("Cache lock was poisoned")
+            .put(k, Arc::new(OnceCell::new_with(Some(v))));
+    }
+
     // TODO: Synchronous get() and set()
 }
 
