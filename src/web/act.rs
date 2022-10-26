@@ -147,18 +147,6 @@ impl RenderElement for Article {
     }
 }
 
-async fn get_single_act(
-    persistence: &Persistence,
-    act_id: ActIdentifier,
-    date: NaiveDate,
-) -> Result<(Arc<Act>, Vec<NaiveDate>)> {
-    let state = ActSet::load_async(persistence, date).await?;
-    let act = state.get_act(act_id)?.act_cached().await?;
-    let act_metadata = ActMetadata::load_async(persistence, act_id).await?;
-    let modification_dates = act_metadata.modification_dates();
-    Ok((act, modification_dates))
-}
-
 fn render_act_menu(
     act_id: ActIdentifier,
     date: NaiveDate,
@@ -258,17 +246,23 @@ pub struct RenderActParams {
     date: Option<NaiveDate>,
 }
 
-pub async fn render_act(
-    Path(act_id_str): Path<String>,
-    params: Query<RenderActParams>,
-    Extension(persistence): Extension<Arc<Persistence>>,
+pub async fn render_existing_act<'a>(
+    act_id: ActIdentifier,
+    date: NaiveDate,
+    state: &'a ActSet<'a>,
+    persistence: &'a Persistence,
 ) -> Result<Markup, StatusCode> {
-    let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
     let today = Utc::today().naive_utc();
-    let date = params.date.unwrap_or(today);
-    let (act, modification_dates) = get_single_act(&persistence, act_id, date)
+    let act = state
+        .get_act(act_id)
+        .map_err(|_| StatusCode::NOT_FOUND)?
+        .act_cached()
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
+    let act_metadata = ActMetadata::load_async(persistence, act_id)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+    let modification_dates = act_metadata.modification_dates();
     let act_render_context = RenderElementContext {
         current_ref: None,
         date: if date == today { None } else { Some(date) },
@@ -284,4 +278,45 @@ pub async fn render_act(
         ),
         act.render(&act_render_context, None)?,
     ))
+}
+
+pub fn render_nonexistent_act(act_id: ActIdentifier) -> Result<Markup, StatusCode> {
+    let njt_link = format!(
+        "https://njt.hu/jogszabaly/{}-{}-00-00",
+        act_id.year, act_id.number
+    );
+    Ok(document_layout(
+        act_id.to_string(),
+        PreEscaped(String::new()),
+        html!(
+            .menu_act_title { ( act_id.to_string() ) }
+        ),
+        html!(
+            .not_found {
+                "A " ( act_id.to_string() ) " még nincs felvéve az adatbázisba."
+                br;
+                br;
+                a href=(njt_link) { "Ezen a linken" }
+                " elérheti a Nemzeti Jogtáron található verziót"
+            }
+        ),
+    ))
+}
+
+pub async fn render_act(
+    Path(act_id_str): Path<String>,
+    params: Query<RenderActParams>,
+    Extension(persistence): Extension<Arc<Persistence>>,
+) -> Result<Markup, StatusCode> {
+    let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
+    let today = Utc::today().naive_utc();
+    let date = params.date.unwrap_or(today);
+    let state = ActSet::load_async(&*persistence, date)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+    if state.has_act(act_id) {
+        render_existing_act(act_id, date, &state, &*persistence).await
+    } else {
+        render_nonexistent_act(act_id)
+    }
 }

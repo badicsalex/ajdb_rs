@@ -215,6 +215,12 @@ blockquote {
     font-size: 10pt;
 }
 
+.not_found {
+    width: 750px;
+    font-size: 16pt;
+    text-align: left;
+}
+
 :target {
    background-color: #ffffc0;
 }
