@@ -244,7 +244,13 @@ fn text_with_semantic_info(
         } else {
             format!("#{}", anchor_string(&absolute_reference))
         };
-        let snippet_attribute = if reference.article().is_some() {
+        let snippet_attribute = if reference.article().is_some()
+            || context
+                .snippet_range
+                .as_ref()
+                .map(|sr| !sr.contains(&absolute_reference))
+                .unwrap_or(false)
+        {
             let url = snippet_link(&absolute_reference, context.date);
             format!("data-snippet=\"{url}\"")
         } else {
