@@ -6,13 +6,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use axum::{http::StatusCode, Extension};
+use chrono::Utc;
 use maud::{html, Markup, DOCTYPE};
 
 use super::util::logged_http_error;
 use crate::{database::ActSet, persistence::Persistence};
 
 async fn get_all_acts(persistence: &Persistence) -> Result<Vec<String>> {
-    let state = ActSet::load_async(persistence, "2022-09-30".parse()?).await?;
+    let today = Utc::today().naive_utc();
+    let state = ActSet::load_async(persistence, today).await?;
     let acts = state.get_acts()?;
     Ok(acts
         .into_iter()
