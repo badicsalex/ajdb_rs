@@ -218,6 +218,7 @@ fn document_layout(title: String, toc: Markup, menu: Markup, document_body: Mark
                 link rel="stylesheet" href="/static/style_common.css";
                 link rel="stylesheet" href="/static/style_app.css";
                 link rel="icon" href="/static/favicon.png";
+                script type="text/javascript" src="/static/jquery-3.6.1.js" {}
                 script type="text/javascript" src="/static/scripts_app.js" {}
             }
             body {
