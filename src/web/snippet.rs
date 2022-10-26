@@ -13,7 +13,7 @@ use axum::{
 use chrono::{NaiveDate, Utc};
 use hun_law::{
     identifier::range::{IdentifierRange, IdentifierRangeFrom},
-    reference::Reference,
+    reference::{parts::AnyReferencePart, Reference},
     util::compact_string::CompactString,
 };
 use maud::{Markup, PreEscaped};
@@ -49,7 +49,9 @@ pub async fn render_snippet(
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
-    let result = if article_range.is_range() {
+    let result = if article_range.is_range()
+        || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
+    {
         let rendered_articles = act
             .articles()
             .filter(|article| article_range.contains(article.identifier))
