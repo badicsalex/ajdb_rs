@@ -114,7 +114,7 @@ function set_up_hash_change_scrolling() {
 
 function toggle_on(event, element_id) {
     // TODO: JQuerify
-    e = document.getElementById(element_id);
+    var e = document.getElementById(element_id);
     e.classList.toggle("show_temporarily");
     event.stopPropagation();
 }

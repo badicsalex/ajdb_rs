@@ -102,6 +102,7 @@ body {
     box-shadow: 2px 2px 5px #888888;
     max-height: 400px;
     overflow: auto;
+    z-index: 1;
 }
 
 .date_dropdown_content a{
