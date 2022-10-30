@@ -17,7 +17,7 @@ function snippet_hover_new($snippeted_link, $parent){
     $snippet_container.html("Előnézet betöltése...")
     $snippet_container.load(url, function( response, status, xhr ) {
         if ( status == "error" ) {
-            $snippet_container.html("Nem elérhető előnézet.")
+            $snippet_container.html("Előnézet nem elérhető.")
         } else {
             add_snippet_handlers($snippet_container);
         }
