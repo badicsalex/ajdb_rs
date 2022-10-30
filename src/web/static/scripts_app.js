@@ -2,17 +2,21 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 'use strict';
-function snippet_hover_new($snippeted_link, $parent){
+function snippet_hover_new(event, $snippeted_link, $parent){
     var url = $snippeted_link.data('snippet');
     var $snippet_container = $('<div class="snippet_container">Előnézet betöltése...</div>');
 
     var offset = $snippeted_link.offset();
     var pane_offset = $('.bottom_right_scrolled').offset()
     offset.left -= pane_offset.left;
-    offset.top -= pane_offset.top;
     offset.left -= 50;
-    offset.top += $snippeted_link.height();
     var right_border = $('.bottom_right_scrolled').width() - 20;
+
+    if ($snippeted_link.height() > 70) {
+        offset.top = event.pageY - pane_offset.top + 25;
+    } else {
+        offset.top = offset.top - pane_offset.top + $snippeted_link.height();
+    }
 
     $snippet_container.html("Előnézet betöltése...")
     $snippet_container.load(url, function( response, status, xhr ) {
@@ -81,10 +85,10 @@ function add_snippet_handlers($parent) {
     $parent.find("[data-snippet]").each(function() {
         var $snippeted_link = $(this)
         $snippeted_link.hover(
-            function(){
+            function(event){
                 var tooltipTimeout=setTimeout(function(){
                     $parent.data('tooltip-timeout', null);
-                    snippet_hover_new($snippeted_link, $parent);
+                    snippet_hover_new(event, $snippeted_link, $parent);
                 }, 500);
                 $parent.data('tooltip-timeout', tooltipTimeout);
             },
