@@ -62,8 +62,8 @@ impl AppliableModificationSet {
         for modification in &modifications {
             let result = modification.apply(act).with_context(|| {
                 format!(
-                    "Error applying single amendment to {} (source: {:?})",
-                    act.identifier, modification.source
+                    "Error applying single amendment to {} (cause: {:?})",
+                    act.identifier, modification.cause
                 )
             });
             match result {
@@ -151,7 +151,7 @@ trait AffectedAct {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AppliableModification {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub source: Option<Reference>,
+    pub cause: Option<Reference>,
     pub modification: AppliableModificationType,
 }
 

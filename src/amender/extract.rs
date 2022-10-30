@@ -119,7 +119,7 @@ fn get_modifications_for_block_amendment(
                 content: ba_content.children.clone(),
             }
             .into(),
-            source: Some(paragraph_ref),
+            cause: Some(paragraph_ref),
         })
     } else {
         bail!(
@@ -145,7 +145,7 @@ fn get_modifications_for_structural_block_amendment(
                     content: ba_content.into(),
                 }
                 .into(),
-                source: Some(paragraph_ref),
+                cause: Some(paragraph_ref),
             })
         }
         _ => bail!(
@@ -189,7 +189,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                 };
             }
             for fixup in self.fixups {
-                if fixup.source.as_ref().map_or(false, |s| s == position) {
+                if fixup.cause.as_ref().map_or(false, |s| s == position) {
                     self.result.push(fixup.clone());
                 }
             }
@@ -218,14 +218,14 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
 }
 
 impl<'a> ModificationAccumulator<'a> {
-    fn add(&mut self, modification: AppliableModificationType, source: &Reference) {
+    fn add(&mut self, modification: AppliableModificationType, cause: &Reference) {
         self.result.push(AppliableModification {
-            source: Some(source.clone()),
+            cause: Some(cause.clone()),
             modification,
         })
     }
 
-    fn handle_repeal(&mut self, repeal: &Repeal, source: &Reference) {
+    fn handle_repeal(&mut self, repeal: &Repeal, cause: &Reference) {
         for position in &repeal.positions {
             if repeal.texts.is_empty() {
                 self.add(
@@ -233,7 +233,7 @@ impl<'a> ModificationAccumulator<'a> {
                         position: position.clone(),
                     }
                     .into(),
-                    source,
+                    cause,
                 )
             } else {
                 for text in &repeal.texts {
@@ -246,13 +246,13 @@ impl<'a> ModificationAccumulator<'a> {
                             },
                         }
                         .into(),
-                        source,
+                        cause,
                     )
                 }
             }
         }
     }
-    fn handle_text_amendment(&mut self, text_amendment: &TextAmendment, source: &Reference) {
+    fn handle_text_amendment(&mut self, text_amendment: &TextAmendment, cause: &Reference) {
         for position in &text_amendment.positions {
             for replacement in &text_amendment.replacements {
                 self.add(
@@ -261,7 +261,7 @@ impl<'a> ModificationAccumulator<'a> {
                         replacement: replacement.clone(),
                     }
                     .into(),
-                    source,
+                    cause,
                 )
             }
         }
@@ -269,7 +269,7 @@ impl<'a> ModificationAccumulator<'a> {
     fn handle_structural_repeal(
         &mut self,
         structural_repeal: &StructuralRepeal,
-        source: &Reference,
+        cause: &Reference,
     ) {
         self.add(
             StructuralBlockAmendmentWithContent {
@@ -278,7 +278,7 @@ impl<'a> ModificationAccumulator<'a> {
                 content: Vec::new(),
             }
             .into(),
-            source,
+            cause,
         )
     }
 }

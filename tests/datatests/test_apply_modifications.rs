@@ -41,7 +41,7 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
         .modifications
         .into_iter()
         .map(|modification| AppliableModification {
-            source: None,
+            cause: None,
             modification,
         })
         .collect();

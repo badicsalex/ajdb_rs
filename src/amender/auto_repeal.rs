@@ -51,7 +51,7 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         };
 
         for fixup in self.fixups {
-            if fixup.source.as_ref().map_or(false, |s| s == position) {
+            if fixup.cause.as_ref().map_or(false, |s| s == position) {
                 add_it = true;
             }
         }
@@ -86,7 +86,7 @@ impl<'a> AutoRepealAccumulator<'a> {
                         position: p.relative_to(act_ref)?,
                     }
                     .into(),
-                    source: None,
+                    cause: None,
                 })
             })
             .collect::<Result<Vec<_>>>()

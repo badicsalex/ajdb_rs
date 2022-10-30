@@ -1,6 +1,6 @@
 2012-01-02:
   2013. évi V. törvény:
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -25,7 +25,7 @@
               body: Az átváltoztatható ...
             - identifier: '3'
               body: Az (1) bekezdés ...
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -42,7 +42,7 @@
           Paragraph:
           - identifier: '4'
             body: Nice.
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -66,7 +66,7 @@
                   body: something
                 - identifier: b
                   body: something else
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1

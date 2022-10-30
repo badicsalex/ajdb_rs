@@ -1,6 +1,6 @@
 2012-01-02:
   2003. évi I. törvény:
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -14,7 +14,7 @@
             number: 1
           article: '1'
           paragraph: '1'
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -28,7 +28,7 @@
             number: 1
           article: '1'
           paragraph: '3'
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -42,7 +42,7 @@
             number: 1
           article: '3'
           paragraph: '1'
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
@@ -87,7 +87,7 @@
           point: d
 2012-02-01:
   2003. évi I. törvény:
-  - source:
+  - cause:
       act:
         year: 2012
         number: 1
