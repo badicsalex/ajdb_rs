@@ -39,7 +39,7 @@ pub async fn render_snippet(
 
     let today = Utc::today().naive_utc();
     let date = params.date.unwrap_or(today);
-    let state = ActSet::load_async(&*persistence, date)
+    let state = ActSet::load_async(&persistence, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let act = state

@@ -315,11 +315,11 @@ pub async fn render_act(
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
     let today = Utc::today().naive_utc();
     let date = params.date.unwrap_or(today);
-    let state = ActSet::load_async(&*persistence, date)
+    let state = ActSet::load_async(&persistence, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     if state.has_act(act_id) {
-        render_existing_act(act_id, date, &state, &*persistence).await
+        render_existing_act(act_id, date, &state, &persistence).await
     } else {
         render_nonexistent_act(act_id)
     }
