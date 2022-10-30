@@ -276,10 +276,6 @@ blockquote {
     margin-bottom: 0.5em;
 }
 
-.previous_state_label {
-    margin-bottom: 1em;
-}
-
 :target {
    background-color: #ffffc0;
 }

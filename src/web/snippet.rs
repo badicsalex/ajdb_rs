@@ -135,7 +135,9 @@ pub async fn render_snippet(
                     "."
                 }
                 .previous_state_label {"Korábbi állapot:"}
-                (result)
+                .blockamendment_container {
+                    (result)
+                }
             ))
         }
     } else if result.0.is_empty() {
