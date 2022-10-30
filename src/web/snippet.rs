@@ -113,8 +113,8 @@ pub async fn render_snippet(
     if let Some(change_cause) = &params.change_cause {
         let cause_ref =
             Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
-        let link =
-            link_to_reference(&cause_ref, date, None, true, true).map_err(logged_http_error)?;
+        let link = link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true, true)
+            .map_err(logged_http_error)?;
         if result.0.is_empty() {
             Ok(html!(
                 .modified_by {
