@@ -64,6 +64,7 @@ pub async fn render_snippet(
                             ),
                             snippet_range: Some(reference.clone()),
                             date: if date == today { None } else { Some(date) },
+                            force_absolute_urls: true,
                         },
                         None,
                     )
@@ -80,6 +81,7 @@ pub async fn render_snippet(
             current_ref: Some((act_id, IdentifierRange::from_single(article.identifier)).into()),
             snippet_range: Some(reference),
             date: if date == today { None } else { Some(date) },
+            force_absolute_urls: true,
         })?
     };
     if result.0.is_empty() {

@@ -235,10 +235,15 @@ fn text_with_semantic_info(
             )
         })?);
         let absolute_reference = reference.relative_to(current_reference).unwrap_or_default();
-        let href = if let Some(act) = reference.act() {
+        let href = if reference.act().is_some() || context.force_absolute_urls {
             format!(
                 "{}#{}",
-                act_link(act, context.date),
+                act_link(
+                    absolute_reference
+                        .act()
+                        .ok_or_else(|| anyhow!("No act in absolute refrence"))?,
+                    context.date
+                ),
                 anchor_string(reference)
             )
         } else {

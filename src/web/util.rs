@@ -15,6 +15,7 @@ pub struct RenderElementContext {
     pub current_ref: Option<Reference>,
     pub snippet_range: Option<Reference>,
     pub date: Option<NaiveDate>,
+    pub force_absolute_urls: bool,
 }
 
 impl RenderElementContext {
