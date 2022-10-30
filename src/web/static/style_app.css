@@ -199,6 +199,11 @@ blockquote {
 .article_container, .sae_container {
     width: 100%
 }
+
+.sae_container {
+    /* to anchor inner position: absolute elements */
+    position: relative;
+}
 .sae_identifier {
     min-height: 1.5em;
 }
@@ -236,6 +241,32 @@ blockquote {
     padding: 10px;
     text-align: justify;
     box-shadow: 2px 2px 10px #888888;
+}
+
+.past_change_container {
+    display: inline-block;
+    position: absolute;
+    top: 3px;
+    left: -25px;
+    height: calc(100% - 6px);
+    width: 15px;
+    text-align: center;
+}
+
+.past_change_marker {
+    display: inline-block;
+    height: 100%;
+    width: 3px;
+    background: indigo;
+}
+
+.modified_by {
+    font-style: italic;
+    margin-bottom: 0.5em;
+}
+
+.previous_state_label {
+    margin-bottom: 1em;
 }
 
 :target {

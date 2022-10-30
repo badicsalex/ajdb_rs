@@ -7,14 +7,17 @@ use chrono::NaiveDate;
 use hun_law::{
     identifier::ActIdentifier,
     reference::{to_element::ReferenceToElement, Reference},
+    structure::LastChange,
     util::compact_string::CompactString,
 };
+use maud::{html, Markup};
 
 #[derive(Debug, Clone, Default)]
 pub struct RenderElementContext {
     pub current_ref: Option<Reference>,
     pub snippet_range: Option<Reference>,
     pub date: Option<NaiveDate>,
+    pub show_changes: bool,
     pub force_absolute_urls: bool,
 }
 
@@ -81,4 +84,54 @@ pub fn snippet_link(r: &Reference, date: Option<NaiveDate>) -> String {
             String::new()
         },
     )
+}
+
+pub fn change_snippet_link(r: &Reference, change: &LastChange) -> String {
+    format!(
+        "/snippet/{}?date={}&change_cause={}",
+        r.compact_string(),
+        change.date.pred(),
+        if let Some(cause) = &change.cause {
+            cause.compact_string().to_string()
+        } else {
+            String::new()
+        },
+    )
+}
+
+pub fn link_to_reference(
+    reference: &Reference,
+    date: Option<NaiveDate>,
+    text: Option<&str>,
+    absolute_url: bool,
+    snippet: bool,
+) -> anyhow::Result<Markup> {
+    let href = if absolute_url {
+        format!(
+            "{}#{}",
+            act_link(
+                reference
+                    .act()
+                    .ok_or_else(|| anyhow::anyhow!("No act in absolute refrence"))?,
+                date
+            ),
+            anchor_string(reference)
+        )
+    } else {
+        format!("#{}", anchor_string(reference))
+    };
+    let snippet_attribute = if snippet {
+        Some(snippet_link(reference, date))
+    } else {
+        None
+    };
+    Ok(html!(
+        a href=(href) data-snippet=[snippet_attribute] {
+            @if let Some(text) = text {
+                (text)
+            } @else {
+                (maud::display(reference))
+            }
+        }
+    ))
 }

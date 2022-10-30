@@ -2,8 +2,6 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use std::fmt::Write;
-
 use anyhow::{anyhow, ensure, Context, Result};
 use axum::http::StatusCode;
 use hun_law::{
@@ -19,10 +17,10 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
-use super::util::RenderElementContext;
+use super::util::{change_snippet_link, RenderElementContext};
 use crate::web::{
     act::RenderElement,
-    util::{act_link, anchor_string, logged_http_error, snippet_link},
+    util::{act_link, anchor_string, link_to_reference, logged_http_error},
 };
 
 pub trait RenderSAE {
@@ -80,9 +78,33 @@ where
                         }
                     }
                 }
+                ( render_changes_markers(&context, self).unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }
+}
+
+fn render_changes_markers<IT: IdentifierCommon, CT: ChildrenCommon>(
+    context: &RenderElementContext,
+    element: &SubArticleElement<IT, CT>,
+) -> Option<Markup> {
+    if !context.show_changes {
+        return None;
+    }
+    let last_change = element.last_change.as_ref()?;
+    let current_ref = context.current_ref.as_ref()?;
+    let change_snippet = change_snippet_link(current_ref, last_change);
+    let change_url = format!(
+        "{}#{}",
+        act_link(current_ref.act()?, Some(last_change.date.pred())),
+        anchor_string(current_ref)
+    );
+
+    Some(html!(
+        a .past_change_container href=(change_url) data-snippet=(change_snippet) {
+            .past_change_marker {}
+        }
+    ))
 }
 
 impl RenderSAE for QuotedBlock {
@@ -235,44 +257,27 @@ fn text_with_semantic_info(
             )
         })?);
         let absolute_reference = reference.relative_to(current_reference).unwrap_or_default();
-        let href = if reference.act().is_some() || context.force_absolute_urls {
-            format!(
-                "{}#{}",
-                act_link(
-                    absolute_reference
-                        .act()
-                        .ok_or_else(|| anyhow!("No act in absolute refrence"))?,
-                    context.date
-                ),
-                anchor_string(reference)
-            )
-        } else {
-            format!("#{}", anchor_string(&absolute_reference))
-        };
-        let snippet_attribute = if reference.article().is_some()
+        let snippet_attribute = reference.article().is_some()
             || context
                 .snippet_range
                 .as_ref()
                 .map(|sr| !sr.contains(&absolute_reference))
-                .unwrap_or(false)
-        {
-            let url = snippet_link(&absolute_reference, context.date);
-            format!("data-snippet=\"{url}\"")
-        } else {
-            String::new()
-        };
-        write!(
-            result,
-            "<a href=\"{href}\" {snippet_attribute}>{}</a>",
-            text.get(*start..*end).ok_or_else(|| {
+                .unwrap_or(false);
+        let link = link_to_reference(
+            &absolute_reference,
+            context.date,
+            Some(text.get(*start..*end).ok_or_else(|| {
                 anyhow!(
                     "Semantic info index out of bounds: {}..{} for '{}'",
                     prev_end,
                     start,
                     text
                 )
-            })?
+            })?),
+            reference.act().is_some() || context.force_absolute_urls,
+            snippet_attribute,
         )?;
+        result.push_str(&link.0);
         prev_end = *end
     }
     result.push_str(&text[prev_end..]);

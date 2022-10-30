@@ -270,6 +270,7 @@ pub async fn render_existing_act<'a>(
         current_ref: None,
         snippet_range: None,
         date: if date == today { None } else { Some(date) },
+        show_changes: true,
         force_absolute_urls: false,
     };
     Ok(document_layout(

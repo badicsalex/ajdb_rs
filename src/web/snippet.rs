@@ -16,15 +16,19 @@ use hun_law::{
     reference::{parts::AnyReferencePart, Reference},
     util::compact_string::CompactString,
 };
-use maud::{Markup, PreEscaped};
+use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 
-use super::{act::RenderElement, util::RenderElementContext};
+use super::{
+    act::RenderElement,
+    util::{link_to_reference, logged_http_error, RenderElementContext},
+};
 use crate::{database::ActSet, persistence::Persistence, web::sae::RenderSAE};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenderSnippetParams {
     date: Option<NaiveDate>,
+    change_cause: Option<String>,
 }
 
 pub async fn render_snippet(
@@ -38,8 +42,12 @@ pub async fn render_snippet(
     let article_range = reference.article().ok_or(StatusCode::NOT_FOUND)?;
 
     let today = Utc::today().naive_utc();
-    let date = params.date.unwrap_or(today);
-    let state = ActSet::load_async(&persistence, date)
+    let date = if params.date == Some(today) {
+        None
+    } else {
+        params.date
+    };
+    let state = ActSet::load_async(&persistence, date.unwrap_or(today))
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let act = state
@@ -63,7 +71,8 @@ pub async fn render_snippet(
                                 (act_id, IdentifierRange::from_single(article.identifier)).into(),
                             ),
                             snippet_range: Some(reference.clone()),
-                            date: if date == today { None } else { Some(date) },
+                            date,
+                            show_changes: false,
                             force_absolute_urls: true,
                         },
                         None,
@@ -80,11 +89,40 @@ pub async fn render_snippet(
         article.children.render(&RenderElementContext {
             current_ref: Some((act_id, IdentifierRange::from_single(article.identifier)).into()),
             snippet_range: Some(reference),
-            date: if date == today { None } else { Some(date) },
+            date,
+            show_changes: false,
             force_absolute_urls: true,
         })?
     };
-    if result.0.is_empty() {
+    if let Some(change_cause) = &params.change_cause {
+        let cause_ref =
+            Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
+        let link =
+            link_to_reference(&cause_ref, date, None, true, true).map_err(logged_http_error)?;
+        if result.0.is_empty() {
+            Ok(html!(
+                .modified_by {
+                    "Beillesztette "
+                    ( date.unwrap_or(today).succ().format("%Y. %m. %d-n").to_string() )
+                    " a "
+                    ( link )
+                    "."
+                }
+            ))
+        } else {
+            Ok(html!(
+                .modified_by {
+                    "Módosíttotta "
+                    ( date.unwrap_or(today).succ().format("%Y. %m. %d-n").to_string() )
+                    " a "
+                    ( link )
+                    "."
+                }
+                .previous_state_label {"Korábbi állapot:"}
+                (result)
+            ))
+        }
+    } else if result.0.is_empty() {
         Err(StatusCode::NOT_FOUND)
     } else {
         Ok(result)
