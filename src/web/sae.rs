@@ -17,10 +17,10 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
-use super::util::{change_snippet_link, RenderElementContext};
+use super::util::RenderElementContext;
 use crate::web::{
     act::RenderElement,
-    util::{act_link, anchor_string, link_to_reference, logged_http_error},
+    util::{link_to_reference, logged_http_error, render_changes_markers},
 };
 
 pub trait RenderSAE {
@@ -78,33 +78,10 @@ where
                         }
                     }
                 }
-                ( render_changes_markers(&context, self).unwrap_or(PreEscaped(String::new())) )
+                ( render_changes_markers(&context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }
-}
-
-fn render_changes_markers<IT: IdentifierCommon, CT: ChildrenCommon>(
-    context: &RenderElementContext,
-    element: &SubArticleElement<IT, CT>,
-) -> Option<Markup> {
-    if !context.show_changes {
-        return None;
-    }
-    let last_change = element.last_change.as_ref()?;
-    let current_ref = context.current_ref.as_ref()?;
-    let change_snippet = change_snippet_link(current_ref, last_change);
-    let change_url = format!(
-        "{}#{}",
-        act_link(current_ref.act()?, Some(last_change.date.pred())),
-        anchor_string(current_ref)
-    );
-
-    Some(html!(
-        a .past_change_container href=(change_url) data-snippet=(change_snippet) {
-            .past_change_marker {}
-        }
-    ))
 }
 
 impl RenderSAE for QuotedBlock {

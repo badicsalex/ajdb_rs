@@ -39,7 +39,6 @@ pub async fn render_snippet(
     let reference =
         Reference::from_compact_string(reference_str).map_err(|_| StatusCode::NOT_FOUND)?;
     let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
-    let article_range = reference.article().ok_or(StatusCode::NOT_FOUND)?;
 
     let today = Utc::today().naive_utc();
     let date = if params.date == Some(today) {
@@ -57,42 +56,53 @@ pub async fn render_snippet(
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
-    let result = if article_range.is_range()
-        || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
-    {
-        let rendered_articles = act
-            .articles()
-            .filter(|article| article_range.contains(article.identifier))
-            .map(|article| {
-                article
-                    .render(
-                        &RenderElementContext {
-                            current_ref: Some(
-                                (act_id, IdentifierRange::from_single(article.identifier)).into(),
-                            ),
-                            snippet_range: Some(reference.clone()),
-                            date,
-                            show_changes: false,
-                            force_absolute_urls: true,
-                        },
-                        None,
-                    )
-                    .map(|r| r.0)
-            })
-            .collect::<Result<String, StatusCode>>()?;
-        PreEscaped(rendered_articles)
-    } else {
-        let article = act
-            .article(article_range.first_in_range())
-            .ok_or(StatusCode::NOT_FOUND)?;
+    // This being an `if let` is a huge hack: we generate modification snippet urls for
+    // structural elements, which are _not_ supported. But we want to have at least a
+    // 'reason' snippet, which is done below if the result here is empty.
+    // For non-modification-type snippets, the end result will be a 404
+    let result = if let Some(article_range) = reference.article() {
+        if article_range.is_range()
+            || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
+        {
+            let rendered_articles = act
+                .articles()
+                .filter(|article| article_range.contains(article.identifier))
+                .map(|article| {
+                    article
+                        .render(
+                            &RenderElementContext {
+                                current_ref: Some(
+                                    (act_id, IdentifierRange::from_single(article.identifier))
+                                        .into(),
+                                ),
+                                snippet_range: Some(reference.clone()),
+                                date,
+                                show_changes: false,
+                                force_absolute_urls: true,
+                            },
+                            None,
+                        )
+                        .map(|r| r.0)
+                })
+                .collect::<Result<String, StatusCode>>()?;
+            PreEscaped(rendered_articles)
+        } else {
+            let article = act
+                .article(article_range.first_in_range())
+                .ok_or(StatusCode::NOT_FOUND)?;
 
-        article.children.render(&RenderElementContext {
-            current_ref: Some((act_id, IdentifierRange::from_single(article.identifier)).into()),
-            snippet_range: Some(reference),
-            date,
-            show_changes: false,
-            force_absolute_urls: true,
-        })?
+            article.children.render(&RenderElementContext {
+                current_ref: Some(
+                    (act_id, IdentifierRange::from_single(article.identifier)).into(),
+                ),
+                snippet_range: Some(reference),
+                date,
+                show_changes: false,
+                force_absolute_urls: true,
+            })?
+        }
+    } else {
+        PreEscaped(String::new())
     };
     if let Some(change_cause) = &params.change_cause {
         let cause_ref =

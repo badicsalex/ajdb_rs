@@ -135,3 +135,26 @@ pub fn link_to_reference(
         }
     ))
 }
+
+pub fn render_changes_markers(
+    context: &RenderElementContext,
+    last_change: &Option<LastChange>,
+) -> Option<Markup> {
+    if !context.show_changes {
+        return None;
+    }
+    let last_change = last_change.as_ref()?;
+    let current_ref = context.current_ref.as_ref()?;
+    let change_snippet = Some(change_snippet_link(current_ref, last_change));
+    let change_url = format!(
+        "{}#{}",
+        act_link(current_ref.act()?, Some(last_change.date.pred())),
+        anchor_string(current_ref)
+    );
+
+    Some(html!(
+        a .past_change_container href=(change_url) data-snippet=[change_snippet] {
+            .past_change_marker {}
+        }
+    ))
+}

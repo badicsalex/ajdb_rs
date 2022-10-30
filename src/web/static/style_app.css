@@ -165,21 +165,23 @@ blockquote {
     text-align: justify;
 }
 
+.se_container {
+    /* to anchor inner position: absolute elements */
+    position: relative;
+}
+
 .se_book {
     font-size: 16pt;
     font-weight: bold;
-    text-align: left;
 }
 
 .se_part {
     font-size: 16pt;
-    text-align: left;
 }
 
 .se_chapter, .se_title {
     font-size: 14pt;
     font-style: italic;
-    text-align: left;
 }
 
 .se_subtitle {
@@ -196,8 +198,9 @@ blockquote {
     font-style: italic;
     margin: 0px 0px 0px 40px;
 }
-.article_container, .sae_container {
-    width: 100%
+.article_container {
+    /* to anchor inner position: absolute elements */
+    position: relative;
 }
 
 .sae_container {

@@ -26,7 +26,7 @@ use super::{
 use crate::{
     database::{ActMetadata, ActSet},
     persistence::Persistence,
-    web::sae::RenderSAE,
+    web::{sae::RenderSAE, util::render_changes_markers},
 };
 
 pub trait RenderElement {
@@ -75,7 +75,7 @@ impl RenderElement for ActChild {
 impl RenderElement for StructuralElement {
     fn render(
         &self,
-        _context: &RenderElementContext,
+        context: &RenderElementContext,
         child_number: Option<usize>,
     ) -> Result<Markup, StatusCode> {
         let class_name = match self.element_type {
@@ -90,12 +90,15 @@ impl RenderElement for StructuralElement {
             "".to_owned()
         };
         Ok(html!(
-            .(class_name) #(id) {
-                ( self.header_string().map_err(logged_http_error)? )
-                @if !self.title.is_empty() {
-                    br;
-                    ( self.title )
+            .se_container {
+                .(class_name) #(id) {
+                    ( self.header_string().map_err(logged_http_error)? )
+                    @if !self.title.is_empty() {
+                        br;
+                        ( self.title )
+                    }
                 }
+                ( render_changes_markers(context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }
@@ -104,7 +107,7 @@ impl RenderElement for StructuralElement {
 impl RenderElement for Subtitle {
     fn render(
         &self,
-        _context: &RenderElementContext,
+        context: &RenderElementContext,
         child_number: Option<usize>,
     ) -> Result<Markup, StatusCode> {
         let id = if let Some(child_number) = child_number {
@@ -113,12 +116,15 @@ impl RenderElement for Subtitle {
             "".to_owned()
         };
         Ok(html!(
-            .se_subtitle  #(id) {
-                @if let Some(identifier) = self.identifier {
-                    ( identifier.with_slash().to_string() )
-                    ". "
+            .se_container {
+                .se_subtitle  #(id) {
+                    @if let Some(identifier) = self.identifier {
+                        ( identifier.with_slash().to_string() )
+                        ". "
+                    }
+                    ( self.title )
                 }
-                ( self.title )
+                ( render_changes_markers(context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }
@@ -142,6 +148,7 @@ impl RenderElement for Article {
                         ( child.render(&context)? )
                     }
                 }
+                ( render_changes_markers(&context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }
