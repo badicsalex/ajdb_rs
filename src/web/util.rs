@@ -158,3 +158,20 @@ pub fn render_changes_markers(
         }
     ))
 }
+
+pub fn today() -> NaiveDate {
+    chrono::Utc::today().naive_utc()
+}
+
+pub trait OrToday {
+    fn or_today(self) -> NaiveDate;
+}
+
+impl OrToday for Option<NaiveDate> {
+    fn or_today(self) -> NaiveDate {
+        match self {
+            Some(d) => d,
+            None => today(),
+        }
+    }
+}

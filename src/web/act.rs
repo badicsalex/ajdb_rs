@@ -10,7 +10,7 @@ use axum::{
     http::StatusCode,
     Extension,
 };
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{Datelike, NaiveDate};
 use hun_law::{
     identifier::ActIdentifier,
     reference::to_element::ReferenceToElement,
@@ -21,7 +21,7 @@ use serde::Deserialize;
 
 use super::{
     act_toc::generate_toc,
-    util::{act_link, logged_http_error, RenderElementContext},
+    util::{act_link, logged_http_error, today, OrToday, RenderElementContext},
 };
 use crate::{
     database::{ActMetadata, ActSet},
@@ -161,7 +161,6 @@ fn render_act_menu(
     mut modification_dates: Vec<NaiveDate>,
 ) -> Markup {
     let mut from = publication_date;
-    let today = Utc::today().naive_utc();
     let mut dropdown_contents = String::new();
     let mut dropdown_current = None;
     modification_dates.push(NaiveDate::from_ymd(3000, 12, 31));
@@ -170,7 +169,7 @@ fn render_act_menu(
         let mut entry_is_today = false;
         let special = if from == publication_date {
             " (Közlönyállapot)"
-        } else if today >= from && today <= to {
+        } else if (from..=to).contains(&today()) {
             entry_is_today = true;
             " (Hatályos állapot)"
         } else {
@@ -262,7 +261,6 @@ pub async fn render_existing_act<'a>(
     state: &'a ActSet<'a>,
     persistence: &'a Persistence,
 ) -> Result<Markup, StatusCode> {
-    let today = Utc::today().naive_utc();
     let act = state
         .get_act(act_id)
         .map_err(|_| StatusCode::NOT_FOUND)?
@@ -276,7 +274,7 @@ pub async fn render_existing_act<'a>(
     let act_render_context = RenderElementContext {
         current_ref: None,
         snippet_range: None,
-        date: if date == today { None } else { Some(date) },
+        date: if date == today() { None } else { Some(date) },
         show_changes: true,
         force_absolute_urls: false,
     };
@@ -322,8 +320,7 @@ pub async fn render_act(
     Extension(persistence): Extension<Arc<Persistence>>,
 ) -> Result<Markup, StatusCode> {
     let act_id = act_id_str.parse().map_err(|_| StatusCode::NOT_FOUND)?;
-    let today = Utc::today().naive_utc();
-    let date = params.date.unwrap_or(today);
+    let date = params.date.or_today();
     let state = ActSet::load_async(&persistence, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;

@@ -10,7 +10,7 @@ use axum::{
     http::StatusCode,
     Extension,
 };
-use chrono::{NaiveDate, Utc};
+use chrono::NaiveDate;
 use hun_law::{
     identifier::range::{IdentifierRange, IdentifierRangeFrom},
     reference::{parts::AnyReferencePart, Reference},
@@ -23,7 +23,14 @@ use super::{
     act::RenderElement,
     util::{link_to_reference, logged_http_error, RenderElementContext},
 };
-use crate::{database::ActSet, persistence::Persistence, web::sae::RenderSAE};
+use crate::{
+    database::ActSet,
+    persistence::Persistence,
+    web::{
+        sae::RenderSAE,
+        util::{today, OrToday},
+    },
+};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenderSnippetParams {
@@ -40,13 +47,12 @@ pub async fn render_snippet(
         Reference::from_compact_string(reference_str).map_err(|_| StatusCode::NOT_FOUND)?;
     let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
 
-    let today = Utc::today().naive_utc();
-    let date = if params.date == Some(today) {
+    let date = if params.date == Some(today()) {
         None
     } else {
         params.date
     };
-    let state = ActSet::load_async(&persistence, date.unwrap_or(today))
+    let state = ActSet::load_async(&persistence, date.or_today())
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let act = state
@@ -113,7 +119,7 @@ pub async fn render_snippet(
             Ok(html!(
                 .modified_by {
                     "Beillesztette "
-                    ( date.unwrap_or(today).succ().format("%Y. %m. %d-n").to_string() )
+                    ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
                     " a "
                     ( link )
                     "."
@@ -123,7 +129,7 @@ pub async fn render_snippet(
             Ok(html!(
                 .modified_by {
                     "Módosíttotta "
-                    ( date.unwrap_or(today).succ().format("%Y. %m. %d-n").to_string() )
+                    ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
                     " a "
                     ( link )
                     "."
