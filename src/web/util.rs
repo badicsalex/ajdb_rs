@@ -61,7 +61,7 @@ pub fn anchor_string(r: &Reference) -> String {
 pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     format!(
         "/act/{}{}",
-        act_id,
+        act_id.compact_string(),
         if let Some(date) = date {
             format!("?date={}", date)
         } else {
