@@ -86,6 +86,7 @@ mod tests {
             identifier: id.into(),
             title: title.into(),
             element_type: t,
+            last_change: None,
         }
         .into()
     }
@@ -186,17 +187,20 @@ mod tests {
                 Subtitle {
                     identifier: None,
                     title: "Nice".into(),
+                    last_change: None,
                 }
                 .into(),
                 Subtitle {
                     identifier: Some(2.into()),
                     title: "Nice with id".into(),
+                    last_change: None,
                 }
                 .into(),
                 se(2, "", Title),
                 Subtitle {
                     identifier: None,
                     title: "Nice 3".into(),
+                    last_change: None,
                 }
                 .into(),
             ],

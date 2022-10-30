@@ -105,6 +105,7 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                         identifier: a.identifier,
                         title: None,
                         children: Vec::new(),
+                        last_change: None,
                     }))
                 } else {
                     None
@@ -1031,6 +1032,7 @@ mod tests {
             identifier: id.into(),
             title: "".into(),
             element_type,
+            last_change: None,
         }
         .into()
     }
@@ -1039,6 +1041,7 @@ mod tests {
         Subtitle {
             identifier: Some(id.into()),
             title: title.into(),
+            last_change: None,
         }
         .into()
     }
@@ -1048,6 +1051,7 @@ mod tests {
             identifier: id.parse().unwrap(),
             title: None,
             children: Vec::new(),
+            last_change: None,
         }
         .into()
     }
