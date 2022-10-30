@@ -63,6 +63,13 @@ children_expected:
       body: Paragraph 1
     - identifier: '2'
       body: Paragraph 2
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: 1/A
     title: Leave me alone me, I beg you
@@ -71,11 +78,25 @@ children_expected:
       body: Paragraph 1
     - identifier: '2'
       body: Paragraph 2
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: '2'
     title: Leave me alone me or else
     children:
     - body: Article with a single paragraph
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: '3'
     title: Nope
@@ -89,3 +110,10 @@ children_expected:
     title: Separate things. Also case sensitive, so Stuff is not touched.
     children:
     - body: Article with a single paragraph
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '2'

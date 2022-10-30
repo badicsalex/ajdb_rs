@@ -24,7 +24,7 @@ children_original:
                 body: "elem 2,"
               - identifier: "c"
                 body: "elem 3,"
-              - identifier: "c"
+              - identifier: "d"
                 body: "elem 4."
         - identifier: "3"
           body:
@@ -85,7 +85,7 @@ modifications:
           number: 1
         article: '1'
         paragraph: "2"
-        point: "c"
+        point: "d"
   - BlockAmendment:
       position:
         act:
@@ -129,6 +129,13 @@ children_expected:
             body: elem 3,
           - identifier: d
             body: New point d.
+            last_change:
+              date: 2013-04-20
+              cause:
+                act:
+                  year: 2013
+                  number: 420
+                article: '1'
     - identifier: '2'
       body:
         intro: Deletion
@@ -139,9 +146,16 @@ children_expected:
           - identifier: b
             body: elem 2,
           - identifier: c
+            body: elem 3,
+          - identifier: d
             body: ''
-          - identifier: c
-            body: ''
+            last_change:
+              date: 2013-04-20
+              cause:
+                act:
+                  year: 2013
+                  number: 420
+                article: '2'
     - identifier: '3'
       body:
         intro: Subpoints
@@ -171,6 +185,13 @@ children_expected:
               wrap_up: exists;
           - identifier: d
             body: New point d.
+            last_change:
+              date: 2013-04-20
+              cause:
+                act:
+                  year: 2013
+                  number: 420
+                article: '3'
     - identifier: '4'
       body:
         intro: Amendment
@@ -182,3 +203,10 @@ children_expected:
             body: elem 2, vagy
           - identifier: c
             body: amended point d.
+            last_change:
+              date: 2013-04-20
+              cause:
+                act:
+                  year: 2013
+                  number: 420
+                article: '4'

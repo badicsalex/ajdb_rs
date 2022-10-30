@@ -6,7 +6,9 @@ use anyhow::{anyhow, bail, ensure, Context, Result};
 use hun_law::{
     identifier::{range::IdentifierRange, ActIdentifier, ArticleIdentifier, NumericIdentifier},
     reference::structural::{StructuralReference, StructuralReferenceElement},
-    structure::{Act, ActChild, Article, StructuralElement, StructuralElementType, Subtitle},
+    structure::{
+        Act, ActChild, Article, LastChange, StructuralElement, StructuralElementType, Subtitle,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +22,7 @@ pub struct StructuralBlockAmendmentWithContent {
 }
 
 impl ModifyAct for StructuralBlockAmendmentWithContent {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
         let (mut cut_start, mut cut_end) = match &self.position.structural_element {
             StructuralReferenceElement::Part(id) => self.handle_structural_element(
@@ -105,7 +107,7 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                         identifier: a.identifier,
                         title: None,
                         children: Vec::new(),
-                        last_change: None,
+                        last_change: Some(change_entry.clone()),
                     }))
                 } else {
                     None
@@ -113,7 +115,16 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
             }));
         } else {
             act.children.truncate(cut_start);
-            act.children.extend(self.content.iter().cloned());
+            let content = self.content.iter().map(|c| {
+                let mut result = c.clone();
+                match &mut result {
+                    ActChild::StructuralElement(x) => x.last_change = Some(change_entry.clone()),
+                    ActChild::Subtitle(x) => x.last_change = Some(change_entry.clone()),
+                    ActChild::Article(x) => x.last_change = Some(change_entry.clone()),
+                }
+                result
+            });
+            act.children.extend(content);
         }
         act.children.append(&mut tail);
         if let StructuralReferenceElement::Article(article_ids) = self.position.structural_element {

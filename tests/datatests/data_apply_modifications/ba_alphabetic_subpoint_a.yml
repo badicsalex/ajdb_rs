@@ -59,7 +59,21 @@ children_expected:
                   body: Subpoint aa
                 - identifier: ab
                   body: Modified ab
+                  last_change:
+                    date: 2013-04-20
+                    cause:
+                      act:
+                        year: 2013
+                        number: 420
+                      article: '1'
                 - identifier: ac
                   body: Modified ac
+                  last_change:
+                    date: 2013-04-20
+                    cause:
+                      act:
+                        year: 2013
+                        number: 420
+                      article: '1'
           - identifier: b
             body: Point b

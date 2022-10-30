@@ -112,10 +112,24 @@ children_expected:
       body: Paragraph 1
     - identifier: 1a
       body: New paragraph 1/A
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
     - identifier: '2'
       body: Paragraph 2
     - identifier: '3'
       body: New paragraph 3
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '2'
 - Article:
     identifier: '2'
     children:
@@ -123,6 +137,13 @@ children_expected:
       body: Paragraph 1
     - identifier: '2'
       body: Modified paragraph 2
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '3'
 - Article:
     identifier: '3'
     children:
@@ -130,10 +151,31 @@ children_expected:
       body: Paragraph 1
     - identifier: '2'
       body: Modified paragraph 2
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
     - identifier: '3'
       body: Modified paragraph 3
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
     - identifier: '4'
       body: Modified paragraph 4
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
 - Article:
     identifier: '4'
     children:
@@ -141,7 +183,28 @@ children_expected:
       body: Paragraph 1
     - identifier: '2'
       body: Modified paragraph 2
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '5'
     - identifier: '3'
       body: Modified paragraph 3
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '5'
     - identifier: '4'
       body: Modified paragraph 4
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '5'

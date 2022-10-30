@@ -40,6 +40,13 @@ children_expected:
             Tv.:
               year: 2069
               number: 45
+        last_change:
+          date: 2013-04-20
+          cause:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
       - identifier: '2'
         body: Lásd a Tv. 74/A. § (2) bekezdését.
         semantic_info:

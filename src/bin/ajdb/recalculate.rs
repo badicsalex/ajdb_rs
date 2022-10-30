@@ -54,7 +54,7 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
         // NOTE: And then there's the case where an Act is modified by one Act, and then another,
         //       Both coming into force at the same time. This is resolved by the internal
         //       ordering fix in modifications.apply_to_act(...)
-        modifications.apply_to_act_in_state(*act_id, &mut state)?;
+        modifications.apply_to_act_in_state(*act_id, date, &mut state)?;
         modifications.remove_affecting(*act_id);
         let act = state.get_act(*act_id)?.act()?;
         modifications.add(&act, date)?;
@@ -70,7 +70,7 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
         }
     }
 
-    modifications.apply_rest(&mut state)?;
+    modifications.apply_rest(date, &mut state)?;
     state.save()?;
     Ok(())
 }

@@ -103,9 +103,23 @@ children_expected:
 - Article:
     identifier: '1'
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: 1/A
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '3'
 - Article:
     identifier: '2'
     title: Hello there 2
@@ -114,10 +128,24 @@ children_expected:
 - Article:
     identifier: '3'
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '5'
 - Article:
     identifier: 3/A
     children:
     - identifier: '1'
       body: ''
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '6'
     - identifier: '2'
       body: Sibling paragraph

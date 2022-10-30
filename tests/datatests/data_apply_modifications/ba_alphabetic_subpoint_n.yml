@@ -35,10 +35,10 @@ modifications:
       pure_insertion: false
       content:
         AlphabeticSubpoint:
-        - identifier: ab
-          body: "Modified ab"
-        - identifier: ac
-          body: "Modified ac"
+        - identifier: b
+          body: "Modified b"
+        - identifier: c
+          body: "Modified c"
 children_expected:
 - Article:
     identifier: '1'
@@ -57,9 +57,23 @@ children_expected:
                 AlphabeticSubpoint:
                 - identifier: a
                   body: Subpoint a
-                - identifier: ab
-                  body: Modified ab
-                - identifier: ac
-                  body: Modified ac
+                - identifier: b
+                  body: Modified b
+                  last_change:
+                    date: 2013-04-20
+                    cause:
+                      act:
+                        year: 2013
+                        number: 420
+                      article: '1'
+                - identifier: c
+                  body: Modified c
+                  last_change:
+                    date: 2013-04-20
+                    cause:
+                      act:
+                        year: 2013
+                        number: 420
+                      article: '1'
           - identifier: '2'
             body: Point 2

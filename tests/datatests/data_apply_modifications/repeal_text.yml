@@ -62,10 +62,31 @@ children_expected:
     children:
     - identifier: '1'
       body: '1'
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
     - identifier: '2'
       body: '2'
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
     - identifier: '3'
       body: This is 3
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
 - Article:
     identifier: '2'
     title: Hello there 2
@@ -81,4 +102,18 @@ children_expected:
             body: My little point a
           - identifier: b
             body: My little
+            last_change:
+              date: 2013-04-20
+              cause:
+                act:
+                  year: 2013
+                  number: 420
+                article: '2'
         wrap_up: hmm.
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '3'

@@ -63,15 +63,43 @@ children_expected:
 - Article:
     identifier: '1'
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: 1/A
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: '2'
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '1'
 - Article:
     identifier: '3'
     children: []
+    last_change:
+      date: 2013-04-20
+      cause:
+        act:
+          year: 2013
+          number: 420
+        article: '2'
 - Article:
     identifier: '4'
     title: Hello there 4

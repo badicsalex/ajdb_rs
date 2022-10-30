@@ -4,14 +4,16 @@
 
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{
-    identifier::ActIdentifier, reference::to_element::ReferenceToElement,
-    semantic_info::ArticleTitleAmendment, structure::Act,
+    identifier::ActIdentifier,
+    reference::to_element::ReferenceToElement,
+    semantic_info::ArticleTitleAmendment,
+    structure::{Act, LastChange},
 };
 
 use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 impl ModifyAct for ArticleTitleAmendment {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         let mut applied = false;
         let act_ref = act.reference();
         for article in act.articles_mut() {
@@ -20,6 +22,7 @@ impl ModifyAct for ArticleTitleAmendment {
                 if let Some(title) = &mut article.title {
                     applied = applied || title.contains(&self.replacement.from);
                     *title = title.replace(&self.replacement.from, &self.replacement.to);
+                    article.last_change = Some(change_entry.clone());
                 }
             }
         }

@@ -15,8 +15,12 @@ use anyhow::{Context, Result};
 use chrono::NaiveDate;
 use from_variants::FromVariants;
 use hun_law::{
-    identifier::ActIdentifier, parser::semantic_info::AbbreviationsChanged, reference::Reference,
-    semantic_info::ArticleTitleAmendment, structure::Act, util::debug::WithElemContext,
+    identifier::ActIdentifier,
+    parser::semantic_info::AbbreviationsChanged,
+    reference::Reference,
+    semantic_info::ArticleTitleAmendment,
+    structure::{Act, LastChange},
+    util::debug::WithElemContext,
 };
 use log::{debug, info, warn};
 use multimap::MultiMap;
@@ -38,7 +42,12 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_to_act_in_state(&self, act_id: ActIdentifier, state: &mut ActSet) -> Result<()> {
+    pub fn apply_to_act_in_state(
+        &self,
+        act_id: ActIdentifier,
+        date: NaiveDate,
+        state: &mut ActSet,
+    ) -> Result<()> {
         if !state.has_act(act_id) {
             debug!("Act not in database for amending: {}", act_id);
             return Ok(());
@@ -46,7 +55,7 @@ impl AppliableModificationSet {
         if let Some(modifications) = self.modifications.get_vec(&act_id).cloned() {
             let mut act = state.get_act(act_id)?.act()?;
             let modifications_len = modifications.len();
-            Self::apply_to_act(&mut act, modifications)?;
+            Self::apply_to_act(&mut act, date, modifications)?;
             state.store_act(act)?;
             info!("Applied {:?} amendments to {}", modifications_len, act_id);
         }
@@ -55,12 +64,13 @@ impl AppliableModificationSet {
 
     pub fn apply_to_act(
         act: &mut Act,
+        date: NaiveDate,
         mut modifications: Vec<AppliableModification>,
     ) -> Result<()> {
         fix_amendment_order(&mut modifications);
         let mut do_full_reparse = false;
         for modification in &modifications {
-            let result = modification.apply(act).with_context(|| {
+            let result = modification.apply(act, date).with_context(|| {
                 format!(
                     "Error applying single amendment to {} (cause: {:?})",
                     act.identifier, modification.cause
@@ -88,9 +98,9 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_rest(&self, state: &mut ActSet) -> Result<()> {
+    pub fn apply_rest(&self, date: NaiveDate, state: &mut ActSet) -> Result<()> {
         for act_id in self.modifications.keys() {
-            self.apply_to_act_in_state(*act_id, state)?
+            self.apply_to_act_in_state(*act_id, date, state)?
         }
         Ok(())
     }
@@ -141,7 +151,7 @@ impl From<AbbreviationsChanged> for NeedsFullReparse {
 }
 
 pub trait ModifyAct {
-    fn apply(&self, target: &mut Act) -> Result<NeedsFullReparse>;
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse>;
 }
 
 trait AffectedAct {
@@ -164,9 +174,15 @@ pub enum AppliableModificationType {
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
 }
 
-impl ModifyAct for AppliableModification {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
-        self.modification.apply(act)
+impl AppliableModification {
+    fn apply(&self, act: &mut Act, date: NaiveDate) -> Result<NeedsFullReparse> {
+        self.modification.apply(
+            act,
+            &LastChange {
+                date,
+                cause: self.cause.clone(),
+            },
+        )
     }
 }
 
@@ -177,13 +193,13 @@ impl AffectedAct for AppliableModification {
 }
 
 impl ModifyAct for AppliableModificationType {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         match self {
-            AppliableModificationType::ArticleTitleAmendment(m) => m.apply(act),
-            AppliableModificationType::BlockAmendment(m) => m.apply(act),
-            AppliableModificationType::Repeal(m) => m.apply(act),
-            AppliableModificationType::TextAmendment(m) => m.apply(act),
-            AppliableModificationType::StructuralBlockAmendment(m) => m.apply(act),
+            AppliableModificationType::ArticleTitleAmendment(m) => m.apply(act, change_entry),
+            AppliableModificationType::BlockAmendment(m) => m.apply(act, change_entry),
+            AppliableModificationType::Repeal(m) => m.apply(act, change_entry),
+            AppliableModificationType::TextAmendment(m) => m.apply(act, change_entry),
+            AppliableModificationType::StructuralBlockAmendment(m) => m.apply(act, change_entry),
         }
     }
 }

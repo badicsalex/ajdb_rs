@@ -2,11 +2,11 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
-    structure::{Act, ChildrenCommon, SAEBody, SubArticleElement},
+    structure::{Act, ChildrenCommon, LastChange, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ pub struct SimplifiedRepeal {
 }
 
 impl ModifyAct for SimplifiedRepeal {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         // TODO: A full act repeal will individually repeal all articles.
         //       But structural elements stay in place
         //       This may not be ideal.
@@ -27,28 +27,41 @@ impl ModifyAct for SimplifiedRepeal {
             act.children = Vec::new();
         } else {
             // TODO: Sanity check if it was actually applied
-            act.walk_saes_mut(&mut self.clone())?;
+            let mut applier = RepealApplier {
+                position: self.position.clone(),
+                applied: false,
+                change_entry,
+            };
+            act.walk_saes_mut(&mut applier)?;
+            ensure!(applier.applied, "Repeal {self:?} did not have an effect");
             // TODO: This should probably be done after we are done with all Repeals
-            Self::collate_repealed_paragraphs(act)?;
+            Self::collate_repealed_paragraphs(act, change_entry)?;
         }
         Ok(NeedsFullReparse::No)
     }
 }
 
 impl SimplifiedRepeal {
-    fn collate_repealed_paragraphs(act: &mut Act) -> Result<()> {
-        act.walk_saes_mut(&mut RepealCollater {})?;
+    fn collate_repealed_paragraphs(act: &mut Act, change_entry: &LastChange) -> Result<()> {
+        act.walk_saes_mut(&mut RepealCollater { change_entry })?;
         for article in act.articles_mut() {
-            if article.children.iter().all(|p| p.is_empty()) {
+            if !article.children.is_empty() && article.children.iter().all(|p| p.is_empty()) {
                 article.title = None;
                 article.children = Vec::new();
+                article.last_change = Some(change_entry.clone());
             }
         }
         Ok(())
     }
 }
 
-impl SAEVisitorMut for SimplifiedRepeal {
+struct RepealApplier<'a> {
+    position: Reference,
+    applied: bool,
+    change_entry: &'a LastChange,
+}
+
+impl<'a> SAEVisitorMut for RepealApplier<'a> {
     fn on_enter<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         position: &Reference,
@@ -58,6 +71,8 @@ impl SAEVisitorMut for SimplifiedRepeal {
             // TODO: Proper repealing. Maybe a separate SAEBody type
             element.body = SAEBody::Text("".to_owned());
             element.semantic_info = Default::default();
+            element.last_change = Some(self.change_entry.clone());
+            self.applied = true;
         }
         Ok(())
     }
@@ -71,9 +86,11 @@ impl AffectedAct for SimplifiedRepeal {
     }
 }
 
-struct RepealCollater {}
+struct RepealCollater<'a> {
+    change_entry: &'a LastChange,
+}
 
-impl SAEVisitorMut for RepealCollater {
+impl<'a> SAEVisitorMut for RepealCollater<'a> {
     fn on_exit<IT: IdentifierCommon, CT: ChildrenCommon>(
         &mut self,
         _position: &Reference,
@@ -83,6 +100,8 @@ impl SAEVisitorMut for RepealCollater {
             if element.is_empty() {
                 element.body = SAEBody::Text("".to_owned());
                 element.semantic_info = Default::default();
+                // NOTE: we lose change information of the children here.
+                element.last_change = Some(self.change_entry.clone());
             }
         }
         Ok(())

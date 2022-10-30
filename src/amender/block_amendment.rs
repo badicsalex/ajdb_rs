@@ -11,8 +11,8 @@ use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     structure::{
         Act, AlphabeticPoint, AlphabeticPointChildren, Article, BlockAmendmentChildren,
-        ChildrenCommon, NumericPoint, NumericPointChildren, Paragraph, ParagraphChildren, SAEBody,
-        SubArticleElement,
+        ChildrenCommon, LastChange, NumericPoint, NumericPointChildren, Paragraph,
+        ParagraphChildren, SAEBody, SubArticleElement,
     },
     util::debug::{DebugContextString, WithElemContext},
 };
@@ -27,14 +27,14 @@ pub struct BlockAmendmentWithContent {
 }
 
 impl ModifyAct for BlockAmendmentWithContent {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         let base_ref = act.reference();
         let act_dbg_string = act.debug_ctx();
         let article =
             find_containing_element(act.articles_mut(), &base_ref, &self.position.parent())
                 .with_context(|| anyhow!("Could not find article in {}", act_dbg_string))?;
         let article_id = article.identifier;
-        self.apply_to_article(article, &base_ref)
+        self.apply_to_article(article, &base_ref, change_entry)
             .with_elem_context("Could not apply amendment", article)
             .with_elem_context("Could not apply amendment", act)?;
 
@@ -46,7 +46,7 @@ impl ModifyAct for BlockAmendmentWithContent {
 // XXX: I am so very sorry for all this.
 //      I found no other way in the limited time I invested in it.
 macro_rules! try_parse {
-    ($self: ident, $base_element: ident, $part_type:tt, $ChildrenType1: tt :: $ChildrenType2: tt) => {
+    ($self: ident, $base_element: ident, $change_entry: ident, $part_type:tt, $ChildrenType1: tt :: $ChildrenType2: tt) => {
         if let Some(range) = $self.position.get_last_part().$part_type() {
             if let BlockAmendmentChildren::$ChildrenType2(content) = &$self.content {
                 if let SAEBody::Children {
@@ -54,7 +54,7 @@ macro_rules! try_parse {
                     ..
                 } = &mut $base_element.body
                 {
-                    return modify_multiple(original_content, range, content, true);
+                    return modify_multiple(original_content, range, content, true, $change_entry);
                 } else {
                     bail!(
                         "Wrong original content for {} reference",
@@ -72,7 +72,12 @@ macro_rules! try_parse {
 }
 
 impl BlockAmendmentWithContent {
-    fn apply_to_article(&self, article: &mut Article, base_ref: &Reference) -> Result<()> {
+    fn apply_to_article(
+        &self,
+        article: &mut Article,
+        base_ref: &Reference,
+        change_entry: &LastChange,
+    ) -> Result<()> {
         let parent_ref = self.position.parent();
         if let Some(range) = self.position.get_last_part().paragraph() {
             if let BlockAmendmentChildren::Paragraph(content) = &self.content {
@@ -81,28 +86,35 @@ impl BlockAmendmentWithContent {
                     range.first_in_range().into(),
                     range.last_in_range().into(),
                 );
-                return modify_multiple(&mut article.children, range, content, false);
+                return modify_multiple(&mut article.children, range, content, false, change_entry);
             } else {
                 bail!("Wrong amendment content for paragraph reference");
             }
         }
         let base_ref = article.reference().relative_to(base_ref)?;
         let paragraph = find_containing_element(&mut article.children, &base_ref, &parent_ref)?;
-        self.apply_to_paragraph(paragraph, &base_ref)
+        self.apply_to_paragraph(paragraph, &base_ref, change_entry)
             .with_elem_context("Could apply amendment", paragraph)
     }
 
-    fn apply_to_paragraph(&self, paragraph: &mut Paragraph, base_ref: &Reference) -> Result<()> {
+    fn apply_to_paragraph(
+        &self,
+        paragraph: &mut Paragraph,
+        base_ref: &Reference,
+        change_entry: &LastChange,
+    ) -> Result<()> {
         let parent_ref = self.position.parent();
         try_parse!(
             self,
             paragraph,
+            change_entry,
             numeric_point,
             ParagraphChildren::NumericPoint
         );
         try_parse!(
             self,
             paragraph,
+            change_entry,
             alphabetic_point,
             ParagraphChildren::AlphabeticPoint
         );
@@ -117,29 +129,35 @@ impl BlockAmendmentWithContent {
             ParagraphChildren::AlphabeticPoint(alphabetic_points) => {
                 let alphabetic_point =
                     find_containing_element(alphabetic_points, &base_ref, &parent_ref)?;
-                self.apply_to_alphabetic_point(alphabetic_point)
+                self.apply_to_alphabetic_point(alphabetic_point, change_entry)
                     .with_elem_context("Could not apply amendment", alphabetic_point)
             }
             ParagraphChildren::NumericPoint(numeric_points) => {
                 let numeric_point =
                     find_containing_element(numeric_points, &base_ref, &parent_ref)?;
-                self.apply_to_numeric_point(numeric_point)
+                self.apply_to_numeric_point(numeric_point, change_entry)
                     .with_elem_context("Could not apply amendment", numeric_point)
             }
             _ => Err(anyhow!("Unexpected children type in paragraph")),
         }
     }
 
-    fn apply_to_alphabetic_point(&self, alphabetic_point: &mut AlphabeticPoint) -> Result<()> {
+    fn apply_to_alphabetic_point(
+        &self,
+        alphabetic_point: &mut AlphabeticPoint,
+        change_entry: &LastChange,
+    ) -> Result<()> {
         try_parse!(
             self,
             alphabetic_point,
+            change_entry,
             numeric_subpoint,
             AlphabeticPointChildren::NumericSubpoint
         );
         try_parse!(
             self,
             alphabetic_point,
+            change_entry,
             alphabetic_subpoint,
             AlphabeticPointChildren::AlphabeticSubpoint
         );
@@ -148,10 +166,15 @@ impl BlockAmendmentWithContent {
         ))
     }
 
-    fn apply_to_numeric_point(&self, numeric_point: &mut NumericPoint) -> Result<()> {
+    fn apply_to_numeric_point(
+        &self,
+        numeric_point: &mut NumericPoint,
+        change_entry: &LastChange,
+    ) -> Result<()> {
         try_parse!(
             self,
             numeric_point,
+            change_entry,
             alphabetic_subpoint,
             NumericPointChildren::AlphabeticSubpoint
         );
@@ -187,6 +210,7 @@ fn modify_multiple<IT, CT>(
     id_to_replace: IdentifierRange<IT>,
     replacement: &[SubArticleElement<IT, CT>],
     fix_punctuation: bool,
+    change_entry: &LastChange,
 ) -> Result<()>
 where
     IT: IdentifierCommon,
@@ -214,15 +238,19 @@ where
         .first()
         .ok_or_else(|| anyhow!("Empty block amendment"))?
         .identifier;
+    let replacement_with_last_change = replacement.iter().map(|c| SubArticleElement {
+        last_change: Some(change_entry.clone()),
+        ..c.clone()
+    });
     if let Some(insertion_index) = elements
         .iter()
         .position(|element| element.identifier > first_replacement_identifier)
     {
         let mut tail = elements.split_off(insertion_index);
-        elements.extend(replacement.iter().cloned());
+        elements.extend(replacement_with_last_change);
         elements.append(&mut tail);
     } else {
-        elements.extend_from_slice(replacement);
+        elements.extend(replacement_with_last_change);
     }
 
     // Check element ordering

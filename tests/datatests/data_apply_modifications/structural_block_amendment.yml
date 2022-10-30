@@ -245,14 +245,35 @@ children_expected:
       - body: Dummy article blah blah.
   - Subtitle:
       title: Some weird insertion
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
   - Article:
       identifier: 1:3/A
       children:
       - body: Inserted article
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
   - Article:
       identifier: 1:3/B
       children:
       - body: Inserted article 2
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '4'
   - Article:
       identifier: 1:4
       children:
@@ -278,10 +299,24 @@ children_expected:
       identifier: '1'
       title: MÓDOSÍTOTT RENDELKEZÉSEK
       element_type: Title
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '5'
   - Article:
       identifier: 3:1
       children:
       - body: Modded
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '5'
   - StructuralElement:
       identifier: '2'
       title: A JOGI SZEMÉLY LÉTESÍTÉSE
@@ -297,6 +332,13 @@ children_expected:
   - Article:
       identifier: 3:4
       children: []
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
   - StructuralElement:
       identifier: '2'
       title: A gazdasági társaság szervezete
@@ -304,6 +346,13 @@ children_expected:
   - Subtitle:
       identifier: '1'
       title: Only the title is changed
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '8'
   - Article:
       identifier: 3:5
       children:
@@ -311,16 +360,44 @@ children_expected:
   - Subtitle:
       identifier: 1a
       title: Változtatott ügyvezetés és képviselet
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '2'
   - Article:
       identifier: 3:6
       children:
       - body: Modded dummy article blah blah.
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '2'
   - Subtitle:
       title: Addition after Chapter
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '6'
   - Article:
       identifier: 3:6/A
       children:
       - body: Inserted article
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '6'
   - StructuralElement:
       identifier: '3'
       title: Másolat a gazdasági társaság szervezetéről
@@ -335,9 +412,30 @@ children_expected:
   - Article:
       identifier: 3:8
       children: []
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '3'
   - Subtitle:
       title: Addition at end
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '7'
   - Article:
       identifier: 3:9
       children:
       - body: Inserted article
+      last_change:
+        date: 2013-04-20
+        cause:
+          act:
+            year: 2013
+            number: 420
+          article: '7'

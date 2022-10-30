@@ -6,7 +6,8 @@ use std::path::Path;
 
 use ajdb::amender::{AppliableModification, AppliableModificationSet, AppliableModificationType};
 use chrono::NaiveDate;
-use hun_law::identifier::ActIdentifier;
+use hun_law::identifier::range::{IdentifierRange, IdentifierRangeFrom};
+use hun_law::identifier::{ActIdentifier, ArticleIdentifier};
 use hun_law::structure::ActChild;
 use hun_law::{structure::Act, util::singleton_yaml};
 use serde::{Deserialize, Serialize};
@@ -40,12 +41,26 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
     let modifications = test_data
         .modifications
         .into_iter()
-        .map(|modification| AppliableModification {
-            cause: None,
+        .enumerate()
+        .map(|(i, modification)| AppliableModification {
+            cause: Some(
+                (
+                    ActIdentifier {
+                        year: 2013,
+                        number: 420,
+                    },
+                    IdentifierRange::from_single(ArticleIdentifier::from((i + 1) as u16)),
+                )
+                    .into(),
+            ),
             modification,
         })
         .collect();
-    AppliableModificationSet::apply_to_act(&mut act, modifications)?;
+    AppliableModificationSet::apply_to_act(
+        &mut act,
+        NaiveDate::from_ymd(2013, 4, 20),
+        modifications,
+    )?;
     ensure_eq(
         &test_data.children_expected,
         &act.children,

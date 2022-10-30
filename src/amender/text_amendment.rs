@@ -7,7 +7,7 @@ use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
     semantic_info::TextAmendmentReplacement,
-    structure::{Act, ChildrenCommon, SAEBody, SubArticleElement},
+    structure::{Act, ChildrenCommon, LastChange, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
 use serde::{Deserialize, Serialize};
@@ -21,10 +21,11 @@ pub struct SimplifiedTextAmendment {
 }
 
 impl ModifyAct for SimplifiedTextAmendment {
-    fn apply(&self, act: &mut Act) -> Result<NeedsFullReparse> {
+    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         let mut visitor = Visitor {
             amendment: self,
             applied: false,
+            change_entry,
         };
         act.walk_saes_mut(&mut visitor)?;
         ensure!(
@@ -49,6 +50,7 @@ impl ModifyAct for SimplifiedTextAmendment {
 
 struct Visitor<'a> {
     amendment: &'a SimplifiedTextAmendment,
+    change_entry: &'a LastChange,
     applied: bool,
 }
 
@@ -63,15 +65,24 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
             let to = &self.amendment.replacement.to;
             match &mut element.body {
                 SAEBody::Text(text) => {
-                    self.applied = self.applied || text.contains(from);
-                    *text = normalized_replace(text, from, to)
+                    if text.contains(from) {
+                        self.applied = true;
+                        element.last_change = Some(self.change_entry.clone());
+                        *text = normalized_replace(text, from, to)
+                    }
                 }
                 SAEBody::Children { intro, wrap_up, .. } => {
-                    self.applied = self.applied || intro.contains(from);
-                    *intro = normalized_replace(intro, from, to);
+                    if intro.contains(from) {
+                        self.applied = true;
+                        element.last_change = Some(self.change_entry.clone());
+                        *intro = normalized_replace(intro, from, to);
+                    }
                     if let Some(wrap_up) = wrap_up {
-                        self.applied = self.applied || wrap_up.contains(from);
-                        *wrap_up = normalized_replace(wrap_up, from, to);
+                        if wrap_up.contains(from) {
+                            self.applied = true;
+                            element.last_change = Some(self.change_entry.clone());
+                            *wrap_up = normalized_replace(wrap_up, from, to);
+                        }
                     }
                 }
             }
@@ -100,6 +111,7 @@ impl AffectedAct for SimplifiedTextAmendment {
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDate;
     use hun_law::util::singleton_yaml;
 
     use super::*;
@@ -135,6 +147,10 @@ mod tests {
     #[test]
     fn test_could_not_apply() {
         let mut test_act: Act = singleton_yaml::from_str(TEST_ACT).unwrap();
+        let change_entry = LastChange {
+            date: NaiveDate::from_ymd(2013, 2, 3),
+            cause: None,
+        };
 
         let mod_1: SimplifiedTextAmendment = singleton_yaml::from_str(
             r#"
@@ -149,8 +165,8 @@ mod tests {
         "#,
         )
         .unwrap();
-        mod_1.apply(&mut test_act).unwrap();
-        assert!(mod_1.apply(&mut test_act).is_err());
+        mod_1.apply(&mut test_act, &change_entry).unwrap();
+        assert!(mod_1.apply(&mut test_act, &change_entry).is_err());
 
         let mod_2: SimplifiedTextAmendment = singleton_yaml::from_str(
             r#"
@@ -165,8 +181,8 @@ mod tests {
         "#,
         )
         .unwrap();
-        mod_2.apply(&mut test_act).unwrap();
-        assert!(mod_2.apply(&mut test_act).is_err());
+        mod_2.apply(&mut test_act, &change_entry).unwrap();
+        assert!(mod_2.apply(&mut test_act, &change_entry).is_err());
 
         let mod_3: SimplifiedTextAmendment = singleton_yaml::from_str(
             r#"
@@ -181,7 +197,7 @@ mod tests {
         "#,
         )
         .unwrap();
-        mod_3.apply(&mut test_act).unwrap();
-        assert!(mod_3.apply(&mut test_act).is_err());
+        mod_3.apply(&mut test_act, &change_entry).unwrap();
+        assert!(mod_3.apply(&mut test_act, &change_entry).is_err());
     }
 }
