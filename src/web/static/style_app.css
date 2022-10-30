@@ -260,7 +260,15 @@ blockquote {
     display: inline-block;
     height: 100%;
     width: 3px;
-    background: indigo;
+    background: #d8ccff;
+}
+
+.past_change_marker.new {
+    background: #aa80ff;
+}
+
+.past_change_marker.new.very_new {
+    background: #9500ff;
 }
 
 .modified_by {

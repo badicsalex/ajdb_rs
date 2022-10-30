@@ -3,7 +3,7 @@
 // All rights reserved.
 
 use axum::http::StatusCode;
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use hun_law::{
     identifier::ActIdentifier,
     reference::{to_element::ReferenceToElement, Reference},
@@ -151,10 +151,16 @@ pub fn render_changes_markers(
         act_link(current_ref.act()?, Some(last_change.date.pred())),
         anchor_string(current_ref)
     );
+    // TODO: or_today is not exactly the most optimal solution for this
+    //       frequently called function.
+    let change_age = context.date.or_today() - last_change.date;
 
     Some(html!(
         a .past_change_container href=(change_url) data-snippet=[change_snippet] {
-            .past_change_marker {}
+            .past_change_marker
+            .new[change_age<Duration::days(365)]
+            .very_new[change_age<Duration::days(100)]
+            {}
         }
     ))
 }
