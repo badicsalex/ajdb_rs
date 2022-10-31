@@ -111,34 +111,55 @@ pub async fn render_snippet(
         PreEscaped(String::new())
     };
     if let Some(change_cause) = &params.change_cause {
-        let cause_ref =
-            Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
-        let link = link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true, true)
-            .map_err(logged_http_error)?;
-        if result.0.is_empty() {
+        if change_cause.is_empty() {
+            let jat_ref =
+                Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
+            let link = link_to_reference(&jat_ref, Some(date.or_today().succ()), None, true, true)
+                .map_err(logged_http_error)?;
             Ok(html!(
                 .modified_by {
-                    "Beillesztette "
+                    "Automatikusan hatályát vesztete "
                     ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
                     " a "
                     ( link )
-                    "."
-                }
-            ))
-        } else {
-            Ok(html!(
-                .modified_by {
-                    "Módosíttotta "
-                    ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
-                    " a "
-                    ( link )
-                    "."
+                    " alapján."
                 }
                 .previous_state_label {"Korábbi állapot:"}
                 .blockamendment_container {
                     (result)
                 }
             ))
+        } else {
+            let cause_ref =
+                Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
+            let link =
+                link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true, true)
+                    .map_err(logged_http_error)?;
+            if result.0.is_empty() {
+                Ok(html!(
+                    .modified_by {
+                        "Beillesztette "
+                        ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
+                        " a "
+                        ( link )
+                        "."
+                    }
+                ))
+            } else {
+                Ok(html!(
+                    .modified_by {
+                        "Módosíttotta "
+                        ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
+                        " a "
+                        ( link )
+                        "."
+                    }
+                    .previous_state_label {"Korábbi állapot:"}
+                    .blockamendment_container {
+                        (result)
+                    }
+                ))
+            }
         }
     } else if result.0.is_empty() {
         Err(StatusCode::NOT_FOUND)
