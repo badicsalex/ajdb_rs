@@ -2,7 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{bail, ensure, Result};
 use chrono::{Datelike, NaiveDate};
 use hun_law::{
     identifier::IdentifierCommon,
@@ -79,7 +79,7 @@ impl EnforcementDateSet {
     }
 
     /// Check the enforcement date of the reference.
-    pub fn effective_enforcement_date(&self, position: &Reference) -> Result<NaiveDate> {
+    pub fn effective_enforcement_date(&self, position: &Reference) -> NaiveDate {
         // TODO: Check the act instead
         let position = position.without_act();
         let mut result = self.default_date;
@@ -90,35 +90,22 @@ impl EnforcementDateSet {
                 }
             }
         }
-        Ok(result)
+        result
     }
 
-    pub fn is_in_force(&self, position: &Reference, on_date: NaiveDate) -> Result<bool> {
+    pub fn is_in_force(&self, position: &Reference, on_date: NaiveDate) -> bool {
         // TODO: short circuit trivial case when all dates are in the past
-        Ok(self
-            .effective_enforcement_date(position)
-            .with_context(|| "In is_in_force()")?
-            <= on_date)
+        self.effective_enforcement_date(position) <= on_date
     }
 
-    pub fn came_into_force_today(&self, position: &Reference, on_date: NaiveDate) -> Result<bool> {
+    pub fn came_into_force_today(&self, position: &Reference, on_date: NaiveDate) -> bool {
         // TODO: short circuit trivial cases when no dates are "on_date"
-        Ok(self
-            .effective_enforcement_date(position)
-            .with_context(|| "In came_into_force_today()")?
-            == on_date)
+        self.effective_enforcement_date(position) == on_date
     }
 
-    pub fn came_into_force_yesterday(
-        &self,
-        position: &Reference,
-        on_date: NaiveDate,
-    ) -> Result<bool> {
+    pub fn came_into_force_yesterday(&self, position: &Reference, on_date: NaiveDate) -> bool {
         // TODO: short circuit trivial cases when no dates are "on_date"
-        Ok(self
-            .effective_enforcement_date(position)
-            .with_context(|| "In came_into_force_today()")?
-            == on_date.pred())
+        self.effective_enforcement_date(position) == on_date.pred()
     }
 
     pub fn get_all_dates(&self) -> Vec<NaiveDate> {
@@ -288,9 +275,7 @@ mod tests {
         for test_ref in test_refs {
             let effective = TestRef {
                 position: test_ref.position.clone(),
-                date: ed_set
-                    .effective_enforcement_date(&test_ref.position)
-                    .unwrap(),
+                date: ed_set.effective_enforcement_date(&test_ref.position),
             };
             assert_eq!(
                 singleton_yaml::to_string(&test_ref).unwrap(),

@@ -31,7 +31,7 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         position: &Reference,
         element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if !self.ed_set.came_into_force_yesterday(position, self.date)? {
+        if !self.ed_set.came_into_force_yesterday(position, self.date) {
             return Ok(());
         }
         let mut add_it = if let Some(phrase) = &element.semantic_info.special_phrase {

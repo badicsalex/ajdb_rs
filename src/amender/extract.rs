@@ -78,7 +78,7 @@ fn get_modifications_in_paragraph(
     auto_repeals: &mut AutoRepealAccumulator,
 ) -> Result<()> {
     let paragraph_ref = paragraph.reference().relative_to(article_ref)?;
-    if ed_set.came_into_force_today(&paragraph_ref, date)? {
+    if ed_set.came_into_force_today(&paragraph_ref, date) {
         match &paragraph.body {
             SAEBody::Children {
                 children: ParagraphChildren::BlockAmendment(ba_content),
@@ -170,7 +170,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
         position: &Reference,
         element: &SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if self.ed_set.came_into_force_today(position, self.date)? {
+        if self.ed_set.came_into_force_today(position, self.date) {
             if let Some(phrase) = &element.semantic_info.special_phrase {
                 match phrase {
                     SpecialPhrase::ArticleTitleAmendment(sp) => {
