@@ -83,8 +83,8 @@ pub async fn render_snippet(
                                 ),
                                 snippet_range: Some(reference.clone()),
                                 date,
-                                show_changes: false,
                                 force_absolute_urls: true,
+                                ..Default::default()
                             },
                             None,
                         )
@@ -103,8 +103,8 @@ pub async fn render_snippet(
                 ),
                 snippet_range: Some(reference),
                 date,
-                show_changes: false,
                 force_absolute_urls: true,
+                ..Default::default()
             })?
         }
     } else {
