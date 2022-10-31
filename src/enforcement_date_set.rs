@@ -2,7 +2,7 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use chrono::{Datelike, NaiveDate};
 use hun_law::{
     identifier::IdentifierCommon,
@@ -51,19 +51,17 @@ impl EnforcementDateSet {
             .iter()
             .filter(|d| d.positions.is_empty())
             .collect();
-        if default_dates.is_empty() {
-            bail!(
-                "Could not find the default enforcement date (out of {})",
-                raw_enforcement_dates.len()
-            );
-        }
-        if default_dates.len() > 1 {
-            bail!(
-                "Found too many default enforcement dates ({} out of {})",
-                default_dates.len(),
-                raw_enforcement_dates.len()
-            );
-        }
+        ensure!(
+            !default_dates.is_empty(),
+            "Could not find the default enforcement date (out of {})",
+            raw_enforcement_dates.len()
+        );
+        ensure!(
+            default_dates.len() == 1,
+            "Found too many default enforcement dates ({} out of {})",
+            default_dates.len(),
+            raw_enforcement_dates.len()
+        );
         let default_date =
             ActualEnforcementDate::from_enforcement_date(default_dates[0], publication_date)?.date;
         let enforcement_dates = raw_enforcement_dates
@@ -71,6 +69,16 @@ impl EnforcementDateSet {
             .filter(|d| !d.positions.is_empty())
             .map(|d| ActualEnforcementDate::from_enforcement_date(d, publication_date))
             .collect::<Result<Vec<_>>>()?;
+
+        // See 61/2009. (XII. 14.) IRM rendelet 81. § (2)
+        ensure!(
+            enforcement_dates.iter().all(|ed| ed.date >= default_date),
+            "Some enforcement dates found after the act's default date ({default_date}): {:?}",
+            enforcement_dates
+                .iter()
+                .filter(|ed| ed.date < default_date)
+                .collect::<Vec<_>>(),
+        );
 
         Ok(Self {
             default_date,
