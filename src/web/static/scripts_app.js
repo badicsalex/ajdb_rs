@@ -130,7 +130,7 @@ window.onclick = function(event) {
         .querySelectorAll(".show_temporarily")
         .forEach(
             function(elem){
-                e.classList.remove("show_temporarily")
+                elem.classList.remove("show_temporarily")
             }
         );
 }
