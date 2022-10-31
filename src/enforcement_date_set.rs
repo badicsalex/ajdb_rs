@@ -6,7 +6,7 @@ use anyhow::{ensure, Result};
 use chrono::{Datelike, NaiveDate};
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::Reference,
+    reference::{parts::AnyReferencePart, Reference},
     semantic_info::{EnforcementDate, SpecialPhrase},
     structure::{Act, ChildrenCommon, SubArticleElement},
     util::{debug::WithElemContext, walker::SAEVisitor},
@@ -24,6 +24,7 @@ pub struct ActualEnforcementDate {
 #[derive(Debug)]
 pub struct EnforcementDateSet {
     default_date: NaiveDate,
+    // TODO: this needs a faster data structure to prevent two levels of linear searches
     enforcement_dates: Vec<ActualEnforcementDate>,
 }
 
@@ -101,6 +102,29 @@ impl EnforcementDateSet {
         result
     }
 
+    /// Returns None for elements that are not specifically mentioned (e.g. the children of mentioned elements)
+    /// Returns the enforcement date of elements that are mentioned and not in force
+    pub fn specific_element_not_in_force(
+        &self,
+        position: &Reference,
+        on_date: NaiveDate,
+    ) -> Option<NaiveDate> {
+        // TODO: Check the act instead
+        let position = position.without_act();
+        let last_part = position.get_last_part();
+        // TODO: speed this up with a hashmap if it's a performance problem
+        self.enforcement_dates
+            .iter()
+            .find(|ed| {
+                ed.date > on_date
+                    && ed.positions.iter().any(|p| {
+                        // This is needed instead of a simple == to handle ranges.
+                        is_same_level(&last_part, &p.get_last_part()) && p.contains(&position)
+                    })
+            })
+            .map(|ed| ed.date)
+    }
+
     pub fn is_in_force(&self, position: &Reference, on_date: NaiveDate) -> bool {
         // TODO: short circuit trivial case when all dates are in the past
         self.effective_enforcement_date(position) <= on_date
@@ -174,6 +198,20 @@ impl ActualEnforcementDate {
         })
     }
 }
+
+#[allow(clippy::match_like_matches_macro)]
+fn is_same_level(a: &AnyReferencePart, b: &AnyReferencePart) -> bool {
+    match (a, b) {
+        (AnyReferencePart::Empty, AnyReferencePart::Empty) => true,
+        (AnyReferencePart::Act(_), AnyReferencePart::Act(_)) => true,
+        (AnyReferencePart::Article(_), AnyReferencePart::Article(_)) => true,
+        (AnyReferencePart::Paragraph(_), AnyReferencePart::Paragraph(_)) => true,
+        (AnyReferencePart::Point(_), AnyReferencePart::Point(_)) => true,
+        (AnyReferencePart::Subpoint(_), AnyReferencePart::Subpoint(_)) => true,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hun_law::util::singleton_yaml;

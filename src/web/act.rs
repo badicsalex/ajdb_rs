@@ -21,10 +21,14 @@ use serde::Deserialize;
 
 use super::{
     act_toc::generate_toc,
-    util::{act_link, logged_http_error, today, OrToday, RenderElementContext},
+    util::{
+        act_link, logged_http_error, render_enforcement_date_marker, today, OrToday,
+        RenderElementContext,
+    },
 };
 use crate::{
     database::{ActMetadata, ActSet},
+    enforcement_date_set::EnforcementDateSet,
     persistence::Persistence,
     web::{sae::RenderSAE, util::render_changes_markers},
 };
@@ -43,7 +47,12 @@ impl RenderElement for Act {
         context: &RenderElementContext,
         _child_number: Option<usize>,
     ) -> Result<Markup, StatusCode> {
-        let context = context.set_current_ref(Some(self.reference()));
+        let mut context = context.set_current_ref(Some(self.reference()));
+        let enforcement_dates;
+        if !self.children.is_empty() {
+            enforcement_dates = EnforcementDateSet::from_act(self).map_err(logged_http_error)?;
+            context.enforcement_dates = Some(&enforcement_dates);
+        }
         Ok(html!(
             .act_title {
                 (self.identifier.to_string())
@@ -137,8 +146,13 @@ impl RenderElement for Article {
         _child_number: Option<usize>,
     ) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
+        let enforcement_date_marker =
+            render_enforcement_date_marker(&context, context.enforcement_dates);
         Ok(html!(
-            .article_container id=(context.current_anchor_string()) {
+            .article_container
+            .not_in_force[enforcement_date_marker.is_some()]
+            id=(context.current_anchor_string())
+            {
                 .article_identifier { (self.identifier.to_string()) ". §" }
                 .article_body {
                     @if let Some(title) = &self.title {
@@ -149,6 +163,7 @@ impl RenderElement for Article {
                     }
                 }
                 ( render_changes_markers(&context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
+                ( enforcement_date_marker.unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }

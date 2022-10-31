@@ -6,7 +6,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use axum::http::StatusCode;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::to_element::ReferenceToElement,
+    reference::{parts::AnyReferencePart, to_element::ReferenceToElement},
     semantic_info::{OutgoingReference, SemanticInfo},
     structure::{
         AlphabeticPointChildren, AlphabeticSubpointChildren, BlockAmendment,
@@ -17,7 +17,7 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
-use super::util::RenderElementContext;
+use super::util::{render_enforcement_date_marker, RenderElementContext};
 use crate::web::{
     act::RenderElement,
     util::{link_to_reference, logged_http_error, render_changes_markers},
@@ -45,16 +45,24 @@ where
 {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
-        if let Some(snippet_range) = &context.snippet_range {
-            if let Some(current_ref) = &context.current_ref {
+        let mut enforcement_date_marker = None;
+        if let Some(current_ref) = &context.current_ref {
+            if let Some(snippet_range) = &context.snippet_range {
                 if !snippet_range.contains(current_ref) && !current_ref.contains(snippet_range) {
                     // TODO: this may be done more optimally
                     return Ok(PreEscaped(String::new()));
                 }
             }
+            if !matches!(current_ref.get_last_part(), AnyReferencePart::Article(_)) {
+                enforcement_date_marker =
+                    render_enforcement_date_marker(&context, context.enforcement_dates);
+            }
         }
         Ok(html!(
-            .sae_container id=(context.current_anchor_string()) {
+            .sae_container
+            .not_in_force[enforcement_date_marker.is_some()]
+            id=(context.current_anchor_string())
+            {
                 .sae_identifier { (self.header_string()) }
                 .sae_body {
                     @match &self.body {
@@ -79,6 +87,7 @@ where
                     }
                 }
                 ( render_changes_markers(&context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
+                ( enforcement_date_marker.unwrap_or(PreEscaped(String::new())) )
             }
         ))
     }

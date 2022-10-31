@@ -12,16 +12,19 @@ use hun_law::{
 };
 use maud::{html, Markup};
 
+use crate::enforcement_date_set::EnforcementDateSet;
+
 #[derive(Debug, Clone, Default)]
-pub struct RenderElementContext {
+pub struct RenderElementContext<'a> {
     pub current_ref: Option<Reference>,
     pub snippet_range: Option<Reference>,
     pub date: Option<NaiveDate>,
     pub show_changes: bool,
     pub force_absolute_urls: bool,
+    pub enforcement_dates: Option<&'a EnforcementDateSet>,
 }
 
-impl RenderElementContext {
+impl<'a> RenderElementContext<'a> {
     pub fn relative_to(&self, e: &impl ReferenceToElement) -> Result<Self, StatusCode> {
         if let Some(current_ref) = &self.current_ref {
             Ok(Self {
@@ -161,6 +164,29 @@ pub fn render_changes_markers(
             .new[change_age<Duration::days(365)]
             .very_new[change_age<Duration::days(100)]
             {}
+        }
+    ))
+}
+
+pub fn render_enforcement_date_marker(
+    context: &RenderElementContext,
+    enforcement_dates: Option<&EnforcementDateSet>,
+) -> Option<Markup> {
+    let current_ref = context.current_ref.as_ref()?;
+    let enforcement_date =
+        enforcement_dates?.specific_element_not_in_force(current_ref, context.date.or_today())?;
+    let change_url = format!(
+        "{}#{}",
+        act_link(current_ref.act()?, Some(enforcement_date)),
+        anchor_string(current_ref)
+    );
+    let snippet = enforcement_date
+        .format("static:%Y. %m. %d-n lép hatályba")
+        .to_string();
+
+    Some(html!(
+        a .enforcement_date_marker href=(change_url) data-snippet=(snippet) {
+            "🕓︎"
         }
     ))
 }
