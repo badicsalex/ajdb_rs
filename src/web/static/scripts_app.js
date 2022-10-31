@@ -17,21 +17,28 @@ function snippet_hover_new(event, $snippeted_link, $parent){
     } else {
         offset.top = offset.top - pane_offset.top + $snippeted_link.height();
     }
-
-    $snippet_container.html("Előnézet betöltése...")
-    $snippet_container.load(url, function( response, status, xhr ) {
-        if ( status == "error" ) {
-            $snippet_container.html("Előnézet nem elérhető.")
-        } else {
-            add_snippet_handlers($snippet_container);
-        }
+    var reposition_snippet = function() {
         $snippet_container.css({'left': 0});
         if (offset.left + $snippet_container.outerWidth() > right_border){
-            offset.left = right_border - $snippet_container.outerWidth()
+            offset.left = right_border - $snippet_container.outerWidth();
         }
         $snippet_container.css(offset);
-    });
-    $snippet_container.css(offset);
+    };
+
+    $snippet_container.html("Előnézet betöltése...")
+    if (url.startsWith('static:')) {
+        $snippet_container.html("<i>" + url.slice(7) + "</i>");
+    } else {
+        $snippet_container.load(url, function( response, status, xhr ) {
+            if ( status == "error" ) {
+                $snippet_container.html("Előnézet nem elérhető.");
+            } else {
+                add_snippet_handlers($snippet_container);
+            }
+            reposition_snippet();
+        });
+    }
+    reposition_snippet();
     $snippet_container.data('tooltip-parent', $parent);
     snippet_hover_start($snippet_container);
     /* Cancel fadeOut if mouse enters the snippet_container itself */
