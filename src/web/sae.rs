@@ -243,12 +243,6 @@ fn text_with_semantic_info(
             )
         })?);
         let absolute_reference = reference.relative_to(current_reference).unwrap_or_default();
-        let snippet_attribute = reference.article().is_some()
-            || context
-                .snippet_range
-                .as_ref()
-                .map(|sr| !sr.contains(&absolute_reference))
-                .unwrap_or(false);
         let link = link_to_reference(
             &absolute_reference,
             context.date,
@@ -261,7 +255,6 @@ fn text_with_semantic_info(
                 )
             })?),
             reference.act().is_some() || context.force_absolute_urls,
-            snippet_attribute,
         )?;
         result.push_str(&link.0);
         prev_end = *end

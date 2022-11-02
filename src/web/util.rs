@@ -107,7 +107,6 @@ pub fn link_to_reference(
     date: Option<NaiveDate>,
     text: Option<&str>,
     absolute_url: bool,
-    snippet: bool,
 ) -> anyhow::Result<Markup> {
     let href = if absolute_url {
         format!(
@@ -123,13 +122,8 @@ pub fn link_to_reference(
     } else {
         format!("#{}", anchor_string(reference))
     };
-    let snippet_attribute = if snippet {
-        Some(snippet_link(reference, date))
-    } else {
-        None
-    };
     Ok(html!(
-        a href=(href) data-snippet=[snippet_attribute] {
+        a href=(href) data-snippet=( snippet_link(reference, date) ) {
             @if let Some(text) = text {
                 (text)
             } @else {

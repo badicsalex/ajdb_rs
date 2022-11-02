@@ -114,7 +114,7 @@ pub async fn render_snippet(
         if change_cause.is_empty() {
             let jat_ref =
                 Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
-            let link = link_to_reference(&jat_ref, Some(date.or_today().succ()), None, true, true)
+            let link = link_to_reference(&jat_ref, Some(date.or_today().succ()), None, true)
                 .map_err(logged_http_error)?;
             Ok(html!(
                 .modified_by {
@@ -132,9 +132,8 @@ pub async fn render_snippet(
         } else {
             let cause_ref =
                 Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
-            let link =
-                link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true, true)
-                    .map_err(logged_http_error)?;
+            let link = link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true)
+                .map_err(logged_http_error)?;
             if result.0.is_empty() {
                 Ok(html!(
                     .modified_by {
