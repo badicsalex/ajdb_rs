@@ -188,7 +188,7 @@ modifications:
           number: 3
         book: '3'
         structural_element:
-          AtTheEndOfChapter: "2"
+          InChapter: "2"
       pure_insertion: true
       content:
         - Subtitle:
@@ -203,7 +203,7 @@ modifications:
           year: 2009
           number: 3
         book: '3'
-        structural_element: AtTheEndOfAct
+        structural_element: EndOfAct
       pure_insertion: true
       content:
         - Subtitle:

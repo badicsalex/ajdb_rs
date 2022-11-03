@@ -62,25 +62,22 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                     *id,
                     SubtitlePosition::BeforeArticleInclusive,
                 ),
-            StructuralReferenceElement::AtTheEndOfPart(id) => self
-                .handle_end_of_structural_element(
-                    children_of_the_book,
-                    *id,
-                    StructuralElementType::Part { is_special: false },
-                ),
-            StructuralReferenceElement::AtTheEndOfTitle(id) => self
-                .handle_end_of_structural_element(
-                    children_of_the_book,
-                    *id,
-                    StructuralElementType::Title,
-                ),
-            StructuralReferenceElement::AtTheEndOfChapter(id) => self
-                .handle_end_of_structural_element(
-                    children_of_the_book,
-                    *id,
-                    StructuralElementType::Chapter,
-                ),
-            StructuralReferenceElement::AtTheEndOfAct => {
+            StructuralReferenceElement::InPart(id) => self.handle_end_of_structural_element(
+                children_of_the_book,
+                *id,
+                StructuralElementType::Part { is_special: false },
+            ),
+            StructuralReferenceElement::InTitle(id) => self.handle_end_of_structural_element(
+                children_of_the_book,
+                *id,
+                StructuralElementType::Title,
+            ),
+            StructuralReferenceElement::InChapter(id) => self.handle_end_of_structural_element(
+                children_of_the_book,
+                *id,
+                StructuralElementType::Chapter,
+            ),
+            StructuralReferenceElement::EndOfAct => {
                 Ok((children_of_the_book.len(), children_of_the_book.len()))
             }
             StructuralReferenceElement::Article(range) => {
@@ -270,7 +267,7 @@ impl StructuralBlockAmendmentWithContent {
         }
         ensure!(
             self.pure_insertion,
-            "Not pure insertion with a AtTheEndOfX ({:?}, id: {}) reference",
+            "Not pure insertion with a InX ({:?}, id: {}) reference",
             expected_type,
             expected_id
         );
