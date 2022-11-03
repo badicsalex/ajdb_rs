@@ -228,7 +228,7 @@ mod tests {
 
     const TEST_ED_SET: &str = r#"
         - date:
-            Date: 2013-07-02
+            Date: 2013-07-15
         - date:
             Date: 2013-11-02
           positions:
@@ -268,15 +268,15 @@ mod tests {
     const TEST_REFS: &str = r#"
         - position:
             article: '1'
-          date: 2013-07-02
+          date: 2013-07-15
         - position:
             article: '180'
             paragraph: '1'
-          date: 2013-07-02
+          date: 2013-07-15
         - position:
             article: '180'
             paragraph: '1'
-          date: 2013-07-02
+          date: 2013-07-15
         - position:
             article: '180'
             paragraph: '1'
@@ -298,13 +298,13 @@ mod tests {
           date: 2014-09-01
         - position:
             article: "38"
-          date: 2012-09-01
+          date: 2013-08-01
         - position:
             article: "39"
-          date: 2012-10-05
+          date: 2013-09-05
         - position:
             article: "40"
-          date: 2012-09-27
+          date: 2013-07-31
     "#;
 
     #[test]
@@ -314,7 +314,7 @@ mod tests {
         let test_refs: Vec<TestRef> = singleton_yaml::from_str(TEST_REFS).unwrap();
         let ed_set = EnforcementDateSet::from_enforcement_dates(
             &enforcement_dates,
-            NaiveDate::from_ymd(2012, 8, 28),
+            NaiveDate::from_ymd(2013, 7, 1),
         )
         .unwrap();
 
