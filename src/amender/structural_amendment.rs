@@ -5,7 +5,9 @@
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use hun_law::{
     identifier::{range::IdentifierRange, ActIdentifier, ArticleIdentifier, NumericIdentifier},
-    reference::structural::{StructuralReference, StructuralReferenceElement},
+    reference::structural::{
+        StructuralReference, StructuralReferenceElement, StructuralReferenceParent,
+    },
     structure::{
         Act, ActChild, Article, LastChange, StructuralElement, StructuralElementType, Subtitle,
     },
@@ -23,65 +25,93 @@ pub struct StructuralBlockAmendmentWithContent {
 
 impl ModifyAct for StructuralBlockAmendmentWithContent {
     fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
-        let (book_offset, children_of_the_book) = self.select_relevant_book(&act.children)?;
-        let (mut cut_start, mut cut_end) = match &self.position.structural_element {
-            StructuralReferenceElement::Part(id) => self.handle_structural_element(
-                children_of_the_book,
+        let (book_start, book_end) = match self.position.book {
+            Some(book_id) => Self::find_structural_element_offsets(
+                &act.children,
+                book_id,
+                StructuralElementType::Book,
+            )?,
+            None => (0, act.children.len()),
+        };
+        let book_children = &act.children[book_start..book_end];
+
+        let (parent_start, parent_end) = match &self.position.parent {
+            Some(StructuralReferenceParent::Part(id)) => Self::find_structural_element_offsets(
+                book_children,
                 *id,
                 StructuralElementType::Part { is_special: false },
             ),
-            StructuralReferenceElement::Title(id) => self.handle_structural_element(
-                children_of_the_book,
+            Some(StructuralReferenceParent::Title(id)) => Self::find_structural_element_offsets(
+                book_children,
                 *id,
                 StructuralElementType::Title,
             ),
+            Some(StructuralReferenceParent::Chapter(id)) => Self::find_structural_element_offsets(
+                book_children,
+                *id,
+                StructuralElementType::Chapter,
+            ),
+            Some(StructuralReferenceParent::SubtitleId(id)) => {
+                Self::find_subtitle_offsets_by_id(book_children, *id)
+            }
+            Some(StructuralReferenceParent::SubtitleTitle(title)) => {
+                Self::find_subtitle_offsets_by_title(book_children, title)
+            }
+            None => Ok((0, book_children.len())),
+        }
+        .with_context(|| {
+            anyhow!(
+                "Could not find cut points for parent element {:?}",
+                self.position.parent,
+            )
+        })?;
+        let children_start =
+            book_start + parent_start + usize::from(self.position.parent.is_some());
+        let children_end = book_start + parent_end;
+        let relevant_children = &act.children[children_start..children_end];
+        let (mut cut_start, mut cut_end) = match &self.position.structural_element {
+            StructuralReferenceElement::Part(id) => self.handle_structural_element(
+                relevant_children,
+                *id,
+                StructuralElementType::Part { is_special: false },
+            ),
+            StructuralReferenceElement::Title(id) => {
+                self.handle_structural_element(relevant_children, *id, StructuralElementType::Title)
+            }
             StructuralReferenceElement::Chapter(id) => self.handle_structural_element(
-                children_of_the_book,
+                relevant_children,
                 *id,
                 StructuralElementType::Chapter,
             ),
             StructuralReferenceElement::SubtitleId(id) => {
-                self.handle_subtitle_id(children_of_the_book, *id)
+                self.handle_subtitle_id(relevant_children, *id)
             }
             StructuralReferenceElement::SubtitleTitle(title) => {
-                self.handle_subtitle_title(children_of_the_book, title)
+                self.handle_subtitle_title(relevant_children, title)
             }
-            StructuralReferenceElement::SubtitleAfterArticle(id) => self.handle_article_relative(
-                children_of_the_book,
-                *id,
-                SubtitlePosition::AfterArticle,
-            ),
+            StructuralReferenceElement::SubtitleAfterArticle(id) => {
+                self.handle_article_relative(relevant_children, *id, SubtitlePosition::AfterArticle)
+            }
             StructuralReferenceElement::SubtitleBeforeArticle(id) => self.handle_article_relative(
-                children_of_the_book,
+                relevant_children,
                 *id,
                 SubtitlePosition::BeforeArticle,
             ),
             StructuralReferenceElement::SubtitleBeforeArticleInclusive(id) => self
                 .handle_article_relative(
-                    children_of_the_book,
+                    relevant_children,
                     *id,
                     SubtitlePosition::BeforeArticleInclusive,
                 ),
-            StructuralReferenceElement::InPart(id) => self.handle_end_of_structural_element(
-                children_of_the_book,
-                *id,
-                StructuralElementType::Part { is_special: false },
-            ),
-            StructuralReferenceElement::InTitle(id) => self.handle_end_of_structural_element(
-                children_of_the_book,
-                *id,
-                StructuralElementType::Title,
-            ),
-            StructuralReferenceElement::InChapter(id) => self.handle_end_of_structural_element(
-                children_of_the_book,
-                *id,
-                StructuralElementType::Chapter,
-            ),
-            StructuralReferenceElement::EndOfAct => {
-                Ok((children_of_the_book.len(), children_of_the_book.len()))
+            StructuralReferenceElement::SubtitleUnknown => {
+                ensure!(
+                    self.pure_insertion,
+                    "Unknown subtitles can only be inserted"
+                );
+                Ok((relevant_children.len(), relevant_children.len()))
             }
             StructuralReferenceElement::Article(range) => {
-                self.handle_article_range(children_of_the_book, range)
+                self.handle_article_range(relevant_children, range)
             }
         }?;
         if self.position.title_only {
@@ -93,8 +123,8 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
             );
             cut_end = cut_start + 1;
         }
-        cut_start += book_offset;
-        cut_end += book_offset;
+        cut_start += children_start;
+        cut_end += children_start;
         let mut tail = act.children.split_off(cut_end);
         if self.content.is_empty() {
             let cut_out = act.children.split_off(cut_start);
@@ -172,35 +202,36 @@ impl StructuralBlockAmendmentWithContent {
         pre_search_fn: impl Fn(&ActChild) -> bool,
         search_fn: impl Fn(&ActChild) -> bool,
     ) -> Result<(usize, usize)> {
-        let last_smaller = children.iter().rposition(pre_search_fn).ok_or_else(|| {
-            anyhow!(
-                // NOTE: inserting before everything is not supported
-                "Could not find element to insert after",
-            )
-        })?;
-        let insertion_point = children
-            .iter()
-            .skip(last_smaller + 1)
-            .position(search_fn)
-            .map_or(children.len(), |p| p + last_smaller + 1);
+        let insertion_point = match children.iter().rposition(pre_search_fn) {
+            Some(last_smaller) => children
+                .iter()
+                .skip(last_smaller + 1)
+                .position(search_fn)
+                .map_or(children.len(), |p| p + last_smaller + 1),
+            None => children
+                .iter()
+                .position(search_fn)
+                .unwrap_or(children.len()),
+        };
         Ok((insertion_point, insertion_point))
     }
 
-    fn select_relevant_book<'a, 'c>(
-        &'a self,
-        children: &'c [ActChild],
-    ) -> Result<(usize, &'c [ActChild])> {
-        if let Some(book_id) = self.position.book {
-            let (book_start, book_end) = Self::get_cut_points(
-                children,
-                |child| get_book_id(child) == Some(book_id),
-                |child| get_book_id(child).is_some(),
-            )
-            .with_context(|| anyhow!("Could not find book with id {}", book_id))?;
-            Ok((book_start, &children[book_start..book_end]))
-        } else {
-            Ok((0, children))
-        }
+    fn find_structural_element_offsets(
+        children: &[ActChild],
+        expected_id: NumericIdentifier,
+        expected_type: StructuralElementType,
+    ) -> Result<(usize, usize)> {
+        Self::get_cut_points(
+            children,
+            |child| {
+                as_structural_element(child).map_or(false, |se| {
+                    se.element_type == expected_type && se.identifier == expected_id
+                })
+            },
+            |child| {
+                as_structural_element(child).map_or(false, |se| se.element_type <= expected_type)
+            },
+        )
     }
 
     fn handle_structural_element(
@@ -209,13 +240,6 @@ impl StructuralBlockAmendmentWithContent {
         expected_id: NumericIdentifier,
         expected_type: StructuralElementType,
     ) -> Result<(usize, usize)> {
-        fn as_structural_element(child: &ActChild) -> Option<&StructuralElement> {
-            if let ActChild::StructuralElement(se) = child {
-                Some(se)
-            } else {
-                None
-            }
-        }
         if self.pure_insertion {
             Self::get_insertion_point(
                 children,
@@ -229,19 +253,15 @@ impl StructuralBlockAmendmentWithContent {
                         .map_or(false, |se| se.element_type <= expected_type)
                 },
             )
+            .with_context(|| {
+                anyhow!(
+                    "Could not find insertion point for element {:?} with id {}",
+                    expected_type,
+                    expected_id
+                )
+            })
         } else {
-            Self::get_cut_points(
-                children,
-                |child| {
-                    as_structural_element(child).map_or(false, |se| {
-                        se.element_type == expected_type && se.identifier == expected_id
-                    })
-                },
-                |child| {
-                    as_structural_element(child)
-                        .map_or(false, |se| se.element_type <= expected_type)
-                },
-            )
+            Self::find_structural_element_offsets(children, expected_id, expected_type)
         }
         .with_context(|| {
             anyhow!(
@@ -252,43 +272,20 @@ impl StructuralBlockAmendmentWithContent {
         })
     }
 
-    fn handle_end_of_structural_element(
-        &self,
+    fn find_subtitle_offsets_by_id(
         children: &[ActChild],
         expected_id: NumericIdentifier,
-        expected_type: StructuralElementType,
     ) -> Result<(usize, usize)> {
-        fn as_structural_element(child: &ActChild) -> Option<&StructuralElement> {
-            if let ActChild::StructuralElement(se) = child {
-                Some(se)
-            } else {
-                None
-            }
-        }
-        ensure!(
-            self.pure_insertion,
-            "Not pure insertion with a InX ({:?}, id: {}) reference",
-            expected_type,
-            expected_id
-        );
-        Self::get_insertion_point(
+        Self::get_cut_points(
             children,
+            |child| get_subtitle_id(child).map_or(false, |id| id == expected_id),
             |child| {
-                as_structural_element(child).map_or(false, |se| {
-                    se.element_type == expected_type && se.identifier == expected_id
-                })
-            },
-            |child| {
-                as_structural_element(child).map_or(false, |se| se.element_type <= expected_type)
+                matches!(
+                    child,
+                    ActChild::Subtitle(_) | ActChild::StructuralElement(_)
+                )
             },
         )
-        .with_context(|| {
-            anyhow!(
-                "Could not find cut points at the end of element {:?} with id {}",
-                expected_type,
-                expected_id
-            )
-        })
     }
 
     fn handle_subtitle_id(
@@ -308,16 +305,7 @@ impl StructuralBlockAmendmentWithContent {
                 },
             )
         } else {
-            Self::get_cut_points(
-                children,
-                |child| get_subtitle_id(child).map_or(false, |id| id == expected_id),
-                |child| {
-                    matches!(
-                        child,
-                        ActChild::Subtitle(_) | ActChild::StructuralElement(_)
-                    )
-                },
-            )
+            Self::find_subtitle_offsets_by_id(children, expected_id)
         }
         .with_context(|| {
             anyhow!(
@@ -325,6 +313,22 @@ impl StructuralBlockAmendmentWithContent {
                 expected_id
             )
         })
+    }
+
+    fn find_subtitle_offsets_by_title(
+        children: &[ActChild],
+        expected_title: &str,
+    ) -> Result<(usize, usize)> {
+        Self::get_cut_points(
+            children,
+            |child| get_subtitle_title(child).map_or(false, |title| title == expected_title),
+            |child| {
+                matches!(
+                    child,
+                    ActChild::Subtitle(_) | ActChild::StructuralElement(_)
+                )
+            },
+        )
     }
 
     fn handle_subtitle_title(
@@ -337,16 +341,7 @@ impl StructuralBlockAmendmentWithContent {
                 "Pure insertions for the SubtitleTitle case are not supported"
             ))
         } else {
-            Self::get_cut_points(
-                children,
-                |child| get_subtitle_title(child).map_or(false, |title| title == expected_title),
-                |child| {
-                    matches!(
-                        child,
-                        ActChild::Subtitle(_) | ActChild::StructuralElement(_)
-                    )
-                },
-            )
+            Self::find_subtitle_offsets_by_title(children, expected_title)
         }
         .with_context(|| {
             anyhow!(
@@ -446,19 +441,6 @@ impl StructuralBlockAmendmentWithContent {
     }
 }
 
-fn get_book_id(child: &ActChild) -> Option<NumericIdentifier> {
-    if let ActChild::StructuralElement(StructuralElement {
-        identifier,
-        element_type: StructuralElementType::Book,
-        ..
-    }) = child
-    {
-        Some(*identifier)
-    } else {
-        None
-    }
-}
-
 fn get_subtitle_id(child: &ActChild) -> Option<NumericIdentifier> {
     if let ActChild::Subtitle(Subtitle {
         identifier: Some(identifier),
@@ -487,6 +469,14 @@ fn get_article_id(child: &ActChild) -> Option<ArticleIdentifier> {
     }
 }
 
+fn as_structural_element(child: &ActChild) -> Option<&StructuralElement> {
+    if let ActChild::StructuralElement(se) = child {
+        Some(se)
+    } else {
+        None
+    }
+}
+
 impl AffectedAct for StructuralBlockAmendmentWithContent {
     fn affected_act(&self) -> Result<ActIdentifier> {
         self.position.act.ok_or_else(|| {
@@ -501,6 +491,24 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+
+    impl StructuralBlockAmendmentWithContent {
+        fn select_relevant_book<'a>(
+            &self,
+            children: &'a [ActChild],
+        ) -> Result<(usize, &'a [ActChild])> {
+            if let Some(book_id) = self.position.book {
+                let (book_start, book_end) = Self::find_structural_element_offsets(
+                    children,
+                    book_id,
+                    StructuralElementType::Book,
+                )?;
+                Ok((book_start, &children[book_start..book_end]))
+            } else {
+                Ok((0, children))
+            }
+        }
+    }
 
     #[test]
     fn test_select_relevant_book() {
@@ -1027,6 +1035,7 @@ mod tests {
             position: StructuralReference {
                 act: None,
                 book: None,
+                parent: None,
                 structural_element: StructuralReferenceElement::SubtitleId(1.into()),
                 title_only: false,
             },

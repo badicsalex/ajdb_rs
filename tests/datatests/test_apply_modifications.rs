@@ -4,7 +4,9 @@
 
 use std::path::Path;
 
-use ajdb::amender::{AppliableModification, AppliableModificationSet, AppliableModificationType};
+use ajdb::amender::{
+    AppliableModification, AppliableModificationSet, AppliableModificationType, OnError,
+};
 use chrono::NaiveDate;
 use hun_law::identifier::range::{IdentifierRange, IdentifierRangeFrom};
 use hun_law::identifier::{ActIdentifier, ArticleIdentifier};
@@ -60,6 +62,7 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
         &mut act,
         NaiveDate::from_ymd(2013, 4, 20),
         modifications,
+        OnError::ReturnErr,
     )?;
     ensure_eq(
         &test_data.children_expected,

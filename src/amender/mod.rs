@@ -47,6 +47,7 @@ impl AppliableModificationSet {
         act_id: ActIdentifier,
         date: NaiveDate,
         state: &mut ActSet,
+        on_error: OnError,
     ) -> Result<()> {
         if !state.has_act(act_id) {
             debug!("Act not in database for amending: {}", act_id);
@@ -55,7 +56,7 @@ impl AppliableModificationSet {
         if let Some(modifications) = self.modifications.get_vec(&act_id).cloned() {
             let mut act = state.get_act(act_id)?.act()?;
             let modifications_len = modifications.len();
-            Self::apply_to_act(&mut act, date, modifications)?;
+            Self::apply_to_act(&mut act, date, modifications, on_error)?;
             state.store_act(act)?;
             info!("Applied {:?} amendments to {}", modifications_len, act_id);
         }
@@ -66,6 +67,7 @@ impl AppliableModificationSet {
         act: &mut Act,
         date: NaiveDate,
         mut modifications: Vec<AppliableModification>,
+        on_error: OnError,
     ) -> Result<()> {
         fix_amendment_order(&mut modifications);
         let mut do_full_reparse = false;
@@ -79,7 +81,12 @@ impl AppliableModificationSet {
             match result {
                 Ok(NeedsFullReparse::No) => (),
                 Ok(NeedsFullReparse::Yes) => do_full_reparse = true,
-                Err(err) => warn!("{:?}\n\n", err),
+                Err(err) => match on_error {
+                    OnError::Warn => warn!("{:?}\n\n", err),
+                    OnError::ReturnErr => {
+                        return Err(err).with_elem_context("Error applying modifications", act);
+                    }
+                },
             }
         }
         if do_full_reparse {
@@ -98,9 +105,9 @@ impl AppliableModificationSet {
     /// Apply the modification list calculated by get_all_modifications
     /// This function is separate to make sure that immutable and mutable
     /// references to the DatabaseState are properly exclusive.
-    pub fn apply_rest(&self, date: NaiveDate, state: &mut ActSet) -> Result<()> {
+    pub fn apply_rest(&self, date: NaiveDate, state: &mut ActSet, on_error: OnError) -> Result<()> {
         for act_id in self.modifications.keys() {
-            self.apply_to_act_in_state(*act_id, date, state)?
+            self.apply_to_act_in_state(*act_id, date, state, on_error)?
         }
         Ok(())
     }
@@ -133,6 +140,12 @@ impl AppliableModificationSet {
         }
         self.modifications
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OnError {
+    Warn,
+    ReturnErr,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
