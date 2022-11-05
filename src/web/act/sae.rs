@@ -17,10 +17,10 @@ use hun_law::{
 };
 use maud::{html, Markup, PreEscaped};
 
-use super::util::{render_enforcement_date_marker, RenderElementContext};
+use super::{context::RenderElementContext, markers::render_enforcement_date_marker};
 use crate::web::{
-    act::RenderElement,
-    util::{link_to_reference, logged_http_error, render_changes_markers},
+    act::{act_children::RenderActChild, markers::render_changes_markers},
+    util::{link_to_reference, logged_http_error},
 };
 
 pub trait RenderSAE {

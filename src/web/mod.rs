@@ -3,17 +3,14 @@
 // All rights reserved.
 
 mod act;
-mod act_toc;
 mod index;
-mod sae;
 mod snippet;
 mod util;
 
 use std::{net::SocketAddr, sync::Arc};
 
-use crate::persistence::Persistence;
-
 use self::{act::render_act, index::render_index, snippet::render_snippet};
+use crate::persistence::Persistence;
 
 pub async fn web_main() {
     let persistence = Persistence::new("db");

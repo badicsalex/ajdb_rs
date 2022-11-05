@@ -5,10 +5,10 @@
 use std::future::Future;
 use std::hash::Hash;
 use std::num::NonZeroUsize;
+use std::sync::{Arc, Mutex};
 
 use async_once_cell::OnceCell;
 use lru::LruCache;
-use std::sync::{Arc, Mutex};
 
 /*
    Reasons behind the 'data' field of this abomination:

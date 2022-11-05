@@ -20,17 +20,10 @@ use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 
 use super::{
-    act::RenderElement,
-    util::{link_to_reference, logged_http_error, RenderElementContext},
+    act::{act_children::RenderActChild, context::RenderElementContext, sae::RenderSAE},
+    util::{link_to_reference, logged_http_error, today, OrToday},
 };
-use crate::{
-    database::ActSet,
-    persistence::Persistence,
-    web::{
-        sae::RenderSAE,
-        util::{today, OrToday},
-    },
-};
+use crate::{database::ActSet, persistence::Persistence};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenderSnippetParams {
