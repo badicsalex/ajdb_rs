@@ -2,14 +2,15 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 #[allow(clippy::module_inception)]
-pub mod act;
-pub mod act_children;
+mod act;
+mod act_children;
 pub mod context;
-pub mod layout;
-pub mod markers;
-pub mod menu;
-pub mod sae;
-pub mod toc;
+pub mod document_part;
+mod layout;
+mod markers;
+mod menu;
+mod sae;
+mod toc;
 
 use std::sync::Arc;
 
@@ -24,8 +25,8 @@ use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 
 use self::{
-    context::RenderElementContext, layout::document_layout, menu::render_act_menu,
-    toc::generate_toc,
+    act::render_act_body, context::RenderElementContext, document_part::DocumentPart,
+    layout::document_layout, menu::render_act_menu, toc::generate_toc,
 };
 use super::util::{today, OrToday};
 use crate::{
@@ -34,7 +35,24 @@ use crate::{
 };
 
 pub trait RenderElement {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode>;
+}
+
+impl<T: RenderElement> RenderElement for Vec<T> {
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode> {
+        for child in self {
+            child.render(context, output)?
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -58,11 +76,6 @@ pub async fn render_existing_act<'a>(
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let modification_dates = act_metadata.modification_dates();
-    let act_render_context = RenderElementContext {
-        date: if date == today() { None } else { Some(date) },
-        show_changes: true,
-        ..Default::default()
-    };
     Ok(document_layout(
         act.identifier.to_string(),
         generate_toc(&act),
@@ -72,7 +85,7 @@ pub async fn render_existing_act<'a>(
             act.publication_date,
             modification_dates,
         ),
-        act.render(&act_render_context)?,
+        render_act_body(&act, if date == today() { None } else { Some(date) })?,
     ))
 }
 

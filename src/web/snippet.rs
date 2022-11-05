@@ -16,11 +16,15 @@ use hun_law::{
     reference::{parts::AnyReferencePart, Reference},
     util::compact_string::CompactString,
 };
-use maud::{html, Markup, PreEscaped};
+use maud::{html, Markup};
 use serde::Deserialize;
 
 use super::{
-    act::{context::RenderElementContext, RenderElement},
+    act::{
+        context::RenderElementContext,
+        document_part::{DocumentPartMetadata, RenderPartParams},
+        RenderElement,
+    },
     util::{link_to_reference, logged_http_error, today, OrToday},
 };
 use crate::{database::ActSet, persistence::Persistence};
@@ -60,45 +64,47 @@ pub async fn render_snippet(
     // 'reason' snippet, which is done below if the result here is empty.
     // For non-modification-type snippets, the end result will be a 404
     let result = if let Some(article_range) = reference.article() {
-        if article_range.is_range()
-            || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
-        {
-            let rendered_articles = act
-                .articles()
-                .filter(|article| article_range.contains(article.identifier))
-                .map(|article| {
-                    article
-                        .render(&RenderElementContext {
-                            current_ref: Some(
-                                (act_id, IdentifierRange::from_single(article.identifier)).into(),
-                            ),
-                            snippet_range: Some(reference.clone()),
-                            date,
-                            force_absolute_urls: true,
-                            ..Default::default()
-                        })
-                        .map(|r| r.0)
-                })
-                .collect::<Result<String, StatusCode>>()?;
-            PreEscaped(rendered_articles)
-        } else {
-            let article = act
-                .article(article_range.first_in_range())
-                .ok_or(StatusCode::NOT_FOUND)?;
-
-            article.children.render(&RenderElementContext {
-                current_ref: Some(
-                    (act_id, IdentifierRange::from_single(article.identifier)).into(),
-                ),
-                snippet_range: Some(reference),
-                date,
-                force_absolute_urls: true,
+        let context = RenderElementContext {
+            snippet_range: Some(reference.clone()),
+            date,
+            part_metadata: DocumentPartMetadata {
+                reference: (
+                    act_id,
+                    IdentifierRange::from_single(article_range.first_in_range()),
+                )
+                    .into(),
                 ..Default::default()
-            })?
+            },
+            ..Default::default()
+        };
+        let mut parts = Vec::new();
+        for article in act
+            .articles()
+            .filter(|article| article_range.contains(article.identifier))
+        {
+            if article_range.is_range()
+                || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
+            {
+                article.render(&context, &mut parts)?
+            } else {
+                article.children.render(&context, &mut parts)?;
+            }
         }
+        parts
     } else {
-        PreEscaped(String::new())
+        Vec::new()
     };
+    let render_part_params = RenderPartParams {
+        date,
+        convert_links: true,
+        force_absolute_urls: true,
+        ..Default::default()
+    };
+    let result = html!(
+        @for part in result {
+            ( part.render_part(&render_part_params).map_err(logged_http_error)? )
+        }
+    );
     if let Some(change_cause) = &params.change_cause {
         if change_cause.is_empty() {
             let jat_ref =

@@ -10,70 +10,92 @@ use hun_law::{
     identifier::NumericIdentifier,
     structure::{ActChild, Article, StructuralElement, StructuralElementType, Subtitle},
 };
-use maud::{html, Markup, PreEscaped};
 
 use super::{
-    context::RenderElementContext, markers::render_enforcement_date_marker, RenderElement,
+    context::RenderElementContext,
+    document_part::{DocumentPart, DocumentPartSpecific},
+    RenderElement,
 };
-use crate::web::{act::markers::render_changes_markers, util::logged_http_error};
+use crate::web::util::logged_http_error;
 
 impl RenderElement for ActChild {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode> {
         match self {
-            ActChild::StructuralElement(x) => x.render(context),
-            ActChild::Subtitle(x) => x.render(context),
-            ActChild::Article(x) => x.render(context),
+            ActChild::StructuralElement(x) => x.render(context, output),
+            ActChild::Subtitle(x) => x.render(context, output),
+            ActChild::Article(x) => x.render(context, output),
         }
     }
 }
 
 impl RenderElement for StructuralElement {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode> {
+        let context = context
+            .clone()
+            .update_last_changed(self.last_change.as_ref());
         let class_name = match self.element_type {
-            StructuralElementType::Book => "se_book",
-            StructuralElementType::Part { .. } => "se_part",
-            StructuralElementType::Title => "se_title",
-            StructuralElementType::Chapter => "se_chapter",
+            StructuralElementType::Book => "book",
+            StructuralElementType::Part { .. } => "part",
+            StructuralElementType::Title => "title",
+            StructuralElementType::Chapter => "chapter",
         };
-        let id = if !context.in_block_amendment {
-            structural_element_html_id(context.current_book, self)
-        } else {
-            "".to_owned()
+        let id = structural_element_html_id(context.current_book, self);
+        let mut text = self.header_string().map_err(logged_http_error)?;
+        if !self.title.is_empty() {
+            text.push_str("<br>");
+            text.push_str(&self.title);
         };
-        Ok(html!(
-            .se_container {
-                .(class_name) #(id) {
-                    ( self.header_string().map_err(logged_http_error)? )
-                    @if !self.title.is_empty() {
-                        br;
-                        ( self.title )
-                    }
-                }
-                ( render_changes_markers(context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
-            }
-        ))
+        output.push(DocumentPart {
+            specifics: DocumentPartSpecific::StructuralElement {
+                class_name,
+                id,
+                line1: self.header_string().map_err(logged_http_error)?,
+                line2: if !self.title.is_empty() {
+                    Some(&self.title)
+                } else {
+                    None
+                },
+            },
+            metadata: context.part_metadata,
+        });
+        Ok(())
     }
 }
 
 impl RenderElement for Subtitle {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
-        let id = if !context.in_block_amendment {
-            subtitle_html_id(context.current_book, context.current_chapter, self)
-        } else {
-            "".to_owned()
-        };
-        Ok(html!(
-            .se_container {
-                .se_subtitle  #(id) {
-                    @if let Some(identifier) = self.identifier {
-                        ( identifier.with_slash().to_string() )
-                        ". "
-                    }
-                    ( self.title )
-                }
-                ( render_changes_markers(context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
-            }
-        ))
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode> {
+        let context = context
+            .clone()
+            .update_last_changed(self.last_change.as_ref());
+        let id = subtitle_html_id(context.current_book, context.current_chapter, self);
+        let mut text = String::new();
+
+        if let Some(identifier) = self.identifier {
+            let _never_fails = write!(text, "{}. ", identifier.with_slash());
+        }
+        text.push_str(&self.title);
+        output.push(DocumentPart {
+            specifics: DocumentPartSpecific::StructuralElement {
+                class_name: "subtitle",
+                id,
+                line1: text,
+                line2: None,
+            },
+            metadata: context.part_metadata,
+        });
+        Ok(())
     }
 }
 
@@ -123,27 +145,32 @@ pub fn subtitle_html_id(
 }
 
 impl RenderElement for Article {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
-        let context = context.relative_to(self)?;
-        let enforcement_date_marker =
-            render_enforcement_date_marker(&context, context.enforcement_dates);
-        Ok(html!(
-            .article_container
-            .not_in_force[enforcement_date_marker.is_some()]
-            id=(context.current_anchor_string())
-            {
-                .article_identifier { (self.identifier.to_string()) ". §" }
-                .article_body {
-                    @if let Some(title) = &self.title {
-                        .article_title { "[" (title) "]" }
-                    }
-                    @for child in &self.children {
-                        ( child.render(&context)? )
-                    }
-                }
-                ( render_changes_markers(&context, &self.last_change).unwrap_or(PreEscaped(String::new())) )
-                ( enforcement_date_marker.unwrap_or(PreEscaped(String::new())) )
-            }
-        ))
+    fn render<'a>(
+        &'a self,
+        context: &RenderElementContext,
+        output: &mut Vec<DocumentPart<'a>>,
+    ) -> Result<(), StatusCode> {
+        let mut context = context
+            .clone()
+            .relative_to(self)?
+            .update_last_changed(self.last_change.as_ref())
+            .update_enforcement_date_marker();
+
+        context.show_article_header = true;
+        if let Some(title) = &self.title {
+            output.push(DocumentPart {
+                specifics: DocumentPartSpecific::ArticleTitle { title },
+                metadata: context.part_metadata.clone(),
+            });
+            context.show_article_header = false;
+        }
+
+        context = context.indent();
+        for child in &self.children {
+            child.render(&context, output)?;
+            context.show_article_header = false;
+            context.part_metadata.enforcement_date_marker = None;
+        }
+        Ok(())
     }
 }
