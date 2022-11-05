@@ -10,14 +10,10 @@ use hun_law::{
 };
 use maud::{html, Markup};
 
-use super::{act_children::RenderActChild, context::RenderElementContext};
+use super::{context::RenderElementContext, RenderElement};
 use crate::{enforcement_date_set::EnforcementDateSet, web::util::logged_http_error};
 
-pub trait RenderAct {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
-}
-
-impl RenderAct for Act {
+impl RenderElement for Act {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let mut context = context.set_current_ref(Some(self.reference()));
         let enforcement_dates;

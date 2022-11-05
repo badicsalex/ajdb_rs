@@ -24,7 +24,7 @@ use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 
 use self::{
-    act::RenderAct, context::RenderElementContext, layout::document_layout, menu::render_act_menu,
+    context::RenderElementContext, layout::document_layout, menu::render_act_menu,
     toc::generate_toc,
 };
 use super::util::{today, OrToday};
@@ -32,6 +32,10 @@ use crate::{
     database::{ActMetadata, ActSet},
     persistence::Persistence,
 };
+
+pub trait RenderElement {
+    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenderActParams {

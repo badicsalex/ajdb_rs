@@ -13,15 +13,11 @@ use hun_law::{
 use maud::{html, Markup, PreEscaped};
 
 use super::{
-    context::RenderElementContext, markers::render_enforcement_date_marker, sae::RenderSAE,
+    context::RenderElementContext, markers::render_enforcement_date_marker, RenderElement,
 };
 use crate::web::{act::markers::render_changes_markers, util::logged_http_error};
 
-pub trait RenderActChild {
-    fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode>;
-}
-
-impl RenderActChild for ActChild {
+impl RenderElement for ActChild {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         match self {
             ActChild::StructuralElement(x) => x.render(context),
@@ -31,7 +27,7 @@ impl RenderActChild for ActChild {
     }
 }
 
-impl RenderActChild for StructuralElement {
+impl RenderElement for StructuralElement {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let class_name = match self.element_type {
             StructuralElementType::Book => "se_book",
@@ -59,7 +55,7 @@ impl RenderActChild for StructuralElement {
     }
 }
 
-impl RenderActChild for Subtitle {
+impl RenderElement for Subtitle {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let id = if !context.in_block_amendment {
             subtitle_html_id(context.current_book, context.current_chapter, self)
@@ -126,7 +122,7 @@ pub fn subtitle_html_id(
     result
 }
 
-impl RenderActChild for Article {
+impl RenderElement for Article {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
         let context = context.relative_to(self)?;
         let enforcement_date_marker =

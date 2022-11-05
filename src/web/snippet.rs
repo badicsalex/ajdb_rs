@@ -20,7 +20,7 @@ use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 
 use super::{
-    act::{act_children::RenderActChild, context::RenderElementContext, sae::RenderSAE},
+    act::{context::RenderElementContext, RenderElement},
     util::{link_to_reference, logged_http_error, today, OrToday},
 };
 use crate::{database::ActSet, persistence::Persistence};
