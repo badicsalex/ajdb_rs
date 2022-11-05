@@ -144,14 +144,14 @@ impl RenderSAE for BlockAmendment {
 
 impl RenderSAE for StructuralBlockAmendment {
     fn render(&self, context: &RenderElementContext) -> Result<Markup, StatusCode> {
-        let context = context.set_current_ref(None);
+        let context = context.set_current_ref(None).enter_block_amendment();
         Ok(html!(
             @if let Some(intro) = &self.intro {
                 .blockamendment_text { "(" (intro) ")" }
             }
             .blockamendment_container {
                 @for child in &self.children {
-                    ( child.render(&context, None)? )
+                    ( child.render(&context)? )
                 }
             }
             @if let Some(wrap_up) = &self.wrap_up {

@@ -4,8 +4,13 @@
 
 use std::fmt::Write;
 
-use hun_law::structure::{Act, ActChild, StructuralElementType};
+use hun_law::{
+    identifier::NumericIdentifier,
+    structure::{Act, ActChild, StructuralElement, StructuralElementType},
+};
 use maud::{Markup, PreEscaped};
+
+use super::act_children::{structural_element_html_id, subtitle_html_id};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum ActChildLevelHelper {
@@ -23,10 +28,16 @@ fn act_child_level(child: &ActChild) -> Option<ActChildLevelHelper> {
         ActChild::Article(_) => None,
     }
 }
-fn generate_toc_entry_for_child(child: &ActChild, child_num: usize, result: &mut String) {
-    let _never_fails = write!(result, "<a href=\"#se_{:?}\">", child_num);
+fn generate_toc_entry_for_child(
+    child: &ActChild,
+    book: Option<NumericIdentifier>,
+    chapter: Option<NumericIdentifier>,
+    result: &mut String,
+) {
     match child {
         ActChild::StructuralElement(se) => {
+            let id = structural_element_html_id(book, se);
+            let _never_fails = write!(result, "<a href=\"#{id}\">");
             if se.title.is_empty() {
                 // TODO: That unwrap_or() should probably be logged at least.
                 result.push_str(&se.header_string().unwrap_or_else(|_| "---".into()));
@@ -35,6 +46,8 @@ fn generate_toc_entry_for_child(child: &ActChild, child_num: usize, result: &mut
             }
         }
         ActChild::Subtitle(st) => {
+            let id = subtitle_html_id(book, chapter, st);
+            let _never_fails = write!(result, "<a href=\"#{id}\">");
             result.push_str(&st.title);
         }
         ActChild::Article(_) => (),
@@ -46,7 +59,26 @@ pub fn generate_toc(act: &Act) -> Markup {
     let mut result = String::new();
     let mut current_level = ActChildLevelHelper::Top;
     let mut level_stack = Vec::new();
-    for (child_num, child) in act.children.iter().enumerate() {
+    let mut book = None;
+    let mut chapter = None;
+    for child in &act.children {
+        match child {
+            ActChild::StructuralElement(StructuralElement {
+                element_type: StructuralElementType::Book,
+                identifier,
+                ..
+            }) => {
+                book = Some(*identifier);
+                chapter = None;
+            }
+            ActChild::StructuralElement(StructuralElement {
+                element_type: StructuralElementType::Chapter,
+                identifier,
+                ..
+            }) => chapter = Some(*identifier),
+            _ => (),
+        };
+
         if let Some(child_level) = act_child_level(child) {
             while current_level > child_level {
                 result.push_str("</li></ul>");
@@ -61,7 +93,7 @@ pub fn generate_toc(act: &Act) -> Markup {
             } else {
                 result.push_str("</li><li>");
             }
-            generate_toc_entry_for_child(child, child_num, &mut result);
+            generate_toc_entry_for_child(child, book, chapter, &mut result);
         }
     }
     while level_stack.pop().is_some() {
@@ -113,10 +145,10 @@ mod tests {
             ],
             html!(
                 ul {
-                    li { a href="#se_0" { "Bevezetes" }
+                    li { a href="#se_b1" { "Bevezetes" }
                         ul {
-                            li { a href="#se_1" { "Cim 1" } }
-                            li { a href="#se_2" { "II. CÍM" } }
+                            li { a href="#se_b1_t1" { "Cim 1" } }
+                            li { a href="#se_b1_t2" { "II. CÍM" } }
                         }
                     }
                 }
@@ -136,15 +168,15 @@ mod tests {
             html!(
                 ul {
                     li {
-                        a href="#se_0" { "Bevezetes" }
+                        a href="#se_b1" { "Bevezetes" }
                         ul {
-                            li { a href="#se_1" { "I. FEJEZET" } }
+                            li { a href="#se_b1_c1" { "I. FEJEZET" } }
                         }
                         ul {
                             li {
-                                a href="#se_2" { "ÁLTALÁNOS RÉSZ" }
+                                a href="#se_b1_p1" { "ÁLTALÁNOS RÉSZ" }
                                 ul {
-                                    li { a href="#se_3" { "II. FEJEZET" } }
+                                    li { a href="#se_b1_c2" { "II. FEJEZET" } }
                                 }
                             }
                         }
@@ -165,12 +197,12 @@ mod tests {
             html!(
                 ul {
                     li {
-                        a href="#se_0" { "ELSŐ RÉSZ" }
+                        a href="#se_p1" { "ELSŐ RÉSZ" }
                         ul {
-                            li { a href="#se_1" { "I. FEJEZET" } }
+                            li { a href="#se_c1" { "I. FEJEZET" } }
                         }
                         ul {
-                            li { a href="#se_2" { "I. CÍM" } }
+                            li { a href="#se_t1" { "I. CÍM" } }
                         }
                     }
                 }
@@ -183,7 +215,7 @@ mod tests {
         test_single_toc(
             &[
                 se(1, "Bevezetes", Book),
-                se(1, "Cim 1", Title),
+                se(1, "Fejezet 1", Chapter),
                 Subtitle {
                     identifier: None,
                     title: "Nice".into(),
@@ -196,7 +228,7 @@ mod tests {
                     last_change: None,
                 }
                 .into(),
-                se(2, "", Title),
+                se(2, "", Chapter),
                 Subtitle {
                     identifier: None,
                     title: "Nice 3".into(),
@@ -207,19 +239,19 @@ mod tests {
             html!(
                 ul {
                     li {
-                        a href="#se_0" { "Bevezetes" }
+                        a href="#se_b1" { "Bevezetes" }
                         ul {
                             li {
-                                a href="#se_1" { "Cim 1" }
+                                a href="#se_b1_c1" { "Fejezet 1" }
                                 ul {
-                                    li { a href="#se_2" { "Nice" } }
-                                    li { a href="#se_3" { "Nice with id" } }
+                                    li { a href="#se_b1_c1_stNice" { "Nice" } }
+                                    li { a href="#se_b1_c1_st2" { "Nice with id" } }
                                 }
                             }
                             li {
-                                a href="#se_4" { "II. CÍM" }
+                                a href="#se_b1_c2" { "II. FEJEZET" }
                                 ul {
-                                    li { a href="#se_5" { "Nice 3" } }
+                                    li { a href="#se_b1_c2_stNice-3" { "Nice 3" } }
                                 }
                             }
                         }

@@ -4,7 +4,10 @@
 
 use axum::http::StatusCode;
 use chrono::NaiveDate;
-use hun_law::reference::{to_element::ReferenceToElement, Reference};
+use hun_law::{
+    identifier::NumericIdentifier,
+    reference::{to_element::ReferenceToElement, Reference},
+};
 
 use crate::{
     enforcement_date_set::EnforcementDateSet,
@@ -19,6 +22,9 @@ pub struct RenderElementContext<'a> {
     pub show_changes: bool,
     pub force_absolute_urls: bool,
     pub enforcement_dates: Option<&'a EnforcementDateSet>,
+    pub current_book: Option<NumericIdentifier>,
+    pub current_chapter: Option<NumericIdentifier>,
+    pub in_block_amendment: bool,
 }
 
 impl<'a> RenderElementContext<'a> {
@@ -40,6 +46,13 @@ impl<'a> RenderElementContext<'a> {
     pub fn set_current_ref(&self, current_ref: Option<Reference>) -> Self {
         Self {
             current_ref,
+            ..self.clone()
+        }
+    }
+
+    pub fn enter_block_amendment(&self) -> Self {
+        Self {
+            in_block_amendment: true,
             ..self.clone()
         }
     }

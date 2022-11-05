@@ -68,19 +68,15 @@ pub async fn render_snippet(
                 .filter(|article| article_range.contains(article.identifier))
                 .map(|article| {
                     article
-                        .render(
-                            &RenderElementContext {
-                                current_ref: Some(
-                                    (act_id, IdentifierRange::from_single(article.identifier))
-                                        .into(),
-                                ),
-                                snippet_range: Some(reference.clone()),
-                                date,
-                                force_absolute_urls: true,
-                                ..Default::default()
-                            },
-                            None,
-                        )
+                        .render(&RenderElementContext {
+                            current_ref: Some(
+                                (act_id, IdentifierRange::from_single(article.identifier)).into(),
+                            ),
+                            snippet_range: Some(reference.clone()),
+                            date,
+                            force_absolute_urls: true,
+                            ..Default::default()
+                        })
                         .map(|r| r.0)
                 })
                 .collect::<Result<String, StatusCode>>()?;

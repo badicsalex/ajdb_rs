@@ -4,7 +4,10 @@
 
 use anyhow::Result;
 use axum::http::StatusCode;
-use hun_law::{reference::to_element::ReferenceToElement, structure::Act};
+use hun_law::{
+    reference::to_element::ReferenceToElement,
+    structure::{Act, ActChild, StructuralElement, StructuralElementType},
+};
 use maud::{html, Markup};
 
 use super::{act_children::RenderActChild, context::RenderElementContext};
@@ -29,9 +32,31 @@ impl RenderAct for Act {
                 (self.subject)
             }
             .preamble { (self.preamble) }
-            @for (i, child) in self.children.iter().enumerate() {
-                ( child.render(&context, Some(i))? )
+            @for child in &self.children {
+                ({
+                    update_context_with_act_child(&mut context, child);
+                    child.render(&context)?
+                })
             }
         ))
+    }
+}
+
+pub fn update_context_with_act_child(context: &mut RenderElementContext, act_child: &ActChild) {
+    match act_child {
+        ActChild::StructuralElement(StructuralElement {
+            element_type: StructuralElementType::Book,
+            identifier,
+            ..
+        }) => {
+            context.current_book = Some(*identifier);
+            context.current_chapter = None;
+        }
+        ActChild::StructuralElement(StructuralElement {
+            element_type: StructuralElementType::Chapter,
+            identifier,
+            ..
+        }) => context.current_chapter = Some(*identifier),
+        _ => (),
     }
 }
