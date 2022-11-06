@@ -11,15 +11,12 @@ use hun_law::{
 };
 
 use super::document_part::DocumentPartMetadata;
-use crate::{
-    enforcement_date_set::EnforcementDateSet,
-    web::util::{logged_http_error, OrToday},
-};
+use crate::{enforcement_date_set::EnforcementDateSet, web::util::logged_http_error};
 
 #[derive(Debug, Clone, Default)]
 pub struct ConvertToPartsContext<'a> {
     pub snippet_range: Option<Reference>,
-    pub date: Option<NaiveDate>,
+    pub date: NaiveDate,
     pub enforcement_dates: Option<&'a EnforcementDateSet>,
     pub current_book: Option<NumericIdentifier>,
     pub current_chapter: Option<NumericIdentifier>,
@@ -54,7 +51,7 @@ impl<'a> ConvertToPartsContext<'a> {
     pub fn update_enforcement_date_marker(mut self) -> Self {
         if let Some(enforcement_dates) = &self.enforcement_dates {
             if let Some(enforcement_date) = enforcement_dates
-                .specific_element_not_in_force(&self.part_metadata.reference, self.date.or_today())
+                .specific_element_not_in_force(&self.part_metadata.reference, self.date)
             {
                 self.part_metadata.enforcement_date_marker = Some(enforcement_date);
                 self.part_metadata.not_in_force = true;

@@ -81,7 +81,7 @@ async fn render_existing_act<'a>(
             act.publication_date,
             modification_dates,
         ),
-        render_act_body(&act, if date == today() { None } else { Some(date) })?,
+        render_act_body(&act, date)?,
     ))
 }
 
@@ -108,10 +108,10 @@ fn render_nonexistent_act(act_id: ActIdentifier) -> Result<Markup, StatusCode> {
     ))
 }
 
-fn render_act_body(act: &Act, date: Option<NaiveDate>) -> Result<Markup, StatusCode> {
+fn render_act_body(act: &Act, date: NaiveDate) -> Result<Markup, StatusCode> {
     let body_parts = convert_act_to_parts(act, date)?;
     let render_part_params = RenderPartParams {
-        date,
+        date: if date == today() { None } else { Some(date) },
         element_anchors: true,
         convert_links: true,
         render_markers: true,
@@ -149,10 +149,7 @@ fn update_context_with_act_child(context: &mut ConvertToPartsContext, act_child:
     }
 }
 
-pub fn convert_act_to_parts(
-    act: &Act,
-    date: Option<NaiveDate>,
-) -> Result<Vec<DocumentPart>, StatusCode> {
+pub fn convert_act_to_parts(act: &Act, date: NaiveDate) -> Result<Vec<DocumentPart>, StatusCode> {
     let mut context = ConvertToPartsContext {
         date,
         part_metadata: DocumentPartMetadata {

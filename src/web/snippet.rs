@@ -40,12 +40,8 @@ pub async fn render_snippet(
         Reference::from_compact_string(reference_str).map_err(|_| StatusCode::NOT_FOUND)?;
     let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
 
-    let date = if params.date == Some(today()) {
-        None
-    } else {
-        params.date
-    };
-    let state = ActSet::load_async(&persistence, date.or_today())
+    let date = params.date.or_today();
+    let state = ActSet::load_async(&persistence, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let act = state
@@ -91,7 +87,7 @@ pub async fn render_snippet(
         Vec::new()
     };
     let render_part_params = RenderPartParams {
-        date,
+        date: if date == today() { None } else { Some(date) },
         convert_links: true,
         force_absolute_urls: true,
         ..Default::default()
@@ -105,12 +101,12 @@ pub async fn render_snippet(
         if change_cause.is_empty() {
             let jat_ref =
                 Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
-            let link = link_to_reference(&jat_ref, Some(date.or_today().succ()), None, true)
+            let link = link_to_reference(&jat_ref, Some(date.succ()), None, true)
                 .map_err(logged_http_error)?;
             Ok(html!(
                 .modified_by {
                     "Automatikusan hatályát vesztete "
-                    ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
+                    ( date.succ().format("%Y. %m. %d-n").to_string() )
                     " a "
                     ( link )
                     " alapján."
@@ -123,13 +119,13 @@ pub async fn render_snippet(
         } else {
             let cause_ref =
                 Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
-            let link = link_to_reference(&cause_ref, Some(date.or_today().succ()), None, true)
+            let link = link_to_reference(&cause_ref, Some(date.succ()), None, true)
                 .map_err(logged_http_error)?;
             if result.0.is_empty() {
                 Ok(html!(
                     .modified_by {
                         "Beillesztette "
-                        ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
+                        ( date.succ().format("%Y. %m. %d-n").to_string() )
                         " a "
                         ( link )
                         "."
@@ -139,7 +135,7 @@ pub async fn render_snippet(
                 Ok(html!(
                     .modified_by {
                         "Módosíttotta "
-                        ( date.or_today().succ().format("%Y. %m. %d-n").to_string() )
+                        ( date.succ().format("%Y. %m. %d-n").to_string() )
                         " a "
                         ( link )
                         "."
