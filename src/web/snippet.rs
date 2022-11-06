@@ -20,11 +20,7 @@ use maud::{html, Markup};
 use serde::Deserialize;
 
 use super::{
-    act::{
-        context::RenderElementContext,
-        document_part::{DocumentPartMetadata, RenderPartParams},
-        RenderElement,
-    },
+    act::{ConvertToParts, ConvertToPartsContext, DocumentPartMetadata, RenderPartParams},
     util::{link_to_reference, logged_http_error, today, OrToday},
 };
 use crate::{database::ActSet, persistence::Persistence};
@@ -64,7 +60,7 @@ pub async fn render_snippet(
     // 'reason' snippet, which is done below if the result here is empty.
     // For non-modification-type snippets, the end result will be a 404
     let result = if let Some(article_range) = reference.article() {
-        let context = RenderElementContext {
+        let context = ConvertToPartsContext {
             snippet_range: Some(reference.clone()),
             date,
             part_metadata: DocumentPartMetadata {
@@ -85,9 +81,9 @@ pub async fn render_snippet(
             if article_range.is_range()
                 || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
             {
-                article.render(&context, &mut parts)?
+                article.convert_to_parts(&context, &mut parts)?
             } else {
-                article.children.render(&context, &mut parts)?;
+                article.children.convert_to_parts(&context, &mut parts)?;
             }
         }
         parts

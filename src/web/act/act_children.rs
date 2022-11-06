@@ -12,30 +12,30 @@ use hun_law::{
 };
 
 use super::{
-    context::RenderElementContext,
+    context::ConvertToPartsContext,
     document_part::{DocumentPart, DocumentPartSpecific},
-    RenderElement,
+    ConvertToParts,
 };
 use crate::web::util::logged_http_error;
 
-impl RenderElement for ActChild {
-    fn render<'a>(
+impl ConvertToParts for ActChild {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match self {
-            ActChild::StructuralElement(x) => x.render(context, output),
-            ActChild::Subtitle(x) => x.render(context, output),
-            ActChild::Article(x) => x.render(context, output),
+            ActChild::StructuralElement(x) => x.convert_to_parts(context, output),
+            ActChild::Subtitle(x) => x.convert_to_parts(context, output),
+            ActChild::Article(x) => x.convert_to_parts(context, output),
         }
     }
 }
 
-impl RenderElement for StructuralElement {
-    fn render<'a>(
+impl ConvertToParts for StructuralElement {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         let context = context
@@ -70,10 +70,10 @@ impl RenderElement for StructuralElement {
     }
 }
 
-impl RenderElement for Subtitle {
-    fn render<'a>(
+impl ConvertToParts for Subtitle {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         let context = context
@@ -144,10 +144,10 @@ pub fn subtitle_html_id(
     result
 }
 
-impl RenderElement for Article {
-    fn render<'a>(
+impl ConvertToParts for Article {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         let mut context = context
@@ -178,7 +178,7 @@ impl RenderElement for Article {
             });
         } else {
             for child in &self.children {
-                child.render(&context, output)?;
+                child.convert_to_parts(&context, output)?;
                 context.show_article_header = false;
                 context.part_metadata.enforcement_date_marker = None;
             }

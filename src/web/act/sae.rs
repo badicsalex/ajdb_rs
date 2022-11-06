@@ -16,20 +16,20 @@ use hun_law::{
 };
 
 use super::{
-    context::RenderElementContext,
+    context::ConvertToPartsContext,
     document_part::{DocumentPart, DocumentPartSpecific},
-    RenderElement,
+    ConvertToParts,
 };
 
-impl<IT, CT> RenderElement for SubArticleElement<IT, CT>
+impl<IT, CT> ConvertToParts for SubArticleElement<IT, CT>
 where
     SubArticleElement<IT, CT>: SAEHeaderString + ReferenceToElement,
     IT: IdentifierCommon,
-    CT: ChildrenCommon + RenderElement,
+    CT: ChildrenCommon + ConvertToParts,
 {
-    fn render<'a>(
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         let mut context = context
@@ -72,7 +72,7 @@ where
                 });
                 context.show_article_header = false;
                 context.part_metadata.enforcement_date_marker = None;
-                children.render(&context.clone().indent(), output)?;
+                children.convert_to_parts(&context.clone().indent(), output)?;
                 if let Some(wrap_up) = wrap_up {
                     output.push(DocumentPart {
                         specifics: DocumentPartSpecific::SAEText {
@@ -90,10 +90,10 @@ where
     }
 }
 
-impl RenderElement for QuotedBlock {
-    fn render<'a>(
+impl ConvertToParts for QuotedBlock {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         if let Some(intro) = &self.intro {
@@ -117,10 +117,10 @@ impl RenderElement for QuotedBlock {
     }
 }
 
-impl RenderElement for BlockAmendment {
-    fn render<'a>(
+impl ConvertToParts for BlockAmendment {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         if let Some(intro) = &self.intro {
@@ -132,7 +132,7 @@ impl RenderElement for BlockAmendment {
 
         let mut parts = Vec::new();
         self.children
-            .render(&context.clone().enter_block_amendment(), &mut parts)?;
+            .convert_to_parts(&context.clone().enter_block_amendment(), &mut parts)?;
         output.push(DocumentPart {
             specifics: DocumentPartSpecific::QuotedBlock { parts },
             metadata: context.part_metadata.clone(),
@@ -148,10 +148,10 @@ impl RenderElement for BlockAmendment {
     }
 }
 
-impl RenderElement for StructuralBlockAmendment {
-    fn render<'a>(
+impl ConvertToParts for StructuralBlockAmendment {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         if let Some(intro) = &self.intro {
@@ -163,7 +163,7 @@ impl RenderElement for StructuralBlockAmendment {
 
         let mut parts = Vec::new();
         self.children
-            .render(&context.clone().enter_block_amendment(), &mut parts)?;
+            .convert_to_parts(&context.clone().enter_block_amendment(), &mut parts)?;
         output.push(DocumentPart {
             specifics: DocumentPartSpecific::QuotedBlock { parts },
             metadata: context.part_metadata.clone(),
@@ -179,79 +179,79 @@ impl RenderElement for StructuralBlockAmendment {
     }
 }
 
-impl RenderElement for ParagraphChildren {
-    fn render<'a>(
+impl ConvertToParts for ParagraphChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match self {
-            ParagraphChildren::AlphabeticPoint(x) => x.render(context, output),
-            ParagraphChildren::NumericPoint(x) => x.render(context, output),
-            ParagraphChildren::QuotedBlock(x) => x.render(context, output),
-            ParagraphChildren::BlockAmendment(x) => x.render(context, output),
-            ParagraphChildren::StructuralBlockAmendment(x) => x.render(context, output),
+            ParagraphChildren::AlphabeticPoint(x) => x.convert_to_parts(context, output),
+            ParagraphChildren::NumericPoint(x) => x.convert_to_parts(context, output),
+            ParagraphChildren::QuotedBlock(x) => x.convert_to_parts(context, output),
+            ParagraphChildren::BlockAmendment(x) => x.convert_to_parts(context, output),
+            ParagraphChildren::StructuralBlockAmendment(x) => x.convert_to_parts(context, output),
         }
     }
 }
 
-impl RenderElement for AlphabeticPointChildren {
-    fn render<'a>(
+impl ConvertToParts for AlphabeticPointChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match self {
-            AlphabeticPointChildren::AlphabeticSubpoint(x) => x.render(context, output),
-            AlphabeticPointChildren::NumericSubpoint(x) => x.render(context, output),
+            AlphabeticPointChildren::AlphabeticSubpoint(x) => x.convert_to_parts(context, output),
+            AlphabeticPointChildren::NumericSubpoint(x) => x.convert_to_parts(context, output),
         }
     }
 }
 
-impl RenderElement for NumericPointChildren {
-    fn render<'a>(
+impl ConvertToParts for NumericPointChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match self {
-            NumericPointChildren::AlphabeticSubpoint(x) => x.render(context, output),
+            NumericPointChildren::AlphabeticSubpoint(x) => x.convert_to_parts(context, output),
         }
     }
 }
 
-impl RenderElement for AlphabeticSubpointChildren {
-    fn render<'a>(
+impl ConvertToParts for AlphabeticSubpointChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        _context: &RenderElementContext,
+        _context: &ConvertToPartsContext,
         _output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match *self {}
     }
 }
 
-impl RenderElement for NumericSubpointChildren {
-    fn render<'a>(
+impl ConvertToParts for NumericSubpointChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        _context: &RenderElementContext,
+        _context: &ConvertToPartsContext,
         _output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match *self {}
     }
 }
 
-impl RenderElement for BlockAmendmentChildren {
-    fn render<'a>(
+impl ConvertToParts for BlockAmendmentChildren {
+    fn convert_to_parts<'a>(
         &'a self,
-        context: &RenderElementContext,
+        context: &ConvertToPartsContext,
         output: &mut Vec<DocumentPart<'a>>,
     ) -> Result<(), StatusCode> {
         match self {
-            BlockAmendmentChildren::Paragraph(x) => x.render(context, output),
-            BlockAmendmentChildren::AlphabeticPoint(x) => x.render(context, output),
-            BlockAmendmentChildren::NumericPoint(x) => x.render(context, output),
-            BlockAmendmentChildren::AlphabeticSubpoint(x) => x.render(context, output),
-            BlockAmendmentChildren::NumericSubpoint(x) => x.render(context, output),
+            BlockAmendmentChildren::Paragraph(x) => x.convert_to_parts(context, output),
+            BlockAmendmentChildren::AlphabeticPoint(x) => x.convert_to_parts(context, output),
+            BlockAmendmentChildren::NumericPoint(x) => x.convert_to_parts(context, output),
+            BlockAmendmentChildren::AlphabeticSubpoint(x) => x.convert_to_parts(context, output),
+            BlockAmendmentChildren::NumericSubpoint(x) => x.convert_to_parts(context, output),
         }
     }
 }

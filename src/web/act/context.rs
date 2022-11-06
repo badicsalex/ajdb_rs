@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default)]
-pub struct RenderElementContext<'a> {
+pub struct ConvertToPartsContext<'a> {
     pub snippet_range: Option<Reference>,
     pub date: Option<NaiveDate>,
     pub enforcement_dates: Option<&'a EnforcementDateSet>,
@@ -27,7 +27,7 @@ pub struct RenderElementContext<'a> {
     pub part_metadata: DocumentPartMetadata,
 }
 
-impl<'a> RenderElementContext<'a> {
+impl<'a> ConvertToPartsContext<'a> {
     pub fn relative_to(mut self, e: &impl ReferenceToElement) -> Result<Self, StatusCode> {
         self.part_metadata.reference = e
             .reference()
