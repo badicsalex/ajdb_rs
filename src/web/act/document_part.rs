@@ -79,7 +79,7 @@ impl<'a> DocumentPart<'a> {
                 html!(
                     .se_container {
                         .{"se_" (class_name)}
-                        #(if params.element_anchors { id } else { String::new() })
+                        id=[params.element_anchors.then(|| id)]
                         {
                             ( line1 )
                             @if let Some(line2) = line2 {
@@ -105,14 +105,14 @@ impl<'a> DocumentPart<'a> {
                     {
                         @if show_article_header {
                             .article_header
-                            #(if params.element_anchors { article_anchor(reference) } else { String::new() })
+                            id=[params.element_anchors.then(|| article_anchor(reference))]
                             {
                                 ( article_header(reference) )
                             }
                         }
                         @if let Some(header) = sae_header {
                             .sae_header
-                            #(if params.element_anchors { anchor_string(reference) } else { String::new() })
+                            id=[params.element_anchors.then(|| anchor_string(reference))]
                             {
                                     (header)
                             }
@@ -131,7 +131,7 @@ impl<'a> DocumentPart<'a> {
                     .not_in_force[self.metadata.not_in_force]
                     {
                         .article_header
-                        #(if params.element_anchors { article_anchor(&self.metadata.reference) } else { String::new() })
+                        id=[params.element_anchors.then(|| article_anchor(&self.metadata.reference))]
                         {
                             ( article_header(&self.metadata.reference) )
                         }
