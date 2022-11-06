@@ -2,13 +2,15 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::fmt::Write;
+
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use hun_law::{
     identifier::ActIdentifier, reference::Reference, structure::LastChange,
     util::compact_string::CompactString,
 };
-use maud::{html, Markup};
+use maud::{html, Markup, PreEscaped};
 
 pub fn logged_http_error(e: impl std::fmt::Debug) -> StatusCode {
     log::error!("Internal error occured: {:?}", e);
@@ -65,10 +67,9 @@ pub fn change_snippet_link(r: &Reference, change: &LastChange) -> String {
     )
 }
 
-pub fn link_to_reference(
+pub fn link_to_reference_start(
     reference: &Reference,
     date: Option<NaiveDate>,
-    text: Option<&str>,
     absolute_url: bool,
 ) -> anyhow::Result<Markup> {
     let href = if absolute_url {
@@ -86,14 +87,29 @@ pub fn link_to_reference(
         format!("#{}", anchor_string(reference))
     };
     Ok(html!(
-        a href=(href) data-snippet=( snippet_link(reference, date) ) {
-            @if let Some(text) = text {
-                (text)
-            } @else {
-                (maud::display(reference))
-            }
-        }
+        a href=(href) data-snippet=( snippet_link(reference, date) );
     ))
+}
+
+pub fn link_to_reference_end() -> &'static str {
+    "</a>"
+}
+
+pub fn link_to_reference(
+    reference: &Reference,
+    date: Option<NaiveDate>,
+    text: Option<&str>,
+    absolute_url: bool,
+) -> anyhow::Result<Markup> {
+    let mut result = String::new();
+    result.push_str(&link_to_reference_start(reference, date, absolute_url)?.0);
+    if let Some(text) = text {
+        result.push_str(text);
+    } else {
+        let _does_not_fail = write!(result, "{}", reference);
+    }
+    result.push_str(link_to_reference_end());
+    Ok(PreEscaped(result))
 }
 
 pub fn today() -> NaiveDate {
