@@ -13,7 +13,7 @@ use hun_law::{
 
 use super::{
     context::ConvertToPartsContext,
-    document_part::{DocumentPart, DocumentPartSpecific},
+    document_part::{DocumentPart, DocumentPartSpecific, SAETextPart},
     ConvertToParts,
 };
 use crate::web::util::logged_http_error;
@@ -168,12 +168,12 @@ impl ConvertToParts for Article {
         context = context.indent();
         if self.children.is_empty() {
             output.push(DocumentPart {
-                specifics: DocumentPartSpecific::SAEText {
+                specifics: DocumentPartSpecific::SAEText(SAETextPart {
                     show_article_header: true,
                     sae_header: None,
                     text: "",
                     outgoing_references: &[],
-                },
+                }),
                 metadata: context.part_metadata.clone(),
             });
         } else {

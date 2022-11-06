@@ -73,6 +73,7 @@ async fn render_existing_act<'a>(
         .map_err(|_| StatusCode::NOT_FOUND)?;
     let modification_dates = act_metadata.modification_dates();
     Ok(document_layout(
+        "single_act",
         act.identifier.to_string(),
         generate_toc(&act),
         render_act_menu(
@@ -91,6 +92,7 @@ fn render_nonexistent_act(act_id: ActIdentifier) -> Result<Markup, StatusCode> {
         act_id.year, act_id.number
     );
     Ok(document_layout(
+        "unknown_act",
         act_id.to_string(),
         PreEscaped(String::new()),
         html!(

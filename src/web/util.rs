@@ -19,6 +19,15 @@ pub fn anchor_string(r: &Reference) -> String {
     format!("ref{}", r.without_act().first_in_range().compact_string())
 }
 
+pub fn article_anchor(reference: &Reference) -> String {
+    if let (Some(act), Some(article)) = (reference.act(), reference.article()) {
+        anchor_string(&(act, article).into())
+    } else {
+        // TODO: Maybe log?
+        "".to_string()
+    }
+}
+
 pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     format!(
         "/act/{}{}",

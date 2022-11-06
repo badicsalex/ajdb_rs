@@ -17,7 +17,7 @@ use hun_law::{
 
 use super::{
     context::ConvertToPartsContext,
-    document_part::{DocumentPart, DocumentPartSpecific},
+    document_part::{DocumentPart, DocumentPartSpecific, SAETextPart},
     ConvertToParts,
 };
 
@@ -47,12 +47,12 @@ where
         }
         match &self.body {
             SAEBody::Text(text) => output.push(DocumentPart {
-                specifics: DocumentPartSpecific::SAEText {
+                specifics: DocumentPartSpecific::SAEText(SAETextPart {
                     show_article_header: context.show_article_header,
                     sae_header: Some(self.header_string()),
                     text,
                     outgoing_references: &self.semantic_info.outgoing_references,
-                },
+                }),
                 metadata: context.part_metadata.clone(),
             }),
 
@@ -62,12 +62,12 @@ where
                 wrap_up,
             } => {
                 output.push(DocumentPart {
-                    specifics: DocumentPartSpecific::SAEText {
+                    specifics: DocumentPartSpecific::SAEText(SAETextPart {
                         show_article_header: context.show_article_header,
                         sae_header: Some(self.header_string()),
                         text: intro,
                         outgoing_references: &self.semantic_info.outgoing_references,
-                    },
+                    }),
                     metadata: context.part_metadata.clone(),
                 });
                 context.show_article_header = false;
@@ -75,12 +75,12 @@ where
                 children.convert_to_parts(&context.clone().indent(), output)?;
                 if let Some(wrap_up) = wrap_up {
                     output.push(DocumentPart {
-                        specifics: DocumentPartSpecific::SAEText {
+                        specifics: DocumentPartSpecific::SAEText(SAETextPart {
                             show_article_header: false,
                             sae_header: None,
                             text: wrap_up,
                             outgoing_references: &[],
-                        },
+                        }),
                         metadata: context.part_metadata.clone(),
                     })
                 }

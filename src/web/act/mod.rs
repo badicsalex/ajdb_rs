@@ -5,6 +5,7 @@
 mod act;
 mod act_children;
 mod context;
+mod diff;
 mod document_part;
 mod layout;
 mod markers;
@@ -15,6 +16,7 @@ mod toc;
 pub use act::render_act;
 use axum::http::StatusCode;
 pub use context::ConvertToPartsContext;
+pub use diff::render_act_diff;
 pub use document_part::{DocumentPart, DocumentPartMetadata, RenderPartParams};
 
 pub trait ConvertToParts {

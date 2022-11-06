@@ -4,7 +4,13 @@
 
 use maud::{html, Markup, DOCTYPE};
 
-pub fn document_layout(title: String, toc: Markup, menu: Markup, document_body: Markup) -> Markup {
+pub fn document_layout(
+    additional_class: &'static str,
+    title: String,
+    toc: Markup,
+    menu: Markup,
+    document_body: Markup,
+) -> Markup {
     html!(
         (DOCTYPE)
         html {
@@ -24,14 +30,18 @@ pub fn document_layout(title: String, toc: Markup, menu: Markup, document_body: 
                     "Alex Jogi Adatbázisa"
                 }
                 .top_right {
-                    .menu_container { (menu) }
+                    .menu_container .(additional_class) {
+                        (menu)
+                    }
                 }
                 .bottom_left {
                     .toc { (toc) }
                 }
                 .bottom_right {
                     .bottom_right_scrolled {
-                        .document { (document_body) }
+                        .document .(additional_class) {
+                            (document_body)
+                        }
                     }
                 }
             }

@@ -12,7 +12,7 @@ use maud::{html, Markup, PreEscaped};
 
 use crate::web::{
     act::markers::render_markers,
-    util::{anchor_string, link_to_reference},
+    util::{anchor_string, article_anchor, link_to_reference},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,12 +41,7 @@ pub enum DocumentPartSpecific<'a> {
     ArticleTitle {
         title: &'a str,
     },
-    SAEText {
-        show_article_header: bool,
-        sae_header: Option<String>,
-        text: &'a str,
-        outgoing_references: &'a [OutgoingReference],
-    },
+    SAEText(SAETextPart<'a>),
     QuoteContext {
         text: &'a str,
     },
@@ -56,6 +51,14 @@ pub enum DocumentPartSpecific<'a> {
     IndentedLines {
         lines: &'a [IndentedLine],
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SAETextPart<'a> {
+    pub show_article_header: bool,
+    pub sae_header: Option<String>,
+    pub text: &'a str,
+    pub outgoing_references: &'a [OutgoingReference],
 }
 
 #[derive(Debug, Default, Clone)]
@@ -68,8 +71,8 @@ pub struct RenderPartParams {
 }
 
 impl<'a> DocumentPart<'a> {
-    pub fn render_part(self, params: &RenderPartParams) -> Result<maud::Markup> {
-        Ok(match self.specifics {
+    pub fn render_part(&self, params: &RenderPartParams) -> Result<Markup> {
+        Ok(match &self.specifics {
             DocumentPartSpecific::StructuralElement {
                 class_name,
                 id,
@@ -91,38 +94,8 @@ impl<'a> DocumentPart<'a> {
                     }
                 )
             }
-            DocumentPartSpecific::SAEText {
-                show_article_header,
-                sae_header,
-                text,
-                outgoing_references,
-            } => {
-                let reference = &self.metadata.reference;
-                html!(
-                    .sae_container
-                    .{"indent_" (self.metadata.indentation)}
-                    .not_in_force[self.metadata.not_in_force]
-                    {
-                        @if show_article_header {
-                            .article_header
-                            id=[params.element_anchors.then(|| article_anchor(reference))]
-                            {
-                                ( article_header(reference) )
-                            }
-                        }
-                        @if let Some(header) = sae_header {
-                            .sae_header
-                            id=[params.element_anchors.then(|| anchor_string(reference))]
-                            {
-                                    (header)
-                            }
-                        }
-                        .sae_body {
-                            ( text_with_semantic_info(text, params, reference, outgoing_references)? )
-                        }
-                        ( render_markers(params, &self.metadata) )
-                    }
-                )
+            DocumentPartSpecific::SAEText(part) => {
+                render_sae_text_part(params, part, &self.metadata)?
             }
             DocumentPartSpecific::ArticleTitle { title } => {
                 html!(
@@ -186,15 +159,6 @@ impl<'a> DocumentPart<'a> {
     }
 }
 
-fn article_anchor(reference: &Reference) -> String {
-    if let (Some(act), Some(article)) = (reference.act(), reference.article()) {
-        anchor_string(&(act, article).into())
-    } else {
-        // TODO: Maybe log?
-        "".to_string()
-    }
-}
-
 fn article_header(reference: &Reference) -> String {
     if let Some(article) = reference.article() {
         format!("{}. §", article.first_in_range())
@@ -223,6 +187,45 @@ fn render_indented_lines(lines: &[IndentedLine]) -> Markup {
             }
         }
     )
+}
+
+fn render_sae_text_part(
+    params: &RenderPartParams,
+    part: &SAETextPart,
+    metadata: &DocumentPartMetadata,
+) -> Result<Markup> {
+    Ok(html!(
+        .sae_container
+        .{"indent_" (metadata.indentation)}
+        .not_in_force[metadata.not_in_force]
+        {
+            @if part.show_article_header {
+                .article_header
+                id=[params.element_anchors.then(|| article_anchor(&metadata.reference))]
+                {
+                    ( article_header(&metadata.reference) )
+                }
+            }
+            @if let Some(header) = part.sae_header.as_ref() {
+                .sae_header
+                id=[params.element_anchors.then(|| anchor_string(&metadata.reference))]
+                {
+                        (header)
+                }
+            }
+            .sae_body {
+                (
+                    text_with_semantic_info(
+                        part.text,
+                        params,
+                        &metadata.reference,
+                        part.outgoing_references
+                    )?
+                )
+            }
+            ( render_markers(params, metadata) )
+        }
+    ))
 }
 
 fn text_with_semantic_info(
