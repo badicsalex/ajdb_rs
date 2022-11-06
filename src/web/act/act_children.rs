@@ -166,10 +166,22 @@ impl RenderElement for Article {
         }
 
         context = context.indent();
-        for child in &self.children {
-            child.render(&context, output)?;
-            context.show_article_header = false;
-            context.part_metadata.enforcement_date_marker = None;
+        if self.children.is_empty() {
+            output.push(DocumentPart {
+                specifics: DocumentPartSpecific::SAEText {
+                    show_article_header: true,
+                    sae_header: None,
+                    text: "",
+                    outgoing_references: &[],
+                },
+                metadata: context.part_metadata.clone(),
+            });
+        } else {
+            for child in &self.children {
+                child.render(&context, output)?;
+                context.show_article_header = false;
+                context.part_metadata.enforcement_date_marker = None;
+            }
         }
         Ok(())
     }
