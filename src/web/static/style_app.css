@@ -48,7 +48,7 @@ body {
 
 /* Menu stuff */
 
-.ajdb_logo {
+.ajdb_logo, .ajdb_logo_alternative {
     color: black;
     margin: 5px 15px 5px 15px;
     padding: 5px;
@@ -376,4 +376,30 @@ blockquote {
 
 :target {
    background-color: #ffffc0;
+}
+
+/* Responsive modifiers */
+
+.ajdb_logo_alternative {
+    top: 0px;
+    left: 0px;
+    position: absolute;
+    display: none;
+}
+
+@media (max-width: 1100px) {
+    body {
+        grid-template-columns: 0px auto;
+    }
+    .menu_change_mode {
+        display: none;
+    }
+    .ajdb_logo_alternative {
+        display: inline-block;
+    }
+}
+@media (max-width: 750px) {
+    .menu_date, .menu_diff_date_separator {
+        display: none;
+    }
 }

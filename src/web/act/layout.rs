@@ -30,6 +30,9 @@ pub fn document_layout(
                     "Alex Jogi Adatbázisa"
                 }
                 .top_right {
+                    a href="/" {
+                        .ajdb_logo_alternative { "AJDB" }
+                    }
                     .menu_container .(additional_class) {
                         (menu)
                     }
