@@ -128,6 +128,37 @@ pub fn link_to_reference(
     Ok(PreEscaped(result))
 }
 
+pub fn modified_by_text(
+    date: NaiveDate,
+    cause_ref: Option<Reference>,
+    verb: &'static str,
+) -> Result<Markup, StatusCode> {
+    Ok(if let Some(cause_ref) = cause_ref {
+        let link =
+            link_to_reference(&cause_ref, Some(date), None, true).map_err(logged_http_error)?;
+        html!(
+            ( verb )
+            " "
+            ( date.format("%Y. %m. %d-n").to_string() )
+            " a "
+            ( link )
+            "."
+        )
+    } else {
+        let jat_ref =
+            Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
+        let link =
+            link_to_reference(&jat_ref, Some(date), None, true).map_err(logged_http_error)?;
+        html!(
+            "Automatikusan hatályát vesztete "
+            ( date.format("%Y. %m. %d-n").to_string() )
+            " a "
+            ( link )
+            " alapján."
+        )
+    })
+}
+
 pub fn today() -> NaiveDate {
     chrono::Utc::today().naive_utc()
 }

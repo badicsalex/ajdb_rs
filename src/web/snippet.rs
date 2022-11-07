@@ -28,7 +28,7 @@ use super::{
         ConvertToParts, ConvertToPartsContext, DocumentPart, DocumentPartMetadata,
         DocumentPartSpecific, RenderPartParams,
     },
-    util::{link_to_reference, logged_http_error, today, OrToday},
+    util::{logged_http_error, modified_by_text, today, OrToday},
 };
 use crate::{
     database::ActSet,
@@ -103,41 +103,27 @@ pub async fn render_diff_snippet(
     let parts_left = get_snippet_as_document_parts(&act_left, &reference, params.date_left)?;
     let parts_right = get_snippet_as_document_parts(&act_right, &reference, params.date_right)?;
 
-    let modified_by = if params.change_cause.is_empty() {
-        let jat_ref =
-            Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
-        let link = link_to_reference(&jat_ref, Some(params.date_left.succ()), None, true)
-            .map_err(logged_http_error)?;
-        html!(
-            "Automatikusan hatályát vesztete "
-            ( params.date_left.succ().format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            " alapján."
-        )
-    } else {
-        let cause_ref = Reference::from_compact_string(&params.change_cause)
-            .map_err(|_| StatusCode::NOT_FOUND)?;
-        let link = link_to_reference(&cause_ref, Some(params.date_left.succ()), None, true)
-            .map_err(logged_http_error)?;
-        let verb = match (
-            only_empty_parts(&parts_left),
-            only_empty_parts(&parts_right),
-        ) {
-            (true, true) => "Módosította", // ???? Should not happen
-            (true, false) => "Beillesztette",
-            (false, true) => "Hatályon kívül helyezte",
-            (false, false) => "Módosította",
-        };
-        html!(
-            ( verb )
-            " "
-            ( params.date_left.succ().format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            "."
-        )
+    let verb = match (
+        only_empty_parts(&parts_left),
+        only_empty_parts(&parts_right),
+    ) {
+        (true, true) => "Módosította", // ???? Should not happen
+        (true, false) => "Beillesztette",
+        (false, true) => "Hatályon kívül helyezte",
+        (false, false) => "Módosította",
     };
+    let modified_by = modified_by_text(
+        params.date_left.succ(),
+        if params.change_cause.is_empty() {
+            None
+        } else {
+            Some(
+                Reference::from_compact_string(&params.change_cause)
+                    .map_err(|_| StatusCode::NOT_FOUND)?,
+            )
+        },
+        verb,
+    )?;
     let render_params_left = RenderPartParams {
         date: Some(params.date_left),
         convert_links: true,

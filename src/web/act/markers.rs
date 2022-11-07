@@ -11,8 +11,8 @@ use maud::{html, Markup, PreEscaped};
 
 use super::document_part::{DocumentPartMetadata, RenderPartParams};
 use crate::web::util::{
-    anchor_string, link_to_reference, url_for_act, url_for_change_snippet, url_for_reference,
-    OrToday,
+    anchor_string, link_to_reference, modified_by_text, url_for_act, url_for_change_snippet,
+    url_for_diff, url_for_reference, OrToday,
 };
 
 pub fn render_markers(params: &RenderPartParams, part_metadata: &DocumentPartMetadata) -> Markup {
@@ -39,12 +39,21 @@ pub fn render_changes_markers(
     part_metadata: &DocumentPartMetadata,
 ) -> Option<Markup> {
     let (reference, last_change) = part_metadata.last_change.as_ref()?;
-    let change_snippet = Some(url_for_change_snippet(reference, date, last_change));
+    let change_snippet = if reference.article().is_some() {
+        url_for_change_snippet(reference, date, last_change)
+    } else {
+        let modified_by =
+            modified_by_text(last_change.date, last_change.cause.clone(), "Módosította")
+                .ok()?
+                .0;
+        format!("static:{modified_by}")
+    };
     let change_url = format!(
         "{}#{}",
-        url_for_act(
+        url_for_diff(
             part_metadata.reference.act()?,
-            Some(last_change.date.pred())
+            last_change.date.pred(),
+            date
         ),
         anchor_string(&part_metadata.reference)
     );
@@ -61,7 +70,7 @@ pub fn render_changes_markers(
         a
         .past_change_container
         href=(change_url)
-        data-snippet=[change_snippet]
+        data-snippet=(change_snippet)
         .{"change_indent_" (indentation)}
         {
             .past_change_marker
