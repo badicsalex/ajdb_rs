@@ -20,7 +20,7 @@ use super::{
     act::convert_act_to_parts,
     document_part::{DocumentPartSpecific, RenderPartParams, SAETextPart},
     layout::document_layout,
-    menu::render_act_menu,
+    menu::render_diff_menu,
     toc::generate_toc,
     DocumentPart, DocumentPartMetadata,
 };
@@ -51,11 +51,12 @@ pub async fn render_act_diff<'a>(
         "act_diff",
         diff_data.act_left.identifier.to_string(),
         generate_toc(&diff_data.act_left),
-        render_act_menu(
+        render_diff_menu(
             diff_data.act_left.identifier,
             diff_data.date_left,
+            diff_data.date_right,
             diff_data.act_left.publication_date,
-            diff_data.modification_dates.clone(),
+            &diff_data.modification_dates,
         ),
         render_act_diff_body(&diff_data)?,
     ))

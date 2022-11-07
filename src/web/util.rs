@@ -42,6 +42,13 @@ pub fn url_for_act(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     )
 }
 
+pub fn url_for_diff(act_id: ActIdentifier, date_left: NaiveDate, date_right: NaiveDate) -> String {
+    format!(
+        "/diff/{}?date_left={date_left}&date_right={date_right}",
+        act_id.compact_string(),
+    )
+}
+
 pub fn url_for_snippet(r: &Reference, date: Option<NaiveDate>) -> String {
     format!(
         "/snippet/{}{}",

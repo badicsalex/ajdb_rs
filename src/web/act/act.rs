@@ -80,7 +80,7 @@ async fn render_existing_act<'a>(
             act.identifier,
             date,
             act.publication_date,
-            modification_dates,
+            &modification_dates,
         ),
         render_act_body(&act, date)?,
     ))

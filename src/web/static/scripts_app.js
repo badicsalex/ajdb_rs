@@ -127,13 +127,15 @@ function set_up_hash_change_scrolling() {
 function toggle_on(event, element_id) {
     // TODO: JQuerify
     var e = document.getElementById(element_id);
-    e.classList.toggle("show_temporarily");
+    var turn_it_on = !e.classList.contains("show_temporarily");
+    hide_temporarily_shown();
+    if (turn_it_on) {
+        e.classList.add("show_temporarily");
+    }
     event.stopPropagation();
 }
 
-// TODO: JQuerify
-window.onclick = function(event) {
-    /* close everything */
+function hide_temporarily_shown() {
     document
         .querySelectorAll(".show_temporarily")
         .forEach(
@@ -141,6 +143,13 @@ window.onclick = function(event) {
                 elem.classList.remove("show_temporarily")
             }
         );
+
+}
+
+// TODO: JQuerify
+window.onclick = function(event) {
+    /* close everything */
+    hide_temporarily_shown()
 }
 
 $(function() {

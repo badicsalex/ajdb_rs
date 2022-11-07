@@ -59,7 +59,6 @@ body {
 }
 
 .menu_container {
-    width: 750px;
     display: flex;
     align-items: baseline;
     gap: 30px;
@@ -74,6 +73,19 @@ body {
 .menu_date {
     display: inline-block;
     font-size: 14pt;
+}
+
+.menu_diff_date_separator {
+    font-size: 18pt;
+}
+
+.menu_change_mode {
+    display: inline-block;
+    font-size: 14pt;
+}
+
+.menu_change_mode a {
+    color: white;
 }
 
 .date_flex {

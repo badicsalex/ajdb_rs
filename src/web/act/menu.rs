@@ -6,65 +6,117 @@ use chrono::{Datelike, NaiveDate};
 use hun_law::identifier::ActIdentifier;
 use maud::{html, Markup, PreEscaped};
 
-use crate::web::util::{today, url_for_act};
+use crate::web::util::{today, url_for_act, url_for_diff};
 
 pub fn render_act_menu(
     act_id: ActIdentifier,
     date: NaiveDate,
     publication_date: NaiveDate,
-    mut modification_dates: Vec<NaiveDate>,
+    modification_dates: &[NaiveDate],
+) -> Markup {
+    let dropdown = date_dropdown(
+        "date_dropdown",
+        date,
+        publication_date,
+        modification_dates,
+        |entry_is_today, date| url_for_act(act_id, if entry_is_today { None } else { Some(date) }),
+    );
+    html!(
+        .menu_act_title { ( act_id.to_string() ) }
+        ( dropdown )
+        .menu_change_mode {
+            a href=( url_for_diff(act_id, publication_date, date) ) { "Különbség nézet" }
+        }
+    )
+}
+
+pub fn render_diff_menu(
+    act_id: ActIdentifier,
+    date_left: NaiveDate,
+    date_right: NaiveDate,
+    publication_date: NaiveDate,
+    modification_dates: &[NaiveDate],
+) -> Markup {
+    let dropdown_left = date_dropdown(
+        "date_left_dropdown",
+        date_left,
+        publication_date,
+        modification_dates,
+        |_, date| url_for_diff(act_id, date, date_right),
+    );
+    let dropdown_right = date_dropdown(
+        "date_right_dropdown",
+        date_right,
+        publication_date,
+        modification_dates,
+        |_, date| url_for_diff(act_id, date_left, date),
+    );
+    html!(
+        .menu_act_title { ( act_id.to_string() ) }
+        ( dropdown_left )
+        .menu_diff_date_separator { "↔" }
+        ( dropdown_right )
+        .menu_change_mode {
+            a href=( url_for_act(act_id, Some(date_right)) ) { "Egyszerű nézet" }
+        }
+    )
+}
+
+fn date_dropdown(
+    dropdown_id: &'static str,
+    selected_date: NaiveDate,
+    publication_date: NaiveDate,
+    modification_dates: &[NaiveDate],
+    url_fn: impl Fn(bool, NaiveDate) -> String,
 ) -> Markup {
     let mut from = publication_date;
     let mut dropdown_contents = String::new();
     let mut dropdown_current = None;
-    modification_dates.push(NaiveDate::from_ymd(3000, 12, 31));
-    for modification_date in modification_dates {
+    let last_date = NaiveDate::from_ymd(3000, 12, 31);
+    for modification_date in modification_dates.iter().chain(std::iter::once(&last_date)) {
         let to = modification_date.pred();
         let mut entry_is_today = false;
-        let special = if from == publication_date {
-            " (Közlönyállapot)"
-        } else if (from..=to).contains(&today()) {
-            entry_is_today = true;
-            " (Hatályos állapot)"
+        let mut entry = if from == publication_date {
+            "Közlönyállapot".to_string()
         } else {
-            ""
+            format!(
+                "{} – {}{}",
+                from.format("%Y.%m.%d."),
+                if to.year() == 3000 {
+                    String::new()
+                } else {
+                    to.format("%Y.%m.%d.").to_string()
+                },
+                if (from..=to).contains(&today()) {
+                    entry_is_today = true;
+                    " ✅"
+                } else {
+                    ""
+                }
+            )
         };
-        let mut entry = format!(
-            "{} – {}{}",
-            from.format("%Y.%m.%d."),
-            if to.year() == 3000 {
-                String::new()
-            } else {
-                to.format("%Y.%m.%d.").to_string()
-            },
-            special
-        );
-        if date >= from && date <= to {
+        if selected_date >= from && selected_date <= to {
             dropdown_current = Some(entry.clone());
-            entry = format!("<b>{}</b>", entry);
+            entry = format!("<b>{entry}</b>");
         }
-        entry = format!(
-            "<a href=\"{}\">{}</a>",
-            url_for_act(act_id, if entry_is_today { None } else { Some(from) }),
-            entry
-        );
+        entry = format!("<a href=\"{}\">{entry}</a>", url_fn(entry_is_today, from),);
         dropdown_contents.insert_str(0, &entry);
         if to.year() < 3000 {
             dropdown_contents.insert_str(0, "<br>");
         }
-        from = modification_date;
+        from = *modification_date;
     }
 
-    let dropdown_current = dropdown_current.unwrap_or_else(|| date.format("%Y.%m.%d.").to_string());
+    let dropdown_current =
+        dropdown_current.unwrap_or_else(|| selected_date.format("%Y.%m.%d.").to_string());
 
     html!(
-        .menu_act_title { ( act_id.to_string() ) }
         .menu_date {
-            .date_flex onclick="toggle_on(event, 'date_dropdown')"{
+            .date_flex onclick={"toggle_on(event, '" (dropdown_id) "')"} {
                 .date_current { (dropdown_current) }
                 .date_icon { "▾" }
             }
-            #date_dropdown .date_dropdown_content { ( PreEscaped(dropdown_contents) ) }
+            #(dropdown_id) .date_dropdown_content { ( PreEscaped(dropdown_contents) ) }
         }
     )
 }
