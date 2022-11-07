@@ -191,7 +191,7 @@ fn render_indented_lines(lines: &[IndentedLine]) -> Markup {
     )
 }
 
-fn render_sae_text_part(
+pub fn render_sae_text_part(
     params: &RenderPartParams,
     part: &SAETextPart,
     metadata: &DocumentPartMetadata,
