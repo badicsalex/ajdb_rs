@@ -12,23 +12,33 @@ use axum::{
 };
 use chrono::NaiveDate;
 use hun_law::{
-    identifier::range::{IdentifierRange, IdentifierRangeFrom},
+    identifier::{
+        range::{IdentifierRange, IdentifierRangeFrom},
+        ActIdentifier,
+    },
     reference::{parts::AnyReferencePart, Reference},
+    structure::Act,
     util::compact_string::CompactString,
 };
 use maud::{html, Markup};
 use serde::Deserialize;
 
 use super::{
-    act::{ConvertToParts, ConvertToPartsContext, DocumentPartMetadata, RenderPartParams},
+    act::{
+        ConvertToParts, ConvertToPartsContext, DocumentPart, DocumentPartMetadata,
+        DocumentPartSpecific, RenderPartParams,
+    },
     util::{link_to_reference, logged_http_error, today, OrToday},
 };
-use crate::{database::ActSet, persistence::Persistence};
+use crate::{
+    database::ActSet,
+    persistence::Persistence,
+    web::act::{create_diff_pairs, render_diff_pair},
+};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenderSnippetParams {
     date: Option<NaiveDate>,
-    change_cause: Option<String>,
 }
 
 pub async fn render_snippet(
@@ -41,51 +51,11 @@ pub async fn render_snippet(
     let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
 
     let date = params.date.or_today();
-    let state = ActSet::load_async(&persistence, date)
+    let act = get_act(&persistence, act_id, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
-    let act = state
-        .get_act(act_id)
-        .map_err(|_| StatusCode::NOT_FOUND)?
-        .act_cached()
-        .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
+    let parts = get_snippet_as_document_parts(&act, &reference, date)?;
 
-    // This being an `if let` is a huge hack: we generate modification snippet urls for
-    // structural elements, which are _not_ supported. But we want to have at least a
-    // 'reason' snippet, which is done below if the result here is empty.
-    // For non-modification-type snippets, the end result will be a 404
-    let result = if let Some(article_range) = reference.article() {
-        let context = ConvertToPartsContext {
-            snippet_range: Some(reference.clone()),
-            date,
-            part_metadata: DocumentPartMetadata {
-                reference: (
-                    act_id,
-                    IdentifierRange::from_single(article_range.first_in_range()),
-                )
-                    .into(),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let mut parts = Vec::new();
-        for article in act
-            .articles()
-            .filter(|article| article_range.contains(article.identifier))
-        {
-            if article_range.is_range()
-                || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
-            {
-                article.convert_to_parts(&context, &mut parts)?
-            } else {
-                article.children.convert_to_parts(&context, &mut parts)?;
-            }
-        }
-        parts
-    } else {
-        Vec::new()
-    };
     let render_part_params = RenderPartParams {
         date: if date == today() { None } else { Some(date) },
         convert_links: true,
@@ -93,63 +63,181 @@ pub async fn render_snippet(
         ..Default::default()
     };
     let result = html!(
-        @for part in result {
-            ( part.render_part(&render_part_params).map_err(logged_http_error)? )
-        }
-    );
-    if let Some(change_cause) = &params.change_cause {
-        if change_cause.is_empty() {
-            let jat_ref =
-                Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
-            let link = link_to_reference(&jat_ref, Some(date.succ()), None, true)
-                .map_err(logged_http_error)?;
-            Ok(html!(
-                .modified_by {
-                    "Automatikusan hatályát vesztete "
-                    ( date.succ().format("%Y. %m. %d-n").to_string() )
-                    " a "
-                    ( link )
-                    " alapján."
-                }
-                .previous_state_label {"Korábbi állapot:"}
-                .blockamendment_container {
-                    (result)
-                }
-            ))
-        } else {
-            let cause_ref =
-                Reference::from_compact_string(change_cause).map_err(|_| StatusCode::NOT_FOUND)?;
-            let link = link_to_reference(&cause_ref, Some(date.succ()), None, true)
-                .map_err(logged_http_error)?;
-            if result.0.is_empty() {
-                Ok(html!(
-                    .modified_by {
-                        "Beillesztette "
-                        ( date.succ().format("%Y. %m. %d-n").to_string() )
-                        " a "
-                        ( link )
-                        "."
-                    }
-                ))
-            } else {
-                Ok(html!(
-                    .modified_by {
-                        "Módosíttotta "
-                        ( date.succ().format("%Y. %m. %d-n").to_string() )
-                        " a "
-                        ( link )
-                        "."
-                    }
-                    .previous_state_label {"Korábbi állapot:"}
-                    .blockamendment_container {
-                        (result)
-                    }
-                ))
+        .act_snippet {
+            @for part in parts {
+                ( part.render_part(&render_part_params).map_err(logged_http_error)? )
             }
         }
-    } else if result.0.is_empty() {
+    );
+    if result.0.is_empty() {
         Err(StatusCode::NOT_FOUND)
     } else {
         Ok(result)
     }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RenderDiffSnippetParams {
+    date_left: NaiveDate,
+    date_right: NaiveDate,
+    change_cause: String,
+}
+
+pub async fn render_diff_snippet(
+    Path(reference_str): Path<String>,
+    params: Query<RenderDiffSnippetParams>,
+    Extension(persistence): Extension<Arc<Persistence>>,
+) -> Result<Markup, StatusCode> {
+    let reference =
+        Reference::from_compact_string(reference_str).map_err(|_| StatusCode::NOT_FOUND)?;
+    let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
+
+    let act_left = get_act(&persistence, act_id, params.date_left)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    let act_right = get_act(&persistence, act_id, params.date_right)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    let parts_left = get_snippet_as_document_parts(&act_left, &reference, params.date_left)?;
+    let parts_right = get_snippet_as_document_parts(&act_right, &reference, params.date_right)?;
+
+    let modified_by = if params.change_cause.is_empty() {
+        let jat_ref =
+            Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
+        let link = link_to_reference(&jat_ref, Some(params.date_left.succ()), None, true)
+            .map_err(logged_http_error)?;
+        html!(
+            "Automatikusan hatályát vesztete "
+            ( params.date_left.succ().format("%Y. %m. %d-n").to_string() )
+            " a "
+            ( link )
+            " alapján."
+        )
+    } else {
+        let cause_ref = Reference::from_compact_string(&params.change_cause)
+            .map_err(|_| StatusCode::NOT_FOUND)?;
+        let link = link_to_reference(&cause_ref, Some(params.date_left.succ()), None, true)
+            .map_err(logged_http_error)?;
+        let verb = match (
+            only_empty_parts(&parts_left),
+            only_empty_parts(&parts_right),
+        ) {
+            (true, true) => "Módosította", // ???? Should not happen
+            (true, false) => "Beillesztette",
+            (false, true) => "Hatályon kívül helyezte",
+            (false, false) => "Módosította",
+        };
+        html!(
+            ( verb )
+            " "
+            ( params.date_left.succ().format("%Y. %m. %d-n").to_string() )
+            " a "
+            ( link )
+            "."
+        )
+    };
+    let render_params_left = RenderPartParams {
+        date: Some(params.date_left),
+        convert_links: true,
+        ..Default::default()
+    };
+    let render_params_right = RenderPartParams {
+        date: Some(params.date_right),
+        convert_links: true,
+        ..Default::default()
+    };
+    if only_empty_parts(&parts_left) {
+        Ok(html!(
+            .act_snippet {
+                .modified_by { ( modified_by ) }
+                @for part in parts_right {
+                    .diff_right .different .diff_full {
+                        (part.render_part(&render_params_right).map_err(logged_http_error)?)
+                    }
+                }
+            }
+        ))
+    } else if only_empty_parts(&parts_right) {
+        Ok(html!(
+            .act_snippet {
+                .modified_by { ( modified_by ) }
+                @for part in parts_left {
+                    .diff_left .different .diff_full {
+                        (part.render_part(&render_params_left).map_err(logged_http_error)?)
+                    }
+                }
+            }
+        ))
+    } else {
+        Ok(html!(
+            .diff_snippet {
+                .modified_by { ( modified_by ) }
+                @for (left, right) in create_diff_pairs(&parts_left, &parts_right) {
+                    ( render_diff_pair(left, &render_params_left, right, &render_params_right)? )
+                }
+            }
+        ))
+    }
+}
+
+async fn get_act(
+    persistence: &Persistence,
+    act_id: ActIdentifier,
+    date: NaiveDate,
+) -> anyhow::Result<Arc<Act>> {
+    let state = ActSet::load_async(persistence, date).await?;
+    state.get_act(act_id)?.act_cached().await
+}
+
+fn get_snippet_as_document_parts<'a>(
+    act: &'a Act,
+    reference: &Reference,
+    date: NaiveDate,
+) -> Result<Vec<DocumentPart<'a>>, StatusCode> {
+    let act_id = reference.act().ok_or(StatusCode::NOT_FOUND)?;
+    let article_range = reference.article().ok_or(StatusCode::NOT_FOUND)?;
+
+    let context = ConvertToPartsContext {
+        snippet_range: Some(reference.clone()),
+        date,
+        part_metadata: DocumentPartMetadata {
+            reference: (
+                act_id,
+                IdentifierRange::from_single(article_range.first_in_range()),
+            )
+                .into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let mut parts = Vec::new();
+    for article in act
+        .articles()
+        .filter(|article| article_range.contains(article.identifier))
+    {
+        if article_range.is_range()
+            || matches!(reference.get_last_part(), AnyReferencePart::Article(_))
+        {
+            article.convert_to_parts(&context, &mut parts)?
+        } else {
+            article.children.convert_to_parts(&context, &mut parts)?;
+        }
+    }
+
+    Ok(parts)
+}
+
+fn only_empty_parts(parts: &[DocumentPart]) -> bool {
+    for part in parts {
+        if let DocumentPartSpecific::SAEText(sae) = &part.specifics {
+            if !sae.text.is_empty() {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    true
 }

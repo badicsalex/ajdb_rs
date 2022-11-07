@@ -16,8 +16,10 @@ mod toc;
 pub use act::render_act;
 use axum::http::StatusCode;
 pub use context::ConvertToPartsContext;
-pub use diff::render_act_diff;
-pub use document_part::{DocumentPart, DocumentPartMetadata, RenderPartParams};
+pub use diff::{create_diff_pairs, render_act_diff, render_diff_pair};
+pub use document_part::{
+    DocumentPart, DocumentPartMetadata, DocumentPartSpecific, RenderPartParams,
+};
 
 pub trait ConvertToParts {
     fn convert_to_parts<'a>(

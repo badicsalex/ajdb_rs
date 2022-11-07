@@ -39,7 +39,7 @@ pub fn render_changes_markers(
     part_metadata: &DocumentPartMetadata,
 ) -> Option<Markup> {
     let (reference, last_change) = part_metadata.last_change.as_ref()?;
-    let change_snippet = Some(url_for_change_snippet(reference, last_change));
+    let change_snippet = Some(url_for_change_snippet(reference, date, last_change));
     let change_url = format!(
         "{}#{}",
         url_for_act(

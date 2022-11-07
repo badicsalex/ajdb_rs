@@ -12,7 +12,7 @@ use std::{net::SocketAddr, sync::Arc};
 use self::{
     act::{render_act, render_act_diff},
     index::render_index,
-    snippet::render_snippet,
+    snippet::{render_diff_snippet, render_snippet},
 };
 use crate::persistence::Persistence;
 
@@ -23,6 +23,10 @@ pub async fn web_main() {
         .route("/act/:act_id", axum::routing::get(render_act))
         .route("/diff/:act_id", axum::routing::get(render_act_diff))
         .route("/snippet/:snippet_ref", axum::routing::get(render_snippet))
+        .route(
+            "/diff_snippet/:snippet_ref",
+            axum::routing::get(render_diff_snippet),
+        )
         .merge(axum_extra::routing::SpaRouter::new(
             "/static",
             "src/web/static",

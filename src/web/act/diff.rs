@@ -135,7 +135,7 @@ fn render_act_diff_body(diff_data: &ActDiffData) -> Result<Markup, StatusCode> {
     ))
 }
 
-fn create_diff_pairs<'a, 'b>(
+pub fn create_diff_pairs<'a, 'b>(
     left: &'a [DocumentPart<'b>],
     right: &'a [DocumentPart<'b>],
 ) -> Vec<(Option<&'a DocumentPart<'b>>, Option<&'a DocumentPart<'b>>)> {
@@ -211,7 +211,7 @@ fn part_to_diffable_string(part: &DocumentPart) -> String {
     }
 }
 
-fn render_diff_pair(
+pub fn render_diff_pair(
     left: Option<&DocumentPart>,
     left_params: &RenderPartParams,
     right: Option<&DocumentPart>,

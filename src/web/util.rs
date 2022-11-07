@@ -61,9 +61,9 @@ pub fn url_for_snippet(r: &Reference, date: Option<NaiveDate>) -> String {
     )
 }
 
-pub fn url_for_change_snippet(r: &Reference, change: &LastChange) -> String {
+pub fn url_for_change_snippet(r: &Reference, date: NaiveDate, change: &LastChange) -> String {
     format!(
-        "/snippet/{}?date={}&change_cause={}",
+        "/diff_snippet/{}?date_left={}&date_right={date}&change_cause={}",
         r.compact_string(),
         change.date.pred(),
         if let Some(cause) = &change.cause {
