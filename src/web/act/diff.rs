@@ -87,13 +87,23 @@ async fn get_act_diff_data(
 
     let act_metadata = ActMetadata::load_async(persistence, act_id).await?;
     let modification_dates = act_metadata.modification_dates();
-    Ok(ActDiffData {
-        act_left,
-        date_left,
-        act_right,
-        date_right,
-        modification_dates,
-    })
+    if date_left <= date_right {
+        Ok(ActDiffData {
+            act_left,
+            date_left,
+            act_right,
+            date_right,
+            modification_dates,
+        })
+    } else {
+        Ok(ActDiffData {
+            act_right: act_left,
+            date_right: date_left,
+            act_left: act_right,
+            date_left: date_right,
+            modification_dates,
+        })
+    }
 }
 
 fn render_act_diff_body(diff_data: &ActDiffData) -> Result<Markup, StatusCode> {
