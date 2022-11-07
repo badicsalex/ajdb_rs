@@ -30,7 +30,7 @@ pub fn article_anchor(reference: &Reference) -> String {
     }
 }
 
-pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
+pub fn url_for_act(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     format!(
         "/act/{}{}",
         act_id.compact_string(),
@@ -42,7 +42,7 @@ pub fn act_link(act_id: ActIdentifier, date: Option<NaiveDate>) -> String {
     )
 }
 
-pub fn snippet_link(r: &Reference, date: Option<NaiveDate>) -> String {
+pub fn url_for_snippet(r: &Reference, date: Option<NaiveDate>) -> String {
     format!(
         "/snippet/{}{}",
         r.compact_string(),
@@ -54,7 +54,7 @@ pub fn snippet_link(r: &Reference, date: Option<NaiveDate>) -> String {
     )
 }
 
-pub fn change_snippet_link(r: &Reference, change: &LastChange) -> String {
+pub fn url_for_change_snippet(r: &Reference, change: &LastChange) -> String {
     format!(
         "/snippet/{}?date={}&change_cause={}",
         r.compact_string(),
@@ -67,15 +67,15 @@ pub fn change_snippet_link(r: &Reference, change: &LastChange) -> String {
     )
 }
 
-pub fn link_to_reference_start(
+pub fn url_for_reference(
     reference: &Reference,
     date: Option<NaiveDate>,
     absolute_url: bool,
-) -> anyhow::Result<Markup> {
-    let href = if absolute_url {
+) -> anyhow::Result<String> {
+    Ok(if absolute_url {
         format!(
             "{}#{}",
-            act_link(
+            url_for_act(
                 reference
                     .act()
                     .ok_or_else(|| anyhow::anyhow!("No act in absolute refrence"))?,
@@ -85,9 +85,18 @@ pub fn link_to_reference_start(
         )
     } else {
         format!("#{}", anchor_string(reference))
-    };
+    })
+}
+
+pub fn link_to_reference_start(
+    reference: &Reference,
+    date: Option<NaiveDate>,
+    absolute_url: bool,
+) -> anyhow::Result<Markup> {
     Ok(html!(
-        a href=(href) data-snippet=( snippet_link(reference, date) );
+        a
+        href=( url_for_reference(reference, date, absolute_url)? )
+        data-snippet=( url_for_snippet(reference, date) );
     ))
 }
 

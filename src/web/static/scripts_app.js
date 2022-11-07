@@ -28,6 +28,7 @@ function snippet_hover_new(event, $snippeted_link, $parent){
     $snippet_container.html("Előnézet betöltése...")
     if (url.startsWith('static:')) {
         $snippet_container.html("<i>" + url.slice(7) + "</i>");
+        add_snippet_handlers($snippet_container);
     } else {
         $snippet_container.load(url, function( response, status, xhr ) {
             if ( status == "error" ) {

@@ -6,7 +6,7 @@ use chrono::{Datelike, NaiveDate};
 use hun_law::identifier::ActIdentifier;
 use maud::{html, Markup, PreEscaped};
 
-use crate::web::util::{act_link, today};
+use crate::web::util::{today, url_for_act};
 
 pub fn render_act_menu(
     act_id: ActIdentifier,
@@ -45,7 +45,7 @@ pub fn render_act_menu(
         }
         entry = format!(
             "<a href=\"{}\">{}</a>",
-            act_link(act_id, if entry_is_today { None } else { Some(from) }),
+            url_for_act(act_id, if entry_is_today { None } else { Some(from) }),
             entry
         );
         dropdown_contents.insert_str(0, &entry);

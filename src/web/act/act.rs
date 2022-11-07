@@ -116,7 +116,8 @@ fn render_act_body(act: &Act, date: NaiveDate) -> Result<Markup, StatusCode> {
         date: if date == today() { None } else { Some(date) },
         element_anchors: true,
         convert_links: true,
-        render_markers: true,
+        render_change_marker: true,
+        render_enforcement_date_marker: true,
         ..Default::default()
     };
     Ok(html!(

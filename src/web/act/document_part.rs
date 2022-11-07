@@ -68,7 +68,9 @@ pub struct RenderPartParams {
     pub date: Option<NaiveDate>,
     pub element_anchors: bool,
     pub convert_links: bool,
-    pub render_markers: bool,
+    pub render_change_marker: bool,
+    pub render_enforcement_date_marker: bool,
+    pub render_diff_change_marker: Option<NaiveDate>,
     pub force_absolute_urls: bool,
 }
 

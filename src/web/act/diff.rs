@@ -108,6 +108,7 @@ fn render_act_diff_body(diff_data: &ActDiffData) -> Result<Markup, StatusCode> {
     let render_params_right = RenderPartParams {
         date: Some(diff_data.date_right),
         convert_links: true,
+        render_diff_change_marker: Some(diff_data.date_left),
         ..Default::default()
     };
 
