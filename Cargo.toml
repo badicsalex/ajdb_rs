@@ -37,9 +37,8 @@ strip = true
 lto = "thin"
 
 [profile.dev-fast]
-inherits = "release"
-debug = true
-incremental = true
+inherits = "dev"
+opt-level = 3
 
 [[test]]
 harness = false
