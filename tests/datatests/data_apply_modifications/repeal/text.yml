@@ -27,34 +27,31 @@ children_original:
             wrap_up: "hmm. XXX"
 modifications:
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: '1'
-      replacement:
-        from: Paragraph
-        to: ""
+      from: Paragraph
+      to: ""
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: '2'
         paragraph: '2'
         point: 'b'
-      replacement:
-        from: "point b"
-        to: ""
+      from: "point b"
+      to: ""
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: '2'
-      replacement:
-        from: "XXX"
-        to: ""
+      from: "XXX"
+      to: ""
 children_expected:
 - Article:
     identifier: '1'

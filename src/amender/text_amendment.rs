@@ -6,21 +6,14 @@ use anyhow::{anyhow, ensure, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
-    semantic_info::TextAmendmentReplacement,
+    semantic_info::TextAmendment,
     structure::{Act, ChildrenCommon, LastChange, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
-use serde::{Deserialize, Serialize};
 
 use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SimplifiedTextAmendment {
-    pub position: Reference,
-    pub replacement: TextAmendmentReplacement,
-}
-
-impl ModifyAct for SimplifiedTextAmendment {
+impl ModifyAct for TextAmendment {
     fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         let mut visitor = Visitor {
             amendment: self,
@@ -34,7 +27,7 @@ impl ModifyAct for SimplifiedTextAmendment {
             self
         );
         let article_ids = self
-            .position
+            .reference
             .article()
             .ok_or_else(|| anyhow!("No article in text amendment position"))?;
         if !article_ids.is_range() {
@@ -49,7 +42,7 @@ impl ModifyAct for SimplifiedTextAmendment {
 }
 
 struct Visitor<'a> {
-    amendment: &'a SimplifiedTextAmendment,
+    amendment: &'a TextAmendment,
     change_entry: &'a LastChange,
     applied: bool,
 }
@@ -60,9 +53,9 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
         position: &Reference,
         element: &mut SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if self.amendment.position.contains(position) {
-            let from = &self.amendment.replacement.from;
-            let to = &self.amendment.replacement.to;
+        if self.amendment.reference.contains(position) {
+            let from = &self.amendment.from;
+            let to = &self.amendment.to;
             match &mut element.body {
                 SAEBody::Text(text) => {
                     if text.contains(from) {
@@ -101,9 +94,9 @@ fn normalized_replace(text: &str, from: &str, to: &str) -> String {
     }
 }
 
-impl AffectedAct for SimplifiedTextAmendment {
+impl AffectedAct for TextAmendment {
     fn affected_act(&self) -> Result<ActIdentifier> {
-        self.position
+        self.reference
             .act()
             .ok_or_else(|| anyhow!("No act in reference in special phrase (TextAmendment)"))
     }
@@ -152,48 +145,45 @@ mod tests {
             cause: None,
         };
 
-        let mod_1: SimplifiedTextAmendment = singleton_yaml::from_str(
+        let mod_1: TextAmendment = singleton_yaml::from_str(
             r#"
-            position:
+            reference:
               act:
                 year: 2012
                 number: 1
               article: '1'
-            replacement:
-              from: "Article"
-              to: "modified"
+            from: "Article"
+            to: "modified"
         "#,
         )
         .unwrap();
         mod_1.apply(&mut test_act, &change_entry).unwrap();
         assert!(mod_1.apply(&mut test_act, &change_entry).is_err());
 
-        let mod_2: SimplifiedTextAmendment = singleton_yaml::from_str(
+        let mod_2: TextAmendment = singleton_yaml::from_str(
             r#"
-            position:
+            reference:
               act:
                 year: 2012
                 number: 1
               article: '2'
-            replacement:
-              from: "Intro"
-              to: "modified"
+            from: "Intro"
+            to: "modified"
         "#,
         )
         .unwrap();
         mod_2.apply(&mut test_act, &change_entry).unwrap();
         assert!(mod_2.apply(&mut test_act, &change_entry).is_err());
 
-        let mod_3: SimplifiedTextAmendment = singleton_yaml::from_str(
+        let mod_3: TextAmendment = singleton_yaml::from_str(
             r#"
-            position:
+            reference:
               act:
                 year: 2012
                 number: 1
               article: '2'
-            replacement:
-              from: "wrap_up"
-              to: "modified"
+            from: "wrap_up"
+            to: "modified"
         "#,
         )
         .unwrap();

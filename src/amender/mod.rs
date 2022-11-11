@@ -18,7 +18,7 @@ use hun_law::{
     identifier::ActIdentifier,
     parser::semantic_info::AbbreviationsChanged,
     reference::Reference,
-    semantic_info::ArticleTitleAmendment,
+    semantic_info::{ArticleTitleAmendment, TextAmendment},
     structure::{Act, LastChange},
     util::debug::WithElemContext,
 };
@@ -29,7 +29,6 @@ use serde::{Deserialize, Serialize};
 use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
-    text_amendment::SimplifiedTextAmendment,
 };
 use crate::{amender::fix_order::fix_amendment_order, database::ActSet};
 
@@ -183,7 +182,7 @@ pub enum AppliableModificationType {
     ArticleTitleAmendment(ArticleTitleAmendment),
     BlockAmendment(BlockAmendmentWithContent),
     Repeal(SimplifiedRepeal),
-    TextAmendment(SimplifiedTextAmendment),
+    TextAmendment(TextAmendment),
     StructuralBlockAmendment(StructuralBlockAmendmentWithContent),
 }
 

@@ -35,26 +35,24 @@ children_original:
         - body: "Article with a single paragraph"
 modifications:
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: 
           start: '1'
           end: '2'
-      replacement:
-        from: "Paragraph"
-        to: "Something else"
+      from: "Paragraph"
+      to: "Something else"
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: '3'
         paragraph: '2'
-      replacement:
-        from: "hmm"
-        to: "mmm"
+      from: "hmm"
+      to: "mmm"
 children_expected:
 - Article:
     identifier: '1'

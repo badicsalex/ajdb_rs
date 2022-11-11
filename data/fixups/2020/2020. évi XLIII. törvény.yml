@@ -10,15 +10,14 @@
       point: '5'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184'
           paragraph: '3'
-        replacement:
-          from: "(1)–(2) bekezdés"
-          to: "(1)–(2a) bekezdés"
+        from: "(1)–(2) bekezdés"
+        to: "(1)–(2a) bekezdés"
 - AddModification:
     cause:
       act:
@@ -28,15 +27,14 @@
       point: '5'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184'
           paragraph: '5'
-        replacement:
-          from: "(1) vagy a (2) bekezdésben"
-          to: "(1)–(2a) bekezdésben"
+        from: "(1) vagy a (2) bekezdésben"
+        to: "(1)–(2a) bekezdésben"
 # @ 58. § (6)
 # 184/B. § (3) bekezdésében az „(1)–(2) bekezdés” szövegrész helyébe az „(1)–(2b) bekezdés”,
 #          (4) bekezdésében az „(1)–(2) bekezdésben” szövegrész helyébe az „(1)–(2b) bekezdésben” szöveg,
@@ -49,15 +47,14 @@
       point: '6'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184/B'
           paragraph: '3'
-        replacement:
-          from: "(1)–(2) bekezdés"
-          to: "(1)–(2b) bekezdés"
+        from: "(1)–(2) bekezdés"
+        to: "(1)–(2b) bekezdés"
 - AddModification:
     cause:
       act:
@@ -67,15 +64,14 @@
       point: '6'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184/B'
           paragraph: '4'
-        replacement:
-          from: "(1)–(2) bekezdésben"
-          to: "(1)–(2b) bekezdésben"
+        from: "(1)–(2) bekezdésben"
+        to: "(1)–(2b) bekezdésben"
 # @ 58. § (7)
 # 184/C. § (3) bekezdésében az „(1)–(2) bekezdés” szövegrész helyébe az „(1)–(2b) bekezdés”,
 #          (4) bekezdésében az „(1)–(2) bekezdésben” szövegrész helyébe az „(1)–(2b) bekezdésben” szöveg,
@@ -88,15 +84,14 @@
       point: '7'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184/C'
           paragraph: '3'
-        replacement:
-          from: "(1)–(2) bekezdés"
-          to: "(1)–(2b) bekezdés"
+        from: "(1)–(2) bekezdés"
+        to: "(1)–(2b) bekezdés"
 - AddModification:
     cause:
       act:
@@ -106,12 +101,11 @@
       point: '7'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 100
           article: '184/C'
           paragraph: '4'
-        replacement:
-          from: "(1)–(2) bekezdésben"
-          to: "(1)–(2b) bekezdésben"
+        from: "(1)–(2) bekezdésben"
+        to: "(1)–(2b) bekezdésben"

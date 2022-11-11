@@ -42,18 +42,16 @@ modifications:
         article: 
           start: '1'
           end: '2'
-      replacement:
-        from: "Modify"
-        to: "Leave me alone"
+      from: "Modify"
+      to: "Leave me alone"
   - ArticleTitleAmendment:
       position:
         act:
           year: 2012
           number: 1
         article: "4"
-      replacement:
-        from: "stuff"
-        to: "things"
+      from: "stuff"
+      to: "things"
 children_expected:
 - Article:
     identifier: '1'

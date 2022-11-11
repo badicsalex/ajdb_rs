@@ -50,15 +50,14 @@
       point: d
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2003
             number: 1
           article: '4'
           paragraph: '1'
-        replacement:
-          from: valami
-          to: ''
+        from: valami
+        to: ''
 2012-01-03:
   2012. évi I. törvény:
   - modification:

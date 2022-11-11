@@ -9,12 +9,11 @@
       point: 'b'
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2012
             number: 1
           article: '9'
           paragraph: '3'
-        replacement:
-          from: "személyhez fűződő jogáról"
-          to: "személyiségi jogáról"
+        from: "személyhez fűződő jogáról"
+        to: "személyiségi jogáról"

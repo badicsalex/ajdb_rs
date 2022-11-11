@@ -20,8 +20,8 @@ impl ModifyAct for ArticleTitleAmendment {
             let article_ref = article.reference().relative_to(&act_ref)?;
             if self.position.contains(&article_ref) {
                 if let Some(title) = &mut article.title {
-                    applied = applied || title.contains(&self.replacement.from);
-                    *title = title.replace(&self.replacement.from, &self.replacement.to);
+                    applied = applied || title.contains(&self.from);
+                    *title = title.replace(&self.from, &self.to);
                     article.last_change = Some(change_entry.clone());
                 }
             }

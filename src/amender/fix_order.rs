@@ -29,20 +29,22 @@ fn amendment_order_wrong(
         (
             AppliableModificationType::TextAmendment(earlier),
             AppliableModificationType::TextAmendment(later),
-        ) => {
+        ) if earlier.reference.contains(&later.reference)
+            || later.reference.contains(&earlier.reference) =>
+        {
             // Substring case, e.g.
             // - from: aaa
             //     to: bbb
             // - from: aaa xxx
             //     to: bbb zzz
             //
-            later.replacement.from.contains(&earlier.replacement.from)
+            later.from.contains(&earlier.from)
             // Semi-swap case
             // -from: a
             //    to: b c d
             // -from: c
             //    to: x
-            || earlier.replacement.to.contains(&later.replacement.from)
+            || earlier.to.contains(&later.from)
         }
         (
             AppliableModificationType::BlockAmendment(earlier),

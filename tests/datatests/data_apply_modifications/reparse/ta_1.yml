@@ -12,15 +12,14 @@ children_original:
         - body: "A Tv. 1. §-a nem lép hatályba."
 modifications:
   - TextAmendment:
-      position:
+      reference:
         act:
           year: 2012
           number: 1
         article: '1'
         paragraph: '2'
-      replacement:
-        from: "74/A"
-        to: "420"
+      from: "74/A"
+      to: "420"
 children_expected:
   - Article:
       identifier: '1'

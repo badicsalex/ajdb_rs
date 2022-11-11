@@ -8,15 +8,14 @@
       point: a
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2011
             number: 30
           article: 7:43
           paragraph: '3'
-        replacement:
-          from: Semmis
-          to: Érvénytelen
+        from: Semmis
+        to: Érvénytelen
   - cause:
       act:
         year: 2012
@@ -25,15 +24,14 @@
       point: b
     modification:
       TextAmendment:
-        position:
+        reference:
           act:
             year: 2011
             number: 30
           article: '1'
           paragraph: '3'
-        replacement:
-          from: Totális
-          to: Megfelelő
+        from: Totális
+        to: Megfelelő
 2012-01-16:
   2012. évi I. törvény:
   - modification:
