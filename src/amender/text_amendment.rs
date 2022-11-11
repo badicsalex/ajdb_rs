@@ -6,7 +6,7 @@ use anyhow::{anyhow, ensure, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
     reference::Reference,
-    semantic_info::TextAmendment,
+    semantic_info::{TextAmendment, TextAmendmentSAEPart},
     structure::{Act, ChildrenCommon, LastChange, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
@@ -58,20 +58,30 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
             let to = &self.amendment.to;
             match &mut element.body {
                 SAEBody::Text(text) => {
-                    if text.contains(from) {
+                    if self.amendment.amended_part == TextAmendmentSAEPart::All
+                        && text.contains(from)
+                    {
                         self.applied = true;
                         element.last_change = Some(self.change_entry.clone());
                         *text = normalized_replace(text, from, to)
                     }
                 }
                 SAEBody::Children { intro, wrap_up, .. } => {
-                    if intro.contains(from) {
+                    if (self.amendment.amended_part == TextAmendmentSAEPart::All
+                        || self.amendment.amended_part == TextAmendmentSAEPart::IntroOnly
+                            && self.amendment.reference == *position)
+                        && intro.contains(from)
+                    {
                         self.applied = true;
                         element.last_change = Some(self.change_entry.clone());
                         *intro = normalized_replace(intro, from, to);
                     }
                     if let Some(wrap_up) = wrap_up {
-                        if wrap_up.contains(from) {
+                        if (self.amendment.amended_part == TextAmendmentSAEPart::All
+                            || self.amendment.amended_part == TextAmendmentSAEPart::WrapUpOnly
+                                && self.amendment.reference == *position)
+                            && wrap_up.contains(from)
+                        {
                             self.applied = true;
                             element.last_change = Some(self.change_entry.clone());
                             *wrap_up = normalized_replace(wrap_up, from, to);

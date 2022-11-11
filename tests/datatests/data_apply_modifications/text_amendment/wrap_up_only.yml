@@ -1,0 +1,67 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Aaa bbb ccc."
+        - identifier: "2"
+          body:
+            intro: "Aaa bbb ccc:"
+            children:
+              AlphabeticPoint:
+                - identifier: a
+                  body: 
+                    intro: "aaa bbb ccc"
+                    children:
+                      NumericSubpoint:
+                        - identifier: '1'
+                          body: "aaa bbb ccc"
+                        - identifier: '2'
+                          body: "aaa bbb ccc"
+                    wrap_up: "aaa bbb ccc"
+                - identifier: b
+                  body: "aaa bbb ccc"
+            wrap_up: "aaa bbb ccc."
+modifications:
+  - TextAmendment:
+      reference:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
+        point: 'a'
+      amended_part: WrapUpOnly
+      from: "bbb"
+      to: "xxx"
+children_expected:
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Aaa bbb ccc."
+        - identifier: "2"
+          body:
+            intro: "Aaa bbb ccc:"
+            children:
+              AlphabeticPoint:
+                - identifier: a
+                  body: 
+                    intro: "aaa bbb ccc"
+                    children:
+                      NumericSubpoint:
+                        - identifier: '1'
+                          body: "aaa bbb ccc"
+                        - identifier: '2'
+                          body: "aaa bbb ccc"
+                    wrap_up: "aaa xxx ccc"
+                  last_change:
+                    date: 2013-04-20
+                    cause:
+                      act:
+                        year: 2013
+                        number: 420
+                      article: '1'
+                - identifier: b
+                  body: "aaa bbb ccc"
+            wrap_up: "aaa bbb ccc."
