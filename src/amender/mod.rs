@@ -29,7 +29,7 @@ use self::{
     block_amendment::BlockAmendmentWithContent, extract::extract_modifications_from_act,
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
 };
-use crate::{amender::fix_order::fix_amendment_order, database::ActSet};
+use crate::{amender::fix_order::fix_amendment_order, database::ActSet, fixups::GlobalFixups};
 
 #[derive(Debug, Default)]
 pub struct AppliableModificationSet {
@@ -131,6 +131,19 @@ impl AppliableModificationSet {
         self.modifications.keys().copied().collect()
     }
 
+    pub fn add_fixups(&mut self, date: NaiveDate) -> Result<()> {
+        let fixups = GlobalFixups::load(date)?.get_additional_modifications();
+        if !fixups.is_empty() {
+            info!(
+                "Fixup: Using {} additional date-specific modifications",
+                fixups.len()
+            );
+        }
+        for fixup in fixups {
+            self.modifications.insert(fixup.affected_act()?, fixup)
+        }
+        Ok(())
+    }
     /// Used only for testing
     pub fn get_modifications(mut self) -> MultiMap<ActIdentifier, AppliableModification> {
         for (_key, vals) in self.modifications.iter_all_mut() {

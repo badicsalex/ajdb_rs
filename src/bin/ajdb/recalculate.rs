@@ -50,6 +50,7 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
     act_ids.reverse();
 
     let mut modifications = AppliableModificationSet::default();
+    modifications.add_fixups(date)?;
     for act_id in &act_ids {
         // NOTE: And then there's the case where an Act is modified by one Act, and then another,
         //       Both coming into force at the same time. This is resolved by the internal

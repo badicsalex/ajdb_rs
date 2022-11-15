@@ -1,0 +1,13 @@
+- AddModification:
+    cause:
+      Other: "Az „és a megismételt” szövegrészt megsemmisítette a 2/2022. (II. 10.) AB határozat 2022. 02. 22.-n."
+    modification:
+      TextAmendment:
+        reference:
+          act:
+            year: 2017
+            number: 150
+          article: '271'
+          paragraph: '1'
+        from: "és a megismételt"
+        to: ""

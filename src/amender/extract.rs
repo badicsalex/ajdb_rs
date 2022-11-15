@@ -24,7 +24,7 @@ use super::{
     repeal::SimplifiedRepeal, structural_amendment::StructuralBlockAmendmentWithContent,
     AppliableModification, AppliableModificationType,
 };
-use crate::{enforcement_date_set::EnforcementDateSet, fixups::Fixups};
+use crate::{enforcement_date_set::EnforcementDateSet, fixups::ActFixups};
 
 /// Return all modifications that comes in force on the specific day
 /// Include the auto-repeal of said modifications the next day, according to
@@ -35,7 +35,7 @@ pub fn extract_modifications_from_act(
 ) -> Result<Vec<AppliableModification>> {
     // TODO: this should probably be stored in the act_entry
     let ed_set = EnforcementDateSet::from_act(act)?;
-    let fixups = Fixups::load(act.identifier)?.get_additional_modifications();
+    let fixups = ActFixups::load(act.identifier)?.get_additional_modifications();
     if !fixups.is_empty() {
         info!("Fixup: Using {} additional modifications", fixups.len());
     }

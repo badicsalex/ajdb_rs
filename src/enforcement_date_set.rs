@@ -13,7 +13,7 @@ use hun_law::{
 };
 use log::info;
 
-use crate::fixups::Fixups;
+use crate::fixups::ActFixups;
 
 #[derive(Debug)]
 pub struct ActualEnforcementDate {
@@ -33,7 +33,7 @@ impl EnforcementDateSet {
         let mut visitor = EnforcementDateAccumulator::default();
         act.walk_saes(&mut visitor)
             .with_elem_context("Getting enforcement dates failed", act)?;
-        let additional_eds = Fixups::load(act.identifier)?.get_additional_enforcement_dates();
+        let additional_eds = ActFixups::load(act.identifier)?.get_additional_enforcement_dates();
         if !additional_eds.is_empty() {
             info!(
                 "Fixup: Using {} additional enforcement dates",
