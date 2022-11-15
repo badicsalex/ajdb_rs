@@ -11,12 +11,17 @@ use maud::{html, Markup, DOCTYPE};
 use super::util::{logged_http_error, today};
 use crate::{database::ActSet, persistence::Persistence};
 
-async fn get_all_acts(persistence: &Persistence) -> Result<Vec<String>> {
+async fn get_all_acts(persistence: &Persistence) -> Result<Vec<(String, String)>> {
     let state = ActSet::load_async(persistence, today()).await?;
     let acts = state.get_acts()?;
     Ok(acts
         .into_iter()
-        .map(|ae| ae.identifier().to_string())
+        .map(|ae| {
+            (
+                format!("{:?}", ae.identifier()),
+                ae.identifier().to_string(),
+            )
+        })
         .collect())
 }
 
@@ -68,8 +73,8 @@ pub async fn render_index(
                         }
                         h3 { "Egyéb törvények:" }
                         ul {
-                            @for act in acts {
-                                li { a href={"/act/" (act)} { (act) } }
+                            @for (act_id, act_long) in acts {
+                                li { a href={"/act/" (act_id)} { (act_long) } }
                             }
                         }
                     }
