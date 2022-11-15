@@ -11,7 +11,10 @@ use hun_law::{
 };
 
 use super::document_part::DocumentPartMetadata;
-use crate::{enforcement_date_set::EnforcementDateSet, web::util::logged_http_error};
+use crate::{
+    enforcement_date_set::EnforcementDateSet,
+    web::{act::document_part::ChangeMarkerData, util::logged_http_error},
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct ConvertToPartsContext<'a> {
@@ -42,8 +45,11 @@ impl<'a> ConvertToPartsContext<'a> {
 
     pub fn update_last_changed(mut self, last_change: Option<&LastChange>) -> Self {
         if let Some(last_change) = last_change {
-            self.part_metadata.last_change =
-                Some((self.part_metadata.reference.clone(), last_change.clone()))
+            self.part_metadata.last_change = Some(ChangeMarkerData {
+                changed_ref: self.part_metadata.reference.clone(),
+                change: last_change.clone(),
+                indentation: self.part_metadata.indentation,
+            })
         }
         self
     }

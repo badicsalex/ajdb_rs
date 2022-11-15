@@ -3,13 +3,16 @@
 // All rights reserved.
 
 use chrono::{Duration, NaiveDate};
-use hun_law::{reference::parts::AnyReferencePart, structure::ChangeCause};
+use hun_law::structure::ChangeCause;
 use maud::{html, Markup, PreEscaped};
 
 use super::document_part::{DocumentPartMetadata, RenderPartParams};
-use crate::web::util::{
-    anchor_string, modified_by_text, url_for_act, url_for_change_snippet, url_for_diff,
-    url_for_reference, OrToday,
+use crate::web::{
+    act::document_part::ChangeMarkerData,
+    util::{
+        anchor_string, modified_by_text, url_for_act, url_for_change_snippet, url_for_diff,
+        url_for_reference, OrToday,
+    },
 };
 
 pub fn render_markers(params: &RenderPartParams, part_metadata: &DocumentPartMetadata) -> Markup {
@@ -35,33 +38,25 @@ pub fn render_changes_markers(
     date: NaiveDate,
     part_metadata: &DocumentPartMetadata,
 ) -> Option<Markup> {
-    let (reference, last_change) = part_metadata.last_change.as_ref()?;
-    let change_snippet = if reference.article().is_some() {
-        url_for_change_snippet(reference, date, last_change)
+    let ChangeMarkerData {
+        changed_ref,
+        change,
+        indentation,
+    } = part_metadata.last_change.as_ref()?;
+    let change_snippet = if changed_ref.article().is_some() {
+        url_for_change_snippet(changed_ref, date, change)
     } else {
-        let modified_by = modified_by_text(last_change.date, &last_change.cause, "Módosította")
+        let modified_by = modified_by_text(change.date, &change.cause, "Módosította")
             .ok()?
             .0;
         format!("static:{modified_by}")
     };
     let change_url = format!(
         "{}#{}",
-        url_for_diff(
-            part_metadata.reference.act()?,
-            last_change.date.pred(),
-            date
-        ),
+        url_for_diff(part_metadata.reference.act()?, change.date.pred(), date),
         anchor_string(&part_metadata.reference)
     );
-    let change_age = date - last_change.date;
-    let indentation = match reference.get_last_part() {
-        AnyReferencePart::Empty => 0,
-        AnyReferencePart::Act(_) => 0,
-        AnyReferencePart::Article(_) => 0,
-        AnyReferencePart::Paragraph(_) => 1,
-        AnyReferencePart::Point(_) => 2,
-        AnyReferencePart::Subpoint(_) => 3,
-    };
+    let change_age = date - change.date;
     Some(html!(
         a
         .past_change_container
@@ -81,7 +76,7 @@ pub fn render_diff_change_marker(
     since_date: NaiveDate,
     part_metadata: &DocumentPartMetadata,
 ) -> Option<Markup> {
-    let (_, last_change) = part_metadata.last_change.as_ref()?;
+    let last_change = &part_metadata.last_change.as_ref()?.change;
     if last_change.date < since_date {
         return None;
     }

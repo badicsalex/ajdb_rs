@@ -27,9 +27,16 @@ pub struct DocumentPart<'a> {
 pub struct DocumentPartMetadata {
     pub reference: Reference,
     pub indentation: usize,
-    pub last_change: Option<(Reference, LastChange)>,
+    pub last_change: Option<ChangeMarkerData>,
     pub enforcement_date_marker: Option<NaiveDate>,
     pub not_in_force: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChangeMarkerData {
+    pub changed_ref: Reference,
+    pub change: LastChange,
+    pub indentation: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

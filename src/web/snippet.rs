@@ -12,10 +12,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use hun_law::{
-    identifier::{
-        range::{IdentifierRange, IdentifierRangeFrom},
-        ActIdentifier,
-    },
+    identifier::ActIdentifier,
     reference::{parts::AnyReferencePart, Reference},
     structure::{Act, ChangeCause},
     util::compact_string::CompactString,
@@ -191,11 +188,7 @@ fn get_snippet_as_document_parts<'a>(
         snippet_range: Some(reference.clone()),
         date,
         part_metadata: DocumentPartMetadata {
-            reference: (
-                act_id,
-                IdentifierRange::from_single(article_range.first_in_range()),
-            )
-                .into(),
+            reference: act_id.into(),
             ..Default::default()
         },
         ..Default::default()
@@ -210,6 +203,10 @@ fn get_snippet_as_document_parts<'a>(
         {
             article.convert_to_parts(&context, &mut parts)?
         } else {
+            let context = context
+                .clone()
+                .relative_to(article)?
+                .update_last_changed(article.last_change.as_ref());
             article.children.convert_to_parts(&context, &mut parts)?;
         }
     }
