@@ -21,7 +21,10 @@ impl ModifyAct for ArticleTitleAmendment {
             if self.position.contains(&article_ref) {
                 if let Some(title) = &mut article.title {
                     applied = applied || title.contains(&self.from);
-                    *title = title.replace(&self.from, &self.to);
+                    *title = title
+                        .replace(&self.from, &self.to)
+                        .trim()
+                        .replace("  ", " ");
                     article.last_change = Some(change_entry.clone());
                 }
             }
