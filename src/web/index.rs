@@ -26,6 +26,12 @@ pub async fn render_index(
     let acts = get_all_acts(&persistence)
         .await
         .map_err(logged_http_error)?;
+    let important_acts = [
+        ("Art", "2017-150"),
+        ("Btk", "2012-100"),
+        ("Mt", "2012-1"),
+        ("Ptk", "2013-5"),
+    ];
 
     Ok(html!(
         (DOCTYPE)
@@ -55,14 +61,10 @@ pub async fn render_index(
                             " címre."
                         }
                         h3 { "Fontos elérhető törvények:" }
-                        a href="/act/2012-100" .important_act {
-                            "Btk."
-                        }
-                        a href="/act/2012-1" .important_act {
-                            "Mt."
-                        }
-                        a href="/act/2013-5" .important_act {
-                            "Ptk."
+                        @for (abbreviation, id) in important_acts {
+                            a href={"/act/" (id)} .important_act {
+                                (abbreviation) "."
+                            }
                         }
                         h3 { "Egyéb törvények:" }
                         ul {
