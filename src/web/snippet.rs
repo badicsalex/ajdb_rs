@@ -126,11 +126,13 @@ pub async fn render_diff_snippet(
     let render_params_left = RenderPartParams {
         date: Some(params.date_left),
         convert_links: true,
+        force_absolute_urls: true,
         ..Default::default()
     };
     let render_params_right = RenderPartParams {
         date: Some(params.date_right),
         convert_links: true,
+        force_absolute_urls: true,
         ..Default::default()
     };
     if only_empty_parts(&parts_left) {
