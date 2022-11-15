@@ -1,11 +1,12 @@
 2012-01-02:
   2012. évi C. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      point: a
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        point: a
     modification:
       TextAmendment:
         reference:
@@ -18,11 +19,12 @@
         from: gyermekpornográfia
         to: tizennyolcadik életévét be nem töltött személyt ábrázoló pornográf felvétel kínálása, átadása, hozzáférhetővé tétele, készítése, forgalomba hozatala, azzal való kereskedelem, illetve nagy nyilvánosság számára hozzáférhetővé tétele
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      point: a
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        point: a
     modification:
       TextAmendment:
         reference:
@@ -35,11 +37,12 @@
         from: (6)
         to: (2)–(5)
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      point: a
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        point: a
     modification:
       TextAmendment:
         reference:
@@ -52,11 +55,12 @@
         from: a) és c)
         to: b) pont és (6) bekezdés], tizennyolcadik életévét be nem töltött személynek vagy személyeknek pornográf műsorban való szerepeltetése vagy ilyen pornográf műsor szervezése [204/A. § (1) bekezdés b)
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      point: c
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        point: c
     modification:
       TextAmendment:
         reference:
@@ -68,11 +72,12 @@
         from: anyag megmunkálása
         to: fűdarálás
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      point: b
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        point: b
     modification:
       TextAmendment:
         reference:
@@ -85,7 +90,8 @@
         to: fű
 2012-01-03:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
@@ -93,7 +99,8 @@
             number: 1
           article: '1'
           point: a
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
@@ -101,7 +108,8 @@
             number: 1
           article: '1'
           point: b
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:

@@ -106,20 +106,22 @@ children_expected:
     last_change:
       date: 2013-04-20
       cause:
-        act:
-          year: 2013
-          number: 420
-        article: '1'
+        Amendment:
+          act:
+            year: 2013
+            number: 420
+          article: '1'
 - Article:
     identifier: 1/A
     children: []
     last_change:
       date: 2013-04-20
       cause:
-        act:
-          year: 2013
-          number: 420
-        article: '3'
+        Amendment:
+          act:
+            year: 2013
+            number: 420
+          article: '3'
 - Article:
     identifier: '2'
     title: Hello there 2
@@ -131,10 +133,11 @@ children_expected:
     last_change:
       date: 2013-04-20
       cause:
-        act:
-          year: 2013
-          number: 420
-        article: '5'
+        Amendment:
+          act:
+            year: 2013
+            number: 420
+          article: '5'
 - Article:
     identifier: 3/A
     children:
@@ -143,9 +146,10 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '6'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '6'
     - identifier: '2'
       body: Sibling paragraph

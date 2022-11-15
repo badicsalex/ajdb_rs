@@ -3,11 +3,12 @@
 #        (5) bekezdésében az „(1) vagy a (2) bekezdésben” szövegrész helyébe az „(1)–(2a) bekezdésben” szöveg
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '5'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '5'
     modification:
       TextAmendment:
         reference:
@@ -20,11 +21,12 @@
         to: "(1)–(2a) bekezdés"
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '5'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '5'
     modification:
       TextAmendment:
         reference:
@@ -40,11 +42,12 @@
 #          (4) bekezdésében az „(1)–(2) bekezdésben” szövegrész helyébe az „(1)–(2b) bekezdésben” szöveg,
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '6'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '6'
     modification:
       TextAmendment:
         reference:
@@ -57,11 +60,12 @@
         to: "(1)–(2b) bekezdés"
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '6'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '6'
     modification:
       TextAmendment:
         reference:
@@ -77,11 +81,12 @@
 #          (4) bekezdésében az „(1)–(2) bekezdésben” szövegrész helyébe az „(1)–(2b) bekezdésben” szöveg,
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '7'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '7'
     modification:
       TextAmendment:
         reference:
@@ -94,11 +99,12 @@
         to: "(1)–(2b) bekezdés"
 - AddModification:
     cause:
-      act:
-        year: 2020
-        number: 43
-      article: '58'
-      point: '7'
+      Amendment:
+        act:
+          year: 2020
+          number: 43
+        article: '58'
+        point: '7'
     modification:
       TextAmendment:
         reference:

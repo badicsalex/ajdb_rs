@@ -115,10 +115,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
     - identifier: '2'
       body: Paragraph 2
     - identifier: '3'
@@ -126,10 +127,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '2'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '2'
 - Article:
     identifier: '2'
     children:
@@ -140,10 +142,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '3'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '3'
 - Article:
     identifier: '3'
     children:
@@ -154,28 +157,31 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '4'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '4'
     - identifier: '3'
       body: Modified paragraph 3
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '4'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '4'
     - identifier: '4'
       body: Modified paragraph 4
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '4'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '4'
 - Article:
     identifier: '4'
     children:
@@ -186,25 +192,28 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '5'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '5'
     - identifier: '3'
       body: Modified paragraph 3
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '5'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '5'
     - identifier: '4'
       body: Modified paragraph 4
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '5'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '5'

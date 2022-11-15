@@ -1,10 +1,11 @@
 2012-01-02:
   2013. évi V. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '3'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '3'
     modification:
       StructuralBlockAmendment:
         position:
@@ -26,10 +27,11 @@
             - identifier: '3'
               body: Az (1) bekezdés ...
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '2'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '2'
     modification:
       BlockAmendment:
         position:
@@ -43,10 +45,11 @@
           - identifier: '4'
             body: Nice.
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '5'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '5'
     modification:
       BlockAmendment:
         position:
@@ -67,10 +70,11 @@
                 - identifier: b
                   body: something else
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '4'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '4'
     modification:
       BlockAmendment:
         position:
@@ -86,28 +90,32 @@
             body: Nice.
 2012-01-03:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
             year: 2012
             number: 1
           article: '2'
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
             year: 2012
             number: 1
           article: '3'
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
             year: 2012
             number: 1
           article: '4'
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:

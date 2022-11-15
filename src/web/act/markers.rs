@@ -3,16 +3,13 @@
 // All rights reserved.
 
 use chrono::{Duration, NaiveDate};
-use hun_law::{
-    reference::{parts::AnyReferencePart, Reference},
-    util::compact_string::CompactString,
-};
+use hun_law::{reference::parts::AnyReferencePart, structure::ChangeCause};
 use maud::{html, Markup, PreEscaped};
 
 use super::document_part::{DocumentPartMetadata, RenderPartParams};
 use crate::web::util::{
-    anchor_string, link_to_reference, modified_by_text, url_for_act, url_for_change_snippet,
-    url_for_diff, url_for_reference, OrToday,
+    anchor_string, modified_by_text, url_for_act, url_for_change_snippet, url_for_diff,
+    url_for_reference, OrToday,
 };
 
 pub fn render_markers(params: &RenderPartParams, part_metadata: &DocumentPartMetadata) -> Markup {
@@ -42,10 +39,9 @@ pub fn render_changes_markers(
     let change_snippet = if reference.article().is_some() {
         url_for_change_snippet(reference, date, last_change)
     } else {
-        let modified_by =
-            modified_by_text(last_change.date, last_change.cause.clone(), "Módosította")
-                .ok()?
-                .0;
+        let modified_by = modified_by_text(last_change.date, &last_change.cause, "Módosította")
+            .ok()?
+            .0;
         format!("static:{modified_by}")
     };
     let change_url = format!(
@@ -89,30 +85,12 @@ pub fn render_diff_change_marker(
     if last_change.date < since_date {
         return None;
     }
-    let link;
-    let snippet_text;
-    let href;
-    if let Some(change_ref) = last_change.cause.as_ref() {
-        href = url_for_reference(change_ref, Some(last_change.date), true).ok();
-        link = link_to_reference(change_ref, Some(last_change.date), None, true).ok()?;
-        snippet_text = html!(
-            "Módosíttotta "
-            ( last_change.date.format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            "."
-        )
+    let snippet_text =
+        modified_by_text(last_change.date, &last_change.cause, "Módosította").ok()?;
+    let href = if let ChangeCause::Amendment(change_ref) = &last_change.cause {
+        url_for_reference(change_ref, Some(last_change.date), true).ok()
     } else {
-        let jat_ref = Reference::from_compact_string("2010.130_12_2__").ok()?;
-        href = None;
-        link = link_to_reference(&jat_ref, Some(last_change.date), None, true).ok()?;
-        snippet_text = html!(
-            "Automatikusan hatályát vesztete "
-            ( last_change.date.format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            " alapján."
-        )
+        None
     };
     Some(html!(
         a

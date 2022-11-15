@@ -64,10 +64,11 @@ children_expected:
             last_change:
               date: 2013-04-20
               cause:
-                act:
-                  year: 2013
-                  number: 420
-                article: '1'
+                Amendment:
+                  act:
+                    year: 2013
+                    number: 420
+                  article: '1'
           - identifier: '2'
             body: Point 2
           - identifier: '3'
@@ -75,16 +76,18 @@ children_expected:
             last_change:
               date: 2013-04-20
               cause:
-                act:
-                  year: 2013
-                  number: 420
-                article: '2'
+                Amendment:
+                  act:
+                    year: 2013
+                    number: 420
+                  article: '2'
           - identifier: '4'
             body: Modified 4
             last_change:
               date: 2013-04-20
               cause:
-                act:
-                  year: 2013
-                  number: 420
-                article: '2'
+                Amendment:
+                  act:
+                    year: 2013
+                    number: 420
+                  article: '2'

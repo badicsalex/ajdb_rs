@@ -168,10 +168,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
   - Article:
       identifier: 3:1
       children:
@@ -179,10 +180,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
   - StructuralElement:
       identifier: "2"
       title: A JOGI SZEMÉLY LÉTESÍTÉSE

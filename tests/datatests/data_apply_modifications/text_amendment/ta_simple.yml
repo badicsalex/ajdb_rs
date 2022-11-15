@@ -63,19 +63,21 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
     - identifier: '2'
       body: Something else 2
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
 - Article:
     identifier: '2'
     title: Hello there 2
@@ -84,10 +86,11 @@ children_expected:
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '1'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
 - Article:
     identifier: '3'
     title: Hello there 3
@@ -104,20 +107,22 @@ children_expected:
             last_change:
               date: 2013-04-20
               cause:
-                act:
-                  year: 2013
-                  number: 420
-                article: '2'
+                Amendment:
+                  act:
+                    year: 2013
+                    number: 420
+                  article: '2'
           - identifier: b
             body: My little point b
         wrap_up: mmm.
       last_change:
         date: 2013-04-20
         cause:
-          act:
-            year: 2013
-            number: 420
-          article: '2'
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '2'
 - Article:
     identifier: '4'
     title: Hello there 4

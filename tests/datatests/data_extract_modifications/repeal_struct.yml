@@ -1,10 +1,11 @@
 2012-01-02:
   2003. évi I. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
     modification:
       StructuralBlockAmendment:
         position:
@@ -17,7 +18,8 @@
         content: []
 2012-01-03:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:

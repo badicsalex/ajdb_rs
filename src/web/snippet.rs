@@ -17,7 +17,7 @@ use hun_law::{
         ActIdentifier,
     },
     reference::{parts::AnyReferencePart, Reference},
-    structure::Act,
+    structure::{Act, ChangeCause},
     util::compact_string::CompactString,
 };
 use maud::{html, Markup};
@@ -114,10 +114,12 @@ pub async fn render_diff_snippet(
     };
     let modified_by = modified_by_text(
         params.date_left.succ(),
-        if params.change_cause.is_empty() {
-            None
+        &if params.change_cause.is_empty() {
+            ChangeCause::AutoRepeal
+        } else if params.change_cause.starts_with("other:") {
+            ChangeCause::Other(params.change_cause[6..].to_string())
         } else {
-            Some(
+            ChangeCause::Amendment(
                 Reference::from_compact_string(&params.change_cause)
                     .map_err(|_| StatusCode::NOT_FOUND)?,
             )

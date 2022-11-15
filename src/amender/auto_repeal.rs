@@ -8,7 +8,7 @@ use hun_law::{
     identifier::IdentifierCommon,
     reference::Reference,
     semantic_info::SpecialPhrase,
-    structure::{ChildrenCommon, SubArticleElement},
+    structure::{ChangeCause, ChildrenCommon, SubArticleElement},
     util::walker::SAEVisitor,
 };
 
@@ -51,7 +51,8 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         };
 
         for fixup in self.fixups {
-            if fixup.cause.as_ref().map_or(false, |s| s == position) {
+            if matches!(&fixup.cause, ChangeCause::Amendment(amendment_ref) if amendment_ref == position)
+            {
                 add_it = true;
             }
         }
@@ -86,7 +87,7 @@ impl<'a> AutoRepealAccumulator<'a> {
                         position: p.relative_to(act_ref)?,
                     }
                     .into(),
-                    cause: None,
+                    cause: ChangeCause::AutoRepeal,
                 })
             })
             .collect::<Result<Vec<_>>>()

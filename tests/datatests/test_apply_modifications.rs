@@ -10,7 +10,7 @@ use ajdb::amender::{
 use chrono::NaiveDate;
 use hun_law::identifier::range::{IdentifierRange, IdentifierRangeFrom};
 use hun_law::identifier::{ActIdentifier, ArticleIdentifier};
-use hun_law::structure::ActChild;
+use hun_law::structure::{ActChild, ChangeCause};
 use hun_law::{structure::Act, util::singleton_yaml};
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +45,7 @@ pub fn run_test(path: &Path) -> datatest_stable::Result<()> {
         .into_iter()
         .enumerate()
         .map(|(i, modification)| AppliableModification {
-            cause: Some(
+            cause: ChangeCause::Amendment(
                 (
                     ActIdentifier {
                         year: 2013,

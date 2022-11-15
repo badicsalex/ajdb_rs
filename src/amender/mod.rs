@@ -17,9 +17,8 @@ use from_variants::FromVariants;
 use hun_law::{
     identifier::ActIdentifier,
     parser::semantic_info::AbbreviationsChanged,
-    reference::Reference,
     semantic_info::{ArticleTitleAmendment, TextAmendment},
-    structure::{Act, LastChange},
+    structure::{Act, ChangeCause, LastChange},
     util::debug::WithElemContext,
 };
 use log::{debug, info, warn};
@@ -172,8 +171,7 @@ trait AffectedAct {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AppliableModification {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cause: Option<Reference>,
+    pub cause: ChangeCause,
     pub modification: AppliableModificationType,
 }
 

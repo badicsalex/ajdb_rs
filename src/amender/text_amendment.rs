@@ -205,7 +205,7 @@ impl AffectedAct for TextAmendment {
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use hun_law::util::singleton_yaml;
+    use hun_law::{structure::ChangeCause, util::singleton_yaml};
 
     use super::*;
 
@@ -242,7 +242,7 @@ mod tests {
         let mut test_act: Act = singleton_yaml::from_str(TEST_ACT).unwrap();
         let change_entry = LastChange {
             date: NaiveDate::from_ymd(2013, 2, 3),
-            cause: None,
+            cause: ChangeCause::Other("Test".to_string()),
         };
 
         let mod_1: TextAmendment = singleton_yaml::from_str(

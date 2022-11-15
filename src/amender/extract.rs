@@ -9,8 +9,8 @@ use hun_law::{
     reference::{to_element::ReferenceToElement, Reference},
     semantic_info::{EnforcementDate, SpecialPhrase, StructuralRepeal},
     structure::{
-        Act, ActChild, BlockAmendment, ChildrenCommon, Paragraph, ParagraphChildren, SAEBody,
-        SubArticleElement,
+        Act, ActChild, BlockAmendment, ChangeCause, ChildrenCommon, Paragraph, ParagraphChildren,
+        SAEBody, SubArticleElement,
     },
     util::{
         debug::WithElemContext,
@@ -116,7 +116,7 @@ fn get_modifications_for_block_amendment(
                 content: ba_content.children.clone(),
             }
             .into(),
-            cause: Some(paragraph_ref),
+            cause: ChangeCause::Amendment(paragraph_ref),
         })
     } else {
         bail!(
@@ -142,7 +142,7 @@ fn get_modifications_for_structural_block_amendment(
                     content: ba_content.into(),
                 }
                 .into(),
-                cause: Some(paragraph_ref),
+                cause: ChangeCause::Amendment(paragraph_ref),
             })
         }
         _ => bail!(
@@ -200,7 +200,8 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
                 };
             }
             for fixup in self.fixups {
-                if fixup.cause.as_ref().map_or(false, |s| s == position) {
+                if matches!(&fixup.cause, ChangeCause::Amendment(amendment_ref) if amendment_ref == position)
+                {
                     self.result.push(fixup.clone());
                 }
             }
@@ -231,7 +232,7 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
 impl<'a> ModificationAccumulator<'a> {
     fn add(&mut self, modification: AppliableModificationType, cause: &Reference) {
         self.result.push(AppliableModification {
-            cause: Some(cause.clone()),
+            cause: ChangeCause::Amendment(cause.clone()),
             modification,
         })
     }

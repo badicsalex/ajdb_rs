@@ -1,10 +1,11 @@
 2012-01-02:
   2009. évi III. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '2'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '2'
     modification:
       StructuralBlockAmendment:
         position:
@@ -26,7 +27,8 @@
             - body: Pls no.
 2012-01-03:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:

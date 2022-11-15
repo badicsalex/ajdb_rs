@@ -7,10 +7,11 @@ use std::fmt::Write;
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use hun_law::{
-    identifier::ActIdentifier, reference::Reference, structure::LastChange,
+    identifier::ActIdentifier, reference::Reference, structure::ChangeCause, structure::LastChange,
     util::compact_string::CompactString,
 };
 use maud::{html, Markup, PreEscaped};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 pub fn logged_http_error(e: impl std::fmt::Debug) -> StatusCode {
     log::error!("Internal error occured: {:?}", e);
@@ -66,10 +67,11 @@ pub fn url_for_change_snippet(r: &Reference, date: NaiveDate, change: &LastChang
         "/diff_snippet/{}?date_left={}&date_right={date}&change_cause={}",
         r.compact_string(),
         change.date.pred(),
-        if let Some(cause) = &change.cause {
-            cause.compact_string().to_string()
-        } else {
-            String::new()
+        match &change.cause {
+            ChangeCause::Amendment(cause_ref) => cause_ref.compact_string().to_string(),
+            ChangeCause::AutoRepeal => String::new(),
+            ChangeCause::Other(cause_text) =>
+                utf8_percent_encode(&format!("other:{cause_text}"), NON_ALPHANUMERIC).to_string(),
         },
     )
 }
@@ -130,32 +132,36 @@ pub fn link_to_reference(
 
 pub fn modified_by_text(
     date: NaiveDate,
-    cause_ref: Option<Reference>,
+    cause_ref: &ChangeCause,
     verb: &'static str,
 ) -> Result<Markup, StatusCode> {
-    Ok(if let Some(cause_ref) = cause_ref {
-        let link =
-            link_to_reference(&cause_ref, Some(date), None, true).map_err(logged_http_error)?;
-        html!(
-            ( verb )
-            " "
-            ( date.format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            "."
-        )
-    } else {
-        let jat_ref =
-            Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
-        let link =
-            link_to_reference(&jat_ref, Some(date), None, true).map_err(logged_http_error)?;
-        html!(
-            "Automatikusan hatályát vesztete "
-            ( date.format("%Y. %m. %d-n").to_string() )
-            " a "
-            ( link )
-            " alapján."
-        )
+    Ok(match cause_ref {
+        ChangeCause::Amendment(cause_ref) => {
+            let link =
+                link_to_reference(cause_ref, Some(date), None, true).map_err(logged_http_error)?;
+            html!(
+                ( verb )
+                " "
+                ( date.format("%Y. %m. %d-n").to_string() )
+                " a "
+                ( link )
+                "."
+            )
+        }
+        ChangeCause::AutoRepeal => {
+            let jat_ref =
+                Reference::from_compact_string("2010.130_12_2__").map_err(logged_http_error)?;
+            let link =
+                link_to_reference(&jat_ref, Some(date), None, true).map_err(logged_http_error)?;
+            html!(
+                "Automatikusan hatályát vesztete "
+                ( date.format("%Y. %m. %d-n").to_string() )
+                " a "
+                ( link )
+                " alapján."
+            )
+        }
+        ChangeCause::Other(cause_text) => html!((cause_text)),
     })
 }
 

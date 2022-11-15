@@ -1,11 +1,12 @@
 2012-01-02:
   2011. évi LXXV. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      paragraph: '1'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '1'
     modification:
       BlockAmendment:
         position:
@@ -22,7 +23,8 @@
             body: a kölcsön fedezete a Magyar Köztársaság területén lévő lakóingatlanon alapított zálogjog vagy a Magyar Köztársaság 2005. évi költségvetéséről szóló 2004. évi CXXXV. törvény 44. §-a alapján vállalt állami készfizető kezesség;
 2012-01-03:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
@@ -33,11 +35,12 @@
 2012-03-15:
   2011. évi LXXV. törvény:
   - cause:
-      act:
-        year: 2012
-        number: 1
-      article: '1'
-      paragraph: '2'
+      Amendment:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+        paragraph: '2'
     modification:
       BlockAmendment:
         position:
@@ -53,7 +56,8 @@
             body: 'gyűjtőszámlahitel: nem annyira fontos'
 2012-03-16:
   2012. évi I. törvény:
-  - modification:
+  - cause: AutoRepeal
+    modification:
       Repeal:
         position:
           act:
