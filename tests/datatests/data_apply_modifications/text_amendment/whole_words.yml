@@ -1,0 +1,26 @@
+children_original:
+  - Article:
+      identifier: "1"
+      children:
+        - body: "A vállalkozási tevékenységet nem folytató, általános forgalmi adó fizetésére nem kötelezett természetes személy – a bevallás benyújtására előírt határidőig – személyi jövedelemadó-bevallásában nyilatkozhat úgy, hogy a bevallott, együttesen kettőszázezer forintot meg nem haladó személyi jövedelemadó és szociális hozzájárulási adó-fizetési kötelezettségét pótlékmentes részletfizetés keretében, az esedékességtől számított legfeljebb hat hónapon keresztül, havonként egyenlő részletekben teljesíti. Az első részlet megfizetésének határideje a személyi jövedelemadó fizetési kötelezettség törvényben meghatározott esedékességének napja. A nyilatkozat megtételére előírt határidő jogvesztő."
+modifications:
+  - TextAmendment:
+      reference:
+        act:
+          year: 2012
+          number: 1
+        article: '1'
+      from: "hat"
+      to: "tizenkettő"
+children_expected:
+  - Article:
+      identifier: "1"
+      children:
+        - body: "A vállalkozási tevékenységet nem folytató, általános forgalmi adó fizetésére nem kötelezett természetes személy – a bevallás benyújtására előírt határidőig – személyi jövedelemadó-bevallásában nyilatkozhat úgy, hogy a bevallott, együttesen kettőszázezer forintot meg nem haladó személyi jövedelemadó és szociális hozzájárulási adó-fizetési kötelezettségét pótlékmentes részletfizetés keretében, az esedékességtől számított legfeljebb tizenkettő hónapon keresztül, havonként egyenlő részletekben teljesíti. Az első részlet megfizetésének határideje a személyi jövedelemadó fizetési kötelezettség törvényben meghatározott esedékességének napja. A nyilatkozat megtételére előírt határidő jogvesztő."
+          last_change:
+            date: 2013-04-20
+            cause:
+              act:
+                year: 2013
+                number: 420
+              article: '1'

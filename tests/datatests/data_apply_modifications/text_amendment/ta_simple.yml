@@ -24,7 +24,7 @@ children_original:
             children:
               AlphabeticPoint:
                 - identifier: a
-                  body: "My little point a is hmmmmm, with a 'suffix'"
+                  body: "My little point a is hmm, with a 'suffix'"
                 - identifier: b
                   body: "My little point b"
             wrap_up: "hmm."
@@ -100,7 +100,7 @@ children_expected:
         children:
           AlphabeticPoint:
           - identifier: a
-            body: My little point a is mmmmmm, with a 'suffix'
+            body: My little point a is mmm, with a 'suffix'
             last_change:
               date: 2013-04-20
               cause:

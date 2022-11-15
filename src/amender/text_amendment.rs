@@ -2,6 +2,8 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::str::CharIndices;
+
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{
     identifier::{ActIdentifier, IdentifierCommon},
@@ -58,33 +60,35 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
             let to = &self.amendment.to;
             match &mut element.body {
                 SAEBody::Text(text) => {
-                    if self.amendment.amended_part == TextAmendmentSAEPart::All
-                        && text.contains(from)
-                    {
-                        self.applied = true;
-                        element.last_change = Some(self.change_entry.clone());
-                        *text = normalized_replace(text, from, to)
+                    if self.amendment.amended_part == TextAmendmentSAEPart::All {
+                        if let Some(replaced) = normalized_replace(text, from, to) {
+                            self.applied = true;
+                            element.last_change = Some(self.change_entry.clone());
+                            *text = replaced;
+                        }
                     }
                 }
                 SAEBody::Children { intro, wrap_up, .. } => {
-                    if (self.amendment.amended_part == TextAmendmentSAEPart::All
+                    if self.amendment.amended_part == TextAmendmentSAEPart::All
                         || self.amendment.amended_part == TextAmendmentSAEPart::IntroOnly
-                            && self.amendment.reference == *position)
-                        && intro.contains(from)
+                            && self.amendment.reference == *position
                     {
-                        self.applied = true;
-                        element.last_change = Some(self.change_entry.clone());
-                        *intro = normalized_replace(intro, from, to);
-                    }
-                    if let Some(wrap_up) = wrap_up {
-                        if (self.amendment.amended_part == TextAmendmentSAEPart::All
-                            || self.amendment.amended_part == TextAmendmentSAEPart::WrapUpOnly
-                                && self.amendment.reference == *position)
-                            && wrap_up.contains(from)
-                        {
+                        if let Some(replaced) = normalized_replace(intro, from, to) {
                             self.applied = true;
                             element.last_change = Some(self.change_entry.clone());
-                            *wrap_up = normalized_replace(wrap_up, from, to);
+                            *intro = replaced;
+                        }
+                    }
+                    if let Some(wrap_up) = wrap_up {
+                        if self.amendment.amended_part == TextAmendmentSAEPart::All
+                            || self.amendment.amended_part == TextAmendmentSAEPart::WrapUpOnly
+                                && self.amendment.reference == *position
+                        {
+                            if let Some(replaced) = normalized_replace(wrap_up, from, to) {
+                                self.applied = true;
+                                element.last_change = Some(self.change_entry.clone());
+                                *wrap_up = replaced;
+                            }
                         }
                     }
                 }
@@ -94,14 +98,100 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
     }
 }
 
-fn normalized_replace(text: &str, from: &str, to: &str) -> String {
-    let result = text.replace(from, to);
-    if to.is_empty() {
-        // TODO: Maybe only remove spaces around the 'from' text?
-        result.trim().replace("  ", " ")
-    } else {
-        result
+struct WordBoundaryIterator<'a> {
+    chars_iter: CharIndices<'a>,
+    last_was_alphanumeric: bool,
+}
+
+impl<'a> WordBoundaryIterator<'a> {
+    pub fn new(s: &'a str) -> Self {
+        Self {
+            chars_iter: s.char_indices(),
+            last_was_alphanumeric: false,
+        }
     }
+}
+
+impl<'a> Iterator for WordBoundaryIterator<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for (i, c) in self.chars_iter.by_ref() {
+            if is_hun_alphanumeric(c) {
+                if !self.last_was_alphanumeric {
+                    self.last_was_alphanumeric = true;
+                    return Some(i);
+                } else {
+                    /* continue to next character */
+                }
+            } else {
+                self.last_was_alphanumeric = false;
+                return Some(i);
+            }
+        }
+        None
+    }
+}
+
+struct WholeWordFinderIterator<'a> {
+    s: &'a str,
+    needle: &'a str,
+    words_iter: WordBoundaryIterator<'a>,
+}
+
+impl<'a> WholeWordFinderIterator<'a> {
+    pub fn new(s: &'a str, needle: &'a str) -> Self {
+        Self {
+            s,
+            needle,
+            words_iter: WordBoundaryIterator::new(s),
+        }
+    }
+}
+
+impl<'a> Iterator for WholeWordFinderIterator<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.words_iter.by_ref().find(|&pos| {
+            self.s[pos..].starts_with(self.needle)
+                && !index_is_alphanumeric(self.s, pos + self.needle.len())
+        })
+    }
+}
+
+fn index_is_alphanumeric(s: &str, pos: usize) -> bool {
+    match s[pos..].chars().next() {
+        Some(c) => is_hun_alphanumeric(c),
+        None => false,
+    }
+}
+fn is_hun_alphanumeric(c: char) -> bool {
+    c.is_ascii_alphanumeric()
+        || [
+            'á', 'é', 'ő', 'ú', 'ó', 'ü', 'ö', 'ű', 'í', 'Á', 'É', 'Ő', 'Ú', 'Ó', 'Ü', 'Ö', 'Ű',
+            'Í',
+        ]
+        .contains(&c)
+}
+
+fn normalized_replace(text: &str, from: &str, to: &str) -> Option<String> {
+    let from = from.trim();
+    let to = to.trim();
+    let mut result = None;
+    let mut last_matched_index = 0;
+    for matched_index in WholeWordFinderIterator::new(text, from) {
+        let result = result.get_or_insert_with(String::new);
+        result.push_str(&text[last_matched_index..matched_index]);
+        result.push_str(to);
+        last_matched_index = matched_index + from.len();
+    }
+    if let Some(result) = &mut result {
+        result.push_str(&text[last_matched_index..]);
+        // XXX: This is a workaround and should probably be handled i nthe 'for' above
+        *result = result.trim().replace("  ", " ");
+    }
+    result
 }
 
 impl AffectedAct for TextAmendment {
@@ -199,5 +289,35 @@ mod tests {
         .unwrap();
         mod_3.apply(&mut test_act, &change_entry).unwrap();
         assert!(mod_3.apply(&mut test_act, &change_entry).is_err());
+    }
+
+    #[test]
+    fn test_normalized_replace() {
+        assert_eq!(
+            normalized_replace("Egy kettő három", "kettő", "öt").unwrap(),
+            "Egy öt három"
+        );
+        assert_eq!(
+            normalized_replace("Egy kettő", "kettő", "öt").unwrap(),
+            "Egy öt"
+        );
+        assert_eq!(
+            normalized_replace("kettő három", "kettő", "öt").unwrap(),
+            "öt három"
+        );
+        assert!(normalized_replace("Az hatásos lenne", "hat", "hét").is_none());
+        assert!(normalized_replace("Az meghat majd", "hat", "hét").is_none());
+        assert_eq!(
+            normalized_replace("Egy, kettő, három", "kettő", "öt").unwrap(),
+            "Egy, öt, három"
+        );
+        assert_eq!(
+            normalized_replace("aaa aaa aaa", "aaa", "bbbb").unwrap(),
+            "bbbb bbbb bbbb"
+        );
+        assert_eq!(
+            normalized_replace("aaa aaa aaa", "aaa", "aaa aaa").unwrap(),
+            "aaa aaa aaa aaa aaa aaa"
+        );
     }
 }
