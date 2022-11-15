@@ -125,6 +125,7 @@ pub async fn render_diff_snippet(
     )?;
     let render_params_left = RenderPartParams {
         date: Some(params.date_left),
+        render_change_marker: true,
         convert_links: true,
         force_absolute_urls: true,
         ..Default::default()
