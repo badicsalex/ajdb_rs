@@ -104,10 +104,10 @@ pub async fn render_diff_snippet(
         only_empty_parts(&parts_left),
         only_empty_parts(&parts_right),
     ) {
-        (true, true) => "Módosította", // ???? Should not happen
-        (true, false) => "Beillesztette",
-        (false, true) => "Hatályon kívül helyezte",
-        (false, false) => "Módosította",
+        (true, true) => "Módosítva", // ???? Should not happen
+        (true, false) => "Beillesztve",
+        (false, true) => "Hatályon kívül helyezve",
+        (false, false) => "Módosítva",
     };
     let modified_by = modified_by_text(
         params.date_left.succ(),
@@ -125,7 +125,7 @@ pub async fn render_diff_snippet(
     )?;
     let render_params_left = RenderPartParams {
         date: Some(params.date_left),
-        render_change_marker: true,
+        render_past_change_marker: true,
         convert_links: true,
         force_absolute_urls: true,
         ..Default::default()
@@ -209,7 +209,7 @@ fn get_snippet_as_document_parts<'a>(
             let context = context
                 .clone()
                 .relative_to(article)?
-                .update_last_changed(article.last_change.as_ref());
+                .update_change_markers(article.last_change.as_ref());
             article.children.convert_to_parts(&context, &mut parts)?;
         }
     }

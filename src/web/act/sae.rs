@@ -35,7 +35,7 @@ where
         let mut context = context
             .clone()
             .relative_to(self)?
-            .update_last_changed(self.last_change.as_ref())
+            .update_change_markers(self.last_change.as_ref())
             .update_enforcement_date_marker();
         if let Some(snippet_range) = &context.snippet_range {
             if !snippet_range.contains(&context.part_metadata.reference)

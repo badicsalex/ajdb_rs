@@ -10,7 +10,7 @@ use hun_law::{
     structure::LastChange,
 };
 
-use super::document_part::DocumentPartMetadata;
+use super::{document_part::DocumentPartMetadata, future_changes::FutureActChanges};
 use crate::{
     enforcement_date_set::EnforcementDateSet,
     web::{act::document_part::ChangeMarkerData, util::logged_http_error},
@@ -25,6 +25,7 @@ pub struct ConvertToPartsContext<'a> {
     pub current_chapter: Option<NumericIdentifier>,
     pub show_article_header: bool,
     pub part_metadata: DocumentPartMetadata,
+    pub future_changes: FutureActChanges,
 }
 
 impl<'a> ConvertToPartsContext<'a> {
@@ -43,11 +44,21 @@ impl<'a> ConvertToPartsContext<'a> {
         }
     }
 
-    pub fn update_last_changed(mut self, last_change: Option<&LastChange>) -> Self {
+    pub fn update_change_markers(mut self, last_change: Option<&LastChange>) -> Self {
         if let Some(last_change) = last_change {
             self.part_metadata.last_change = Some(ChangeMarkerData {
                 changed_ref: self.part_metadata.reference.clone(),
                 change: last_change.clone(),
+                indentation: self.part_metadata.indentation,
+            })
+        }
+        if let Some(future_change) = self
+            .future_changes
+            .get_change(&self.part_metadata.reference)
+        {
+            self.part_metadata.future_change = Some(ChangeMarkerData {
+                changed_ref: self.part_metadata.reference.clone(),
+                change: future_change.clone(),
                 indentation: self.part_metadata.indentation,
             })
         }

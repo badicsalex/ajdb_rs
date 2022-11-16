@@ -107,14 +107,19 @@ async fn get_act_diff_data(
 }
 
 fn render_act_diff_body(diff_data: &ActDiffData) -> Result<Markup, StatusCode> {
-    let body_parts_left = convert_act_to_parts(&diff_data.act_left, diff_data.date_left)?;
-    let body_parts_right = convert_act_to_parts(&diff_data.act_right, diff_data.date_right)?;
+    let body_parts_left =
+        convert_act_to_parts(&diff_data.act_left, diff_data.date_left, Default::default())?;
+    let body_parts_right = convert_act_to_parts(
+        &diff_data.act_right,
+        diff_data.date_right,
+        Default::default(),
+    )?;
 
     let render_params_left = RenderPartParams {
         date: Some(diff_data.date_left),
         element_anchors: true,
         convert_links: true,
-        render_change_marker: true,
+        render_past_change_marker: true,
         ..Default::default()
     };
     let render_params_right = RenderPartParams {

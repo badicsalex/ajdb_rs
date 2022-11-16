@@ -7,7 +7,7 @@ use std::fmt::Write;
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use hun_law::{
-    identifier::ActIdentifier, reference::Reference, structure::ChangeCause, structure::LastChange,
+    identifier::ActIdentifier, reference::Reference, structure::ChangeCause,
     util::compact_string::CompactString,
 };
 use maud::{html, Markup, PreEscaped};
@@ -62,12 +62,16 @@ pub fn url_for_snippet(r: &Reference, date: Option<NaiveDate>) -> String {
     )
 }
 
-pub fn url_for_change_snippet(r: &Reference, date: NaiveDate, change: &LastChange) -> String {
+pub fn url_for_change_snippet(
+    r: &Reference,
+    date_left: NaiveDate,
+    date_right: NaiveDate,
+    cause: &ChangeCause,
+) -> String {
     format!(
-        "/diff_snippet/{}?date_left={}&date_right={date}&change_cause={}",
+        "/diff_snippet/{}?date_left={date_left}&date_right={date_right}&change_cause={}",
         r.compact_string(),
-        change.date.pred(),
-        match &change.cause {
+        match cause {
             ChangeCause::Amendment(cause_ref) => cause_ref.compact_string().to_string(),
             ChangeCause::AutoRepeal => String::new(),
             ChangeCause::Other(cause_text) =>
@@ -145,7 +149,7 @@ pub fn modified_by_text(
                 ( date.format("%Y. %m. %d-n").to_string() )
                 " a "
                 ( link )
-                "."
+                " által."
             )
         }
         ChangeCause::AutoRepeal => {
@@ -154,7 +158,7 @@ pub fn modified_by_text(
             let link =
                 link_to_reference(&jat_ref, Some(date), None, true).map_err(logged_http_error)?;
             html!(
-                "Automatikusan hatályát vesztete "
+                "Automatikus hatályvesztés "
                 ( date.format("%Y. %m. %d-n").to_string() )
                 " a "
                 ( link )

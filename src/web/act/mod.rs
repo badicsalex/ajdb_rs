@@ -7,6 +7,7 @@ mod act_children;
 mod context;
 mod diff;
 mod document_part;
+mod future_changes;
 mod layout;
 mod markers;
 mod menu;

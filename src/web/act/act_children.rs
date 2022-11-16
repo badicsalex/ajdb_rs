@@ -40,7 +40,7 @@ impl ConvertToParts for StructuralElement {
     ) -> Result<(), StatusCode> {
         let context = context
             .clone()
-            .update_last_changed(self.last_change.as_ref());
+            .update_change_markers(self.last_change.as_ref());
         let class_name = match self.element_type {
             StructuralElementType::Book => "book",
             StructuralElementType::Part { .. } => "part",
@@ -78,7 +78,7 @@ impl ConvertToParts for Subtitle {
     ) -> Result<(), StatusCode> {
         let context = context
             .clone()
-            .update_last_changed(self.last_change.as_ref());
+            .update_change_markers(self.last_change.as_ref());
         let id = subtitle_html_id(context.current_book, context.current_chapter, self);
         let mut text = String::new();
 
@@ -153,7 +153,7 @@ impl ConvertToParts for Article {
         let mut context = context
             .clone()
             .relative_to(self)?
-            .update_last_changed(self.last_change.as_ref())
+            .update_change_markers(self.last_change.as_ref())
             .update_enforcement_date_marker();
 
         context.show_article_header = true;

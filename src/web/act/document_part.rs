@@ -28,6 +28,7 @@ pub struct DocumentPartMetadata {
     pub reference: Reference,
     pub indentation: usize,
     pub last_change: Option<ChangeMarkerData>,
+    pub future_change: Option<ChangeMarkerData>,
     pub enforcement_date_marker: Option<NaiveDate>,
     pub not_in_force: bool,
 }
@@ -75,7 +76,8 @@ pub struct RenderPartParams {
     pub date: Option<NaiveDate>,
     pub element_anchors: bool,
     pub convert_links: bool,
-    pub render_change_marker: bool,
+    pub render_past_change_marker: bool,
+    pub render_future_change_marker: bool,
     pub render_enforcement_date_marker: bool,
     pub render_diff_change_marker: Option<NaiveDate>,
     pub force_absolute_urls: bool,
