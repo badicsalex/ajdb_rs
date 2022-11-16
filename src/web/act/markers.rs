@@ -120,11 +120,12 @@ fn render_diff_change_marker(
     };
     Some(html!(
         a
-        .past_change_container
+        .change_container
+        .past
         href=[href]
         data-snippet={ "static:" (snippet_text.0) }
         {
-            .past_change_marker
+            .change_marker
             {}
         }
     ))
