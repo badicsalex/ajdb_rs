@@ -1,0 +1,10 @@
+# Lásd. 2021. évi CXV. törvény a veszélyhelyzettel összefüggő átmeneti szabályokról szóló 2021. évi XCIX. törvény hatálybalépéséről
+- AddEnforcementDate:
+    date:
+      Date: 2021-12-01
+- AddEnforcementDate:
+    date:
+      Date: 2022-01-01
+    positions:
+    - article: '311'
+      point: g

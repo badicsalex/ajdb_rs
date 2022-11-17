@@ -1,0 +1,5 @@
+#  Ez a törvény a kihirdetését követő napon lép hatályba, és a hatálybalépését követő napon hatályát veszti.
+- AddEnforcementDate:
+    date:
+      Date: 2012-03-31
+    inline_repeal: 2012-04-01
