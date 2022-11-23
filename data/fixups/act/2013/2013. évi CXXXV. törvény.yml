@@ -2,6 +2,7 @@
 - AddEnforcementDate:
     date:
       DaysAfterPublication: 1
+    is_default: true
 # E törvény 15. § (2) bekezdése és 15. § (4) bekezdése 2013. szeptember 1-jén,
 - AddEnforcementDate:
     positions:

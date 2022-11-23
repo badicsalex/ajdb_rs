@@ -2,3 +2,4 @@
 - AddEnforcementDate:
     date:
       Date: 2022-06-01
+    is_default: true

@@ -55,7 +55,7 @@ impl EnforcementDateSet {
         let mut default_date = None;
         for raw_date in raw_enforcement_dates {
             let converted_date = ActualEnforcementDate::from_enforcement_date(raw_date, act)?;
-            if converted_date.positions.is_empty() {
+            if raw_date.is_default {
                 ensure!(default_date.is_none(), "Found too many default enforcement dates (first: {default_date:?}, second: {raw_date:?})");
                 default_date = Some(converted_date);
             } else {
@@ -259,6 +259,7 @@ mod tests {
     const TEST_ED_SET: &str = r#"
         - date:
             Date: 2013-07-15
+          is_default: true
         - date:
             Date: 2013-11-02
           positions:
@@ -478,6 +479,7 @@ mod tests {
     const TEST_STRUCTURAL_ED_SET: &str = r#"
         - date:
             Date: 2013-07-15
+          is_default: true
         - date:
             Date: 2013-11-01
           positions:

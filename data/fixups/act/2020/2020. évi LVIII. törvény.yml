@@ -3,3 +3,4 @@
 - AddEnforcementDate:
     date:
       Date: 2020-06-18
+    is_default: true
