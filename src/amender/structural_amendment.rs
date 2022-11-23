@@ -4,7 +4,10 @@
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use hun_law::{
-    identifier::{range::IdentifierRange, ActIdentifier, ArticleIdentifier, NumericIdentifier},
+    identifier::{
+        range::{IdentifierRange, IdentifierRangeFrom},
+        ActIdentifier, ArticleIdentifier, NumericIdentifier,
+    },
     reference::structural::{
         StructuralReference, StructuralReferenceElement, StructuralReferenceParent,
     },
@@ -52,7 +55,10 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                 StructuralElementType::Chapter,
             ),
             Some(StructuralReferenceParent::SubtitleId(id)) => {
-                Self::find_subtitle_offsets_by_id(book_children, *id)
+                Self::find_subtitle_offsets_by_id(book_children, &IdentifierRange::from_single(*id))
+            }
+            Some(StructuralReferenceParent::SubtitleRange(idr)) => {
+                Self::find_subtitle_offsets_by_id(book_children, idr)
             }
             Some(StructuralReferenceParent::SubtitleTitle(title)) => {
                 Self::find_subtitle_offsets_by_title(book_children, title)
@@ -84,7 +90,10 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                 StructuralElementType::Chapter,
             ),
             StructuralReferenceElement::SubtitleId(id) => {
-                self.handle_subtitle_id(relevant_children, *id)
+                self.handle_subtitle_id(relevant_children, &IdentifierRange::from_single(*id))
+            }
+            StructuralReferenceElement::SubtitleRange(idr) => {
+                self.handle_subtitle_id(relevant_children, idr)
             }
             StructuralReferenceElement::SubtitleTitle(title) => {
                 self.handle_subtitle_title(relevant_children, title)
@@ -274,16 +283,21 @@ impl StructuralBlockAmendmentWithContent {
 
     fn find_subtitle_offsets_by_id(
         children: &[ActChild],
-        expected_id: NumericIdentifier,
+        expected_id: &IdentifierRange<NumericIdentifier>,
     ) -> Result<(usize, usize)> {
         Self::get_cut_points(
             children,
-            |child| get_subtitle_id(child).map_or(false, |id| id == expected_id),
+            |child| get_subtitle_id(child).map_or(false, |id| expected_id.contains(id)),
             |child| {
-                matches!(
-                    child,
-                    ActChild::Subtitle(_) | ActChild::StructuralElement(_)
-                )
+                match child {
+                    ActChild::StructuralElement(_) => true,
+                    ActChild::Subtitle(Subtitle {
+                        identifier: Some(st_id),
+                        ..
+                    }) => !expected_id.contains(*st_id),
+                    ActChild::Subtitle(_) => true,
+                    ActChild::Article(_) => false,
+                }
             },
         )
     }
@@ -291,12 +305,14 @@ impl StructuralBlockAmendmentWithContent {
     fn handle_subtitle_id(
         &self,
         children: &[ActChild],
-        expected_id: NumericIdentifier,
+        expected_id: &IdentifierRange<NumericIdentifier>,
     ) -> Result<(usize, usize)> {
         if self.pure_insertion {
             Self::get_insertion_point(
                 children,
-                |child| get_subtitle_id(child).map_or(false, |id| id <= expected_id),
+                |child| {
+                    get_subtitle_id(child).map_or(false, |id| id <= expected_id.first_in_range())
+                },
                 |child| {
                     matches!(
                         child,
@@ -307,12 +323,7 @@ impl StructuralBlockAmendmentWithContent {
         } else {
             Self::find_subtitle_offsets_by_id(children, expected_id)
         }
-        .with_context(|| {
-            anyhow!(
-                "Could not find cut points for subtitle with id {}",
-                expected_id
-            )
-        })
+        .with_context(|| anyhow!("Could not find cut points for subtitle with id {expected_id:?}"))
     }
 
     fn find_subtitle_offsets_by_title(
@@ -757,7 +768,7 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, 1.into())
+                .handle_subtitle_id(children, &IdentifierRange::from_single(1.into()))
                 .unwrap(),
             (1, 3)
         );
@@ -765,7 +776,7 @@ mod tests {
         // End is a structural element
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, 2.into())
+                .handle_subtitle_id(children, &IdentifierRange::from_single(2.into()))
                 .unwrap(),
             (3, 5)
         );
@@ -773,9 +784,18 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, 4.into())
+                .handle_subtitle_id(children, &IdentifierRange::from_single(4.into()))
                 .unwrap(),
             (8, 10)
+        );
+
+        // --- Range ---
+
+        assert_eq!(
+            test_amendment
+                .handle_subtitle_id(children, &IdentifierRange::from_range(1.into(), 2.into()))
+                .unwrap(),
+            (1, 5)
         );
 
         // --- Amendments with title ---
@@ -808,7 +828,10 @@ mod tests {
         // Beginning
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, "1/A".parse().unwrap(),)
+                .handle_subtitle_id(
+                    children,
+                    &IdentifierRange::from_single("1/A".parse().unwrap(),)
+                )
                 .unwrap(),
             (3, 3)
         );
@@ -816,7 +839,10 @@ mod tests {
         // End is a structural element
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, "2/A".parse().unwrap(),)
+                .handle_subtitle_id(
+                    children,
+                    &IdentifierRange::from_single("2/A".parse().unwrap(),)
+                )
                 .unwrap(),
             (5, 5)
         );
@@ -824,7 +850,10 @@ mod tests {
         // End
         assert_eq!(
             test_amendment
-                .handle_subtitle_id(children, "4/A".parse().unwrap(),)
+                .handle_subtitle_id(
+                    children,
+                    &IdentifierRange::from_single("4/A".parse().unwrap(),)
+                )
                 .unwrap(),
             (10, 10)
         );
