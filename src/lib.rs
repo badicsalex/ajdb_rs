@@ -8,6 +8,6 @@ pub mod database;
 pub mod enforcement_date_set;
 pub mod fixups;
 pub mod persistence;
+mod structural_cut_points;
 pub mod util;
 pub mod web;
-mod structural_cut_points;

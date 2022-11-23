@@ -2,6 +2,8 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
+use std::ops::Range;
+
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use hun_law::{
     identifier::{
@@ -15,22 +17,22 @@ use hun_law::{
 };
 
 pub trait GetCutPoints {
-    fn get_cut_points(&self, act: &Act, pure_insertion: bool) -> Result<(usize, usize)>;
+    fn get_cut_points(&self, act: &Act, pure_insertion: bool) -> Result<Range<usize>>;
 }
 
 impl GetCutPoints for StructuralReference {
-    fn get_cut_points(&self, act: &Act, pure_insertion: bool) -> Result<(usize, usize)> {
-        let (book_start, book_end) = match self.book {
+    fn get_cut_points(&self, act: &Act, pure_insertion: bool) -> Result<Range<usize>> {
+        let book = match self.book {
             Some(book_id) => find_structural_element_offsets(
                 &act.children,
                 book_id,
                 StructuralElementType::Book,
             )?,
-            None => (0, act.children.len()),
+            None => 0..act.children.len(),
         };
-        let book_children = &act.children[book_start..book_end];
+        let book_children = &act.children[book.clone()];
 
-        let (parent_start, parent_end) = match &self.parent {
+        let parent = match &self.parent {
             Some(StructuralReferenceParent::Part(id)) => find_structural_element_offsets(
                 book_children,
                 *id,
@@ -51,7 +53,7 @@ impl GetCutPoints for StructuralReference {
             Some(StructuralReferenceParent::SubtitleTitle(title)) => {
                 find_subtitle_offsets_by_title(book_children, title)
             }
-            None => Ok((0, book_children.len())),
+            None => Ok(0..book_children.len()),
         }
         .with_context(|| {
             anyhow!(
@@ -59,10 +61,10 @@ impl GetCutPoints for StructuralReference {
                 self.parent,
             )
         })?;
-        let children_start = book_start + parent_start + usize::from(self.parent.is_some());
-        let children_end = book_start + parent_end;
+        let children_start = book.start + parent.start + usize::from(self.parent.is_some());
+        let children_end = book.start + parent.end;
         let relevant_children = &act.children[children_start..children_end];
-        let (mut cut_start, mut cut_end) = match &self.structural_element {
+        let mut cut = match &self.structural_element {
             StructuralReferenceElement::Part(id) => handle_structural_element(
                 relevant_children,
                 *id,
@@ -114,7 +116,7 @@ impl GetCutPoints for StructuralReference {
             }
             StructuralReferenceElement::SubtitleUnknown => {
                 ensure!(pure_insertion, "Unknown subtitles can only be inserted");
-                Ok((relevant_children.len(), relevant_children.len()))
+                Ok(relevant_children.len()..relevant_children.len())
             }
             StructuralReferenceElement::Article(range) => {
                 handle_article_range(relevant_children, range, pure_insertion)
@@ -127,11 +129,11 @@ impl GetCutPoints for StructuralReference {
                 !pure_insertion,
                 "Pure insertion and title only are not supported at the same time"
             );
-            cut_end = cut_start + 1;
+            cut.end = cut.start + 1;
         }
-        cut_start += children_start;
-        cut_end += children_start;
-        Ok((cut_start, cut_end))
+        cut.start += children_start;
+        cut.end += children_start;
+        Ok(cut)
     }
 }
 
@@ -149,7 +151,7 @@ fn get_cut_points(
     children: &[ActChild],
     start_fn: impl Fn(&ActChild) -> bool,
     end_fn: impl Fn(&ActChild) -> bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     let cut_start = children
         .iter()
         .position(start_fn)
@@ -159,7 +161,7 @@ fn get_cut_points(
         .skip(cut_start + 1)
         .position(end_fn)
         .map_or(children.len(), |p| p + cut_start + 1);
-    Ok((cut_start, cut_end))
+    Ok(cut_start..cut_end)
 }
 
 /// Get index of where to insert the element (in cut points format, but both values are the same)
@@ -170,7 +172,7 @@ fn get_insertion_point(
     children: &[ActChild],
     pre_search_fn: impl Fn(&ActChild) -> bool,
     search_fn: impl Fn(&ActChild) -> bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     let insertion_point = match children.iter().rposition(pre_search_fn) {
         Some(last_smaller) => children
             .iter()
@@ -182,14 +184,14 @@ fn get_insertion_point(
             .position(search_fn)
             .unwrap_or(children.len()),
     };
-    Ok((insertion_point, insertion_point))
+    Ok(insertion_point..insertion_point)
 }
 
 fn find_structural_element_offsets(
     children: &[ActChild],
     expected_id: NumericIdentifier,
     expected_type: StructuralElementType,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     get_cut_points(
         children,
         |child| {
@@ -206,7 +208,7 @@ fn handle_structural_element(
     expected_id: NumericIdentifier,
     expected_type: StructuralElementType,
     pure_insertion: bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     if pure_insertion {
         get_insertion_point(
             children,
@@ -241,7 +243,7 @@ fn handle_structural_element(
 fn find_subtitle_offsets_by_id(
     children: &[ActChild],
     expected_id: &IdentifierRange<NumericIdentifier>,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     get_cut_points(
         children,
         |child| get_subtitle_id(child).map_or(false, |id| expected_id.contains(id)),
@@ -261,7 +263,7 @@ fn handle_subtitle_id(
     children: &[ActChild],
     expected_id: &IdentifierRange<NumericIdentifier>,
     pure_insertion: bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     if pure_insertion {
         get_insertion_point(
             children,
@@ -282,7 +284,7 @@ fn handle_subtitle_id(
 fn find_subtitle_offsets_by_title(
     children: &[ActChild],
     expected_title: &str,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     get_cut_points(
         children,
         |child| get_subtitle_title(child).map_or(false, |title| title == expected_title),
@@ -299,7 +301,7 @@ fn handle_subtitle_title(
     children: &[ActChild],
     expected_title: &str,
     pure_insertion: bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     if pure_insertion {
         Err(anyhow!(
             "Pure insertions for the SubtitleTitle case are not supported"
@@ -319,7 +321,7 @@ fn handle_article_range(
     children: &[ActChild],
     range: &IdentifierRange<ArticleIdentifier>,
     pure_insertion: bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     if pure_insertion {
         get_insertion_point(
             children,
@@ -347,7 +349,7 @@ fn handle_article_relative(
     article_id: ArticleIdentifier,
     subtitle_position: SubtitlePosition,
     pure_insertion: bool,
-) -> Result<(usize, usize)> {
+) -> Result<Range<usize>> {
     if pure_insertion {
         let article_position = children
             .iter()
@@ -370,7 +372,7 @@ fn handle_article_relative(
                 .ok_or_else(|| anyhow!("Could not find Article {}", article_id))?
                 + 1
         };
-        Result::<(usize, usize)>::Ok((insertion_point, insertion_point))
+        Result::<Range<usize>>::Ok(insertion_point..insertion_point)
     } else {
         let article_position = children
             .iter()
@@ -393,7 +395,7 @@ fn handle_article_relative(
             article_id,
             subtitle_position
         );
-        Ok((cut_start, cut_end))
+        Ok(cut_start..cut_end)
     }
     .with_context(|| {
         anyhow!(
@@ -485,29 +487,29 @@ mod tests {
                 false,
             )
             .unwrap(),
-            (0, 11)
+            0..11
         );
         assert_eq!(
             handle_structural_element(children, 1.into(), StructuralElementType::Title, false)
                 .unwrap(),
-            (1, 6)
+            1..6
         );
         assert_eq!(
             handle_structural_element(children, 1.into(), StructuralElementType::Chapter, false)
                 .unwrap(),
-            (2, 4)
+            2..4
         );
 
         // End is a parent ref
         assert_eq!(
             handle_structural_element(children, 2.into(), StructuralElementType::Chapter, false)
                 .unwrap(),
-            (4, 6)
+            4..6
         );
         assert_eq!(
             handle_structural_element(children, 2.into(), StructuralElementType::Title, false)
                 .unwrap(),
-            (6, 11)
+            6..11
         );
 
         // End
@@ -519,17 +521,17 @@ mod tests {
                 false
             )
             .unwrap(),
-            (11, 22)
+            11..22
         );
         assert_eq!(
             handle_structural_element(children, 4.into(), StructuralElementType::Title, false)
                 .unwrap(),
-            (17, 22)
+            17..22
         );
         assert_eq!(
             handle_structural_element(children, 8.into(), StructuralElementType::Chapter, false)
                 .unwrap(),
-            (20, 22)
+            20..22
         );
 
         // --- Insertions ---
@@ -542,7 +544,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (11, 11)
+            11..11
         );
         assert_eq!(
             handle_structural_element(
@@ -552,7 +554,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (6, 6)
+            6..6
         );
         assert_eq!(
             handle_structural_element(
@@ -562,7 +564,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (4, 4)
+            4..4
         );
 
         // End is a parent ref
@@ -574,7 +576,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (6, 6)
+            6..6
         );
         assert_eq!(
             handle_structural_element(
@@ -584,7 +586,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (11, 11)
+            11..11
         );
 
         // End
@@ -596,7 +598,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (22, 22)
+            22..22
         );
         assert_eq!(
             handle_structural_element(
@@ -606,7 +608,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (22, 22)
+            22..22
         );
         assert_eq!(
             handle_structural_element(
@@ -616,7 +618,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (22, 22)
+            22..22
         );
     }
 
@@ -640,19 +642,19 @@ mod tests {
         // Beginning
         assert_eq!(
             handle_subtitle_id(children, &IdentifierRange::from_single(1.into()), false).unwrap(),
-            (1, 3)
+            1..3
         );
 
         // End is a structural element
         assert_eq!(
             handle_subtitle_id(children, &IdentifierRange::from_single(2.into()), false).unwrap(),
-            (3, 5)
+            3..5
         );
 
         // End
         assert_eq!(
             handle_subtitle_id(children, &IdentifierRange::from_single(4.into()), false).unwrap(),
-            (8, 10)
+            8..10
         );
 
         // --- Range ---
@@ -664,26 +666,26 @@ mod tests {
                 false
             )
             .unwrap(),
-            (1, 5)
+            1..5
         );
 
         // --- Amendments with title ---
         // Beginning
         assert_eq!(
             handle_subtitle_title(children, "ST 1", false).unwrap(),
-            (1, 3)
+            1..3
         );
 
         // End is a structural element
         assert_eq!(
             handle_subtitle_title(children, "ST 2", false).unwrap(),
-            (3, 5)
+            3..5
         );
 
         // End
         assert_eq!(
             handle_subtitle_title(children, "ST 4", false).unwrap(),
-            (8, 10)
+            8..10
         );
 
         // --- Insertions ---
@@ -695,7 +697,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (3, 3)
+            3..3
         );
 
         // End is a structural element
@@ -706,7 +708,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (5, 5)
+            5..5
         );
 
         // End
@@ -717,7 +719,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (10, 10)
+            10..10
         );
     }
 
@@ -745,7 +747,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 4)
+            3..4
         );
         assert_eq!(
             handle_article_range(
@@ -754,7 +756,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 5)
+            3..5
         );
         assert_eq!(
             handle_article_range(
@@ -763,7 +765,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (11, 12)
+            11..12
         );
 
         // Known limitation: Amendment stops at subtitles and structural elements
@@ -774,7 +776,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 7)
+            3..7
         );
         assert_eq!(
             handle_article_range(
@@ -783,7 +785,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (9, 10)
+            9..10
         );
 
         // --- Insertions ---
@@ -794,7 +796,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (5, 5)
+            5..5
         );
         assert_eq!(
             handle_article_range(
@@ -803,7 +805,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (7, 7)
+            7..7
         );
         assert_eq!(
             handle_article_range(
@@ -812,7 +814,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (12, 12)
+            12..12
         );
     }
 
@@ -840,7 +842,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 4)
+            3..4
         );
         assert_eq!(
             handle_article_relative(
@@ -850,7 +852,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 4)
+            3..4
         );
         assert_eq!(
             handle_article_relative(
@@ -860,7 +862,7 @@ mod tests {
                 false
             )
             .unwrap(),
-            (3, 5)
+            3..5
         );
 
         // --- Insertions ---
@@ -872,7 +874,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (3, 3)
+            3..3
         );
         assert_eq!(
             handle_article_relative(
@@ -882,7 +884,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (4, 4)
+            4..4
         );
         assert_eq!(
             handle_article_relative(
@@ -892,7 +894,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (3, 3)
+            3..3
         );
         assert_eq!(
             handle_article_relative(
@@ -902,7 +904,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (5, 5)
+            5..5
         );
         assert_eq!(
             handle_article_relative(
@@ -912,7 +914,7 @@ mod tests {
                 true
             )
             .unwrap(),
-            (5, 5)
+            5..5
         );
     }
 

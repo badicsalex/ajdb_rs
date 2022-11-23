@@ -10,9 +10,8 @@ use hun_law::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::structural_cut_points::GetCutPoints;
-
 use super::{AffectedAct, ModifyAct, NeedsFullReparse};
+use crate::structural_cut_points::GetCutPoints;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralBlockAmendmentWithContent {
@@ -23,10 +22,10 @@ pub struct StructuralBlockAmendmentWithContent {
 
 impl ModifyAct for StructuralBlockAmendmentWithContent {
     fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
-        let (cut_start, cut_end) = self.position.get_cut_points(act, self.pure_insertion)?;
-        let mut tail = act.children.split_off(cut_end);
+        let cut = self.position.get_cut_points(act, self.pure_insertion)?;
+        let mut tail = act.children.split_off(cut.end);
         if self.content.is_empty() {
-            let cut_out = act.children.split_off(cut_start);
+            let cut_out = act.children.split_off(cut.start);
             act.children.extend(cut_out.into_iter().filter_map(|c| {
                 if let ActChild::Article(a) = c {
                     Some(ActChild::Article(Article {
@@ -40,7 +39,7 @@ impl ModifyAct for StructuralBlockAmendmentWithContent {
                 }
             }));
         } else {
-            act.children.truncate(cut_start);
+            act.children.truncate(cut.start);
             let content = self.content.iter().map(|c| {
                 let mut result = c.clone();
                 match &mut result {
