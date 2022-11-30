@@ -11,10 +11,12 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 1
-          article: '9'
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 1
+              article: '9'
+              paragraph: '3'
         from: "személyhez fűződő jogáról"
         to: "személyiségi jogáról"

@@ -4,10 +4,12 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2017
-            number: 150
-          article: '271'
-          paragraph: '1'
+          SAE:
+            reference:
+              act:
+                year: 2017
+                number: 150
+              article: '271'
+              paragraph: '1'
         from: "és a megismételt"
         to: ""

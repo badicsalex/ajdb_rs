@@ -12,11 +12,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184'
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184'
+              paragraph: '3'
         from: "(1)–(2) bekezdés"
         to: "(1)–(2a) bekezdés"
 - AddModification:
@@ -30,11 +32,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184'
-          paragraph: '5'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184'
+              paragraph: '5'
         from: "(1) vagy a (2) bekezdésben"
         to: "(1)–(2a) bekezdésben"
 # @ 58. § (6)
@@ -51,11 +55,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184/B'
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184/B'
+              paragraph: '3'
         from: "(1)–(2) bekezdés"
         to: "(1)–(2b) bekezdés"
 - AddModification:
@@ -69,11 +75,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184/B'
-          paragraph: '4'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184/B'
+              paragraph: '4'
         from: "(1)–(2) bekezdésben"
         to: "(1)–(2b) bekezdésben"
 # @ 58. § (7)
@@ -90,11 +98,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184/C'
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184/C'
+              paragraph: '3'
         from: "(1)–(2) bekezdés"
         to: "(1)–(2b) bekezdés"
 - AddModification:
@@ -108,10 +118,12 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '184/C'
-          paragraph: '4'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '184/C'
+              paragraph: '4'
         from: "(1)–(2) bekezdésben"
         to: "(1)–(2b) bekezdésben"
