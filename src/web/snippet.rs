@@ -51,25 +51,35 @@ pub async fn render_snippet(
     let act = get_act(&persistence, act_id, date)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
-    let parts = get_snippet_as_document_parts(&act, &reference, date)?;
-
-    let render_part_params = RenderPartParams {
-        date: if date == today() { None } else { Some(date) },
-        convert_links: true,
-        force_absolute_urls: true,
-        ..Default::default()
-    };
-    let result = html!(
-        .act_snippet {
-            @for part in parts {
-                ( part.render_part(&render_part_params).map_err(logged_http_error)? )
+    if reference.is_act_only() {
+        Ok(html!(
+            .act_snippet {
+                b { (act.identifier.to_string()) }
+                br;
+                (act.subject)
             }
-        }
-    );
-    if result.0.is_empty() {
-        Err(StatusCode::NOT_FOUND)
+        ))
     } else {
-        Ok(result)
+        let parts = get_snippet_as_document_parts(&act, &reference, date)?;
+
+        let render_part_params = RenderPartParams {
+            date: if date == today() { None } else { Some(date) },
+            convert_links: true,
+            force_absolute_urls: true,
+            ..Default::default()
+        };
+        let result = html!(
+            .act_snippet {
+                @for part in parts {
+                    ( part.render_part(&render_part_params).map_err(logged_http_error)? )
+                }
+            }
+        );
+        if result.0.is_empty() {
+            Err(StatusCode::NOT_FOUND)
+        } else {
+            Ok(result)
+        }
     }
 }
 
