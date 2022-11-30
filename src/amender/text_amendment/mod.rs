@@ -4,6 +4,8 @@
 
 mod article_title;
 mod sae;
+mod structural;
+mod text_replace;
 
 use anyhow::{anyhow, Result};
 use hun_law::{
@@ -12,7 +14,10 @@ use hun_law::{
     structure::{Act, LastChange},
 };
 
-use self::{article_title::apply_article_title_amendment, sae::apply_sae_text_amendment};
+use self::{
+    article_title::apply_article_title_amendment, sae::apply_sae_text_amendment,
+    structural::apply_structural_title_amendment,
+};
 use super::{AffectedAct, ModifyAct, NeedsFullReparse};
 
 impl ModifyAct for TextAmendment {
@@ -29,7 +34,9 @@ impl ModifyAct for TextAmendment {
                 act,
                 change_entry,
             ),
-            TextAmendmentReference::Structural(_) => todo!(),
+            TextAmendmentReference::Structural(reference) => {
+                apply_structural_title_amendment(reference, &self.from, &self.to, act, change_entry)
+            }
             TextAmendmentReference::ArticleTitle(reference) => {
                 apply_article_title_amendment(reference, &self.from, &self.to, act, change_entry)
             }

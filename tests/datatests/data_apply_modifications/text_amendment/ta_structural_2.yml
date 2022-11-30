@@ -1,0 +1,64 @@
+children_original:
+  - StructuralElement:
+      identifier: "1"
+      title: ÁLTALÁNOS RENDELKEZÉSEK
+      element_type: Chapter
+  - Article:
+      identifier: "1"
+      children:
+        - identifier: "1"
+          body: "Paragraph 1"
+        - identifier: "2"
+          body: "Paragraph 2"
+  - StructuralElement:
+      identifier: "2"
+      title: TESZT CUCC
+      element_type: Chapter
+  - Subtitle:
+      title: Noice st is noice
+  - Article:
+      identifier: "2"
+      children:
+        - body: "Article with a single paragraph (lowercase). Paragraph (uppercase) is handled differently."
+modifications:
+  - TextAmendment:
+      reference:
+        Structural:
+          act:
+            year: 2012
+            number: 1
+          chapter: "2"
+          structural_element:
+            SubtitleBeforeArticle: '2'
+      from: "st"
+      to: "subtitle"
+children_expected:
+  - StructuralElement:
+      identifier: '1'
+      title: ÁLTALÁNOS RENDELKEZÉSEK
+      element_type: Chapter
+  - Article:
+      identifier: '1'
+      children:
+      - identifier: '1'
+        body: Paragraph 1
+      - identifier: '2'
+        body: Paragraph 2
+  - StructuralElement:
+      identifier: '2'
+      title: TESZT CUCC
+      element_type: Chapter
+  - Subtitle:
+      title: Noice subtitle is noice
+      last_change:
+        date: 2013-04-20
+        cause:
+          Amendment:
+            act:
+              year: 2013
+              number: 420
+            article: '1'
+  - Article:
+      identifier: '2'
+      children:
+      - body: Article with a single paragraph (lowercase). Paragraph (uppercase) is handled differently.

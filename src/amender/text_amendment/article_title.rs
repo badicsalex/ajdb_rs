@@ -9,6 +9,7 @@ use hun_law::{
 };
 
 use super::NeedsFullReparse;
+use crate::amender::text_amendment::text_replace::normalized_replace;
 
 pub fn apply_article_title_amendment(
     reference: &Reference,
@@ -23,9 +24,11 @@ pub fn apply_article_title_amendment(
         let article_ref = article.reference().relative_to(&act_ref)?;
         if reference.contains(&article_ref) {
             if let Some(title) = &mut article.title {
-                applied = applied || title.contains(from);
-                *title = title.replace(from, to).trim().replace("  ", " ");
-                article.last_change = Some(change_entry.clone());
+                if let Some(replaced) = normalized_replace(title, from, to) {
+                    applied = true;
+                    *title = replaced;
+                    article.last_change = Some(change_entry.clone());
+                }
             }
         }
     }
