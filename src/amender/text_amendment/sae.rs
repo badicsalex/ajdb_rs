@@ -6,45 +6,54 @@ use std::str::CharIndices;
 
 use anyhow::{anyhow, ensure, Result};
 use hun_law::{
-    identifier::{ActIdentifier, IdentifierCommon},
+    identifier::IdentifierCommon,
     reference::Reference,
-    semantic_info::{TextAmendment, TextAmendmentSAEPart},
+    semantic_info::TextAmendmentSAEPart,
     structure::{Act, ChildrenCommon, LastChange, SAEBody, SubArticleElement},
     util::walker::SAEVisitorMut,
 };
 
-use super::{AffectedAct, ModifyAct, NeedsFullReparse};
+use super::NeedsFullReparse;
 
-impl ModifyAct for TextAmendment {
-    fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
-        let mut visitor = Visitor {
-            amendment: self,
-            applied: false,
-            change_entry,
-        };
-        act.walk_saes_mut(&mut visitor)?;
-        ensure!(
-            visitor.applied,
-            "Text replacement {:?} did not have an effect",
-            self
-        );
-        let article_ids = self
-            .reference
-            .article()
-            .ok_or_else(|| anyhow!("No article in text amendment position"))?;
-        if !article_ids.is_range() {
-            let abbrevs_changed = act.add_semantic_info_to_article(article_ids.first_in_range())?;
-            Ok(abbrevs_changed.into())
-        } else {
-            // TODO: Maybe not ask for a full reparse but handle this ourselves.
-            //       Then again, this is just an optimization for very common cases.
-            Ok(NeedsFullReparse::Yes)
-        }
+pub fn apply_sae_text_amendment(
+    reference: &Reference,
+    amended_part: &TextAmendmentSAEPart,
+    from: &str,
+    to: &str,
+    act: &mut Act,
+    change_entry: &LastChange,
+) -> Result<NeedsFullReparse> {
+    let mut visitor = Visitor {
+        reference,
+        amended_part,
+        from,
+        to,
+        applied: false,
+        change_entry,
+    };
+    act.walk_saes_mut(&mut visitor)?;
+    ensure!(
+        visitor.applied,
+        "Text replacement @{reference:?} {amended_part:?} from={from:?} to={to:?} did not have an effect",
+    );
+    let article_ids = reference
+        .article()
+        .ok_or_else(|| anyhow!("No article in text amendment position"))?;
+    if !article_ids.is_range() {
+        let abbrevs_changed = act.add_semantic_info_to_article(article_ids.first_in_range())?;
+        Ok(abbrevs_changed.into())
+    } else {
+        // TODO: Maybe not ask for a full reparse but handle this ourselves.
+        //       Then again, this is just an optimization for very common cases.
+        Ok(NeedsFullReparse::Yes)
     }
 }
 
 struct Visitor<'a> {
-    amendment: &'a TextAmendment,
+    reference: &'a Reference,
+    amended_part: &'a TextAmendmentSAEPart,
+    from: &'a str,
+    to: &'a str,
     change_entry: &'a LastChange,
     applied: bool,
 }
@@ -55,12 +64,12 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
         position: &Reference,
         element: &mut SubArticleElement<IT, CT>,
     ) -> Result<()> {
-        if self.amendment.reference.contains(position) {
-            let from = &self.amendment.from;
-            let to = &self.amendment.to;
+        if self.reference.contains(position) {
+            let from = &self.from;
+            let to = &self.to;
             match &mut element.body {
                 SAEBody::Text(text) => {
-                    if self.amendment.amended_part == TextAmendmentSAEPart::All {
+                    if self.amended_part == &TextAmendmentSAEPart::All {
                         if let Some(replaced) = normalized_replace(text, from, to) {
                             self.applied = true;
                             element.last_change = Some(self.change_entry.clone());
@@ -69,9 +78,9 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
                     }
                 }
                 SAEBody::Children { intro, wrap_up, .. } => {
-                    if self.amendment.amended_part == TextAmendmentSAEPart::All
-                        || self.amendment.amended_part == TextAmendmentSAEPart::IntroOnly
-                            && self.amendment.reference == *position
+                    if self.amended_part == &TextAmendmentSAEPart::All
+                        || self.amended_part == &TextAmendmentSAEPart::IntroOnly
+                            && self.reference == position
                     {
                         if let Some(replaced) = normalized_replace(intro, from, to) {
                             self.applied = true;
@@ -80,9 +89,9 @@ impl<'a> SAEVisitorMut for Visitor<'a> {
                         }
                     }
                     if let Some(wrap_up) = wrap_up {
-                        if self.amendment.amended_part == TextAmendmentSAEPart::All
-                            || self.amendment.amended_part == TextAmendmentSAEPart::WrapUpOnly
-                                && self.amendment.reference == *position
+                        if self.amended_part == &TextAmendmentSAEPart::All
+                            || self.amended_part == &TextAmendmentSAEPart::WrapUpOnly
+                                && self.reference == position
                         {
                             if let Some(replaced) = normalized_replace(wrap_up, from, to) {
                                 self.applied = true;
@@ -194,20 +203,13 @@ fn normalized_replace(text: &str, from: &str, to: &str) -> Option<String> {
     result
 }
 
-impl AffectedAct for TextAmendment {
-    fn affected_act(&self) -> Result<ActIdentifier> {
-        self.reference
-            .act()
-            .ok_or_else(|| anyhow!("No act in reference in special phrase (TextAmendment)"))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use hun_law::{structure::ChangeCause, util::singleton_yaml};
+    use hun_law::{semantic_info::TextAmendment, structure::ChangeCause, util::singleton_yaml};
 
     use super::*;
+    use crate::amender::ModifyAct;
 
     const TEST_ACT: &str = r#"
         identifier:
@@ -248,10 +250,12 @@ mod tests {
         let mod_1: TextAmendment = singleton_yaml::from_str(
             r#"
             reference:
-              act:
-                year: 2012
-                number: 1
-              article: '1'
+              SAE:
+                reference:
+                  act:
+                    year: 2012
+                    number: 1
+                  article: '1'
             from: "Article"
             to: "modified"
         "#,
@@ -263,10 +267,12 @@ mod tests {
         let mod_2: TextAmendment = singleton_yaml::from_str(
             r#"
             reference:
-              act:
-                year: 2012
-                number: 1
-              article: '2'
+              SAE:
+                reference:
+                  act:
+                    year: 2012
+                    number: 1
+                  article: '2'
             from: "Intro"
             to: "modified"
         "#,
@@ -278,10 +284,12 @@ mod tests {
         let mod_3: TextAmendment = singleton_yaml::from_str(
             r#"
             reference:
-              act:
-                year: 2012
-                number: 1
-              article: '2'
+              SAE:
+                reference:
+                  act:
+                    year: 2012
+                    number: 1
+                  article: '2'
             from: "wrap_up"
             to: "modified"
         "#,

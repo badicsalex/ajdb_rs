@@ -6,10 +6,12 @@ children_original:
 modifications:
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '1'
       from: "hat"
       to: "tizenkettő"
 children_expected:

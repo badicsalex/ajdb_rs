@@ -10,12 +10,14 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: 74/A
-          paragraph: '2'
-          point: d
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: 74/A
+              paragraph: '2'
+              point: d
         from: gyermekpornográfia
         to: tizennyolcadik életévét be nem töltött személyt ábrázoló pornográf felvétel kínálása, átadása, hozzáférhetővé tétele, készítése, forgalomba hozatala, azzal való kereskedelem, illetve nagy nyilvánosság számára hozzáférhetővé tétele
   - cause:
@@ -28,12 +30,14 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: 74/A
-          paragraph: '2'
-          point: d
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: 74/A
+              paragraph: '2'
+              point: d
         from: (6)
         to: (2)–(5)
   - cause:
@@ -46,12 +50,14 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: 74/A
-          paragraph: '2'
-          point: d
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: 74/A
+              paragraph: '2'
+              point: d
         from: a) és c)
         to: b) pont és (6) bekezdés], tizennyolcadik életévét be nem töltött személynek vagy személyeknek pornográf műsorban való szerepeltetése vagy ilyen pornográf műsor szervezése [204/A. § (1) bekezdés b)
   - cause:
@@ -64,11 +70,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '420'
-          paragraph: '1'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '420'
+              paragraph: '1'
         from: anyag megmunkálása
         to: fűdarálás
   - cause:
@@ -81,11 +89,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2012
-            number: 100
-          article: '420'
-          paragraph: '1'
+          SAE:
+            reference:
+              act:
+                year: 2012
+                number: 100
+              article: '420'
+              paragraph: '1'
         from: anyag
         to: fű
 2012-01-03:

@@ -13,11 +13,13 @@ children_original:
 modifications:
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
-        paragraph: '1'
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '1'
+            paragraph: '1'
       from: "2042"
       to: "2069"
 children_expected:

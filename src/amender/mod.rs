@@ -2,7 +2,6 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-pub mod article_title_amendment;
 pub mod auto_repeal;
 pub mod block_amendment;
 pub mod extract;
@@ -17,7 +16,7 @@ use from_variants::FromVariants;
 use hun_law::{
     identifier::ActIdentifier,
     parser::semantic_info::AbbreviationsChanged,
-    semantic_info::{ArticleTitleAmendment, TextAmendment},
+    semantic_info::TextAmendment,
     structure::{Act, ChangeCause, LastChange},
     util::debug::WithElemContext,
 };
@@ -190,7 +189,6 @@ pub struct AppliableModification {
 
 #[derive(Debug, Clone, FromVariants, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppliableModificationType {
-    ArticleTitleAmendment(ArticleTitleAmendment),
     BlockAmendment(BlockAmendmentWithContent),
     Repeal(SimplifiedRepeal),
     TextAmendment(TextAmendment),
@@ -218,7 +216,6 @@ impl AffectedAct for AppliableModification {
 impl ModifyAct for AppliableModificationType {
     fn apply(&self, act: &mut Act, change_entry: &LastChange) -> Result<NeedsFullReparse> {
         match self {
-            AppliableModificationType::ArticleTitleAmendment(m) => m.apply(act, change_entry),
             AppliableModificationType::BlockAmendment(m) => m.apply(act, change_entry),
             AppliableModificationType::Repeal(m) => m.apply(act, change_entry),
             AppliableModificationType::TextAmendment(m) => m.apply(act, change_entry),
@@ -230,7 +227,6 @@ impl ModifyAct for AppliableModificationType {
 impl AffectedAct for AppliableModificationType {
     fn affected_act(&self) -> Result<ActIdentifier> {
         match self {
-            AppliableModificationType::ArticleTitleAmendment(m) => m.affected_act(),
             AppliableModificationType::BlockAmendment(m) => m.affected_act(),
             AppliableModificationType::Repeal(m) => m.affected_act(),
             AppliableModificationType::TextAmendment(m) => m.affected_act(),

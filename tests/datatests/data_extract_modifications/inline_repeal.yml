@@ -10,11 +10,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2011
-            number: 30
-          article: 7:43
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2011
+                number: 30
+              article: 7:43
+              paragraph: '3'
         from: Semmis
         to: Érvénytelen
   - cause:
@@ -27,11 +29,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2011
-            number: 30
-          article: '1'
-          paragraph: '3'
+          SAE:
+            reference:
+              act:
+                year: 2011
+                number: 30
+              article: '1'
+              paragraph: '3'
         from: Totális
         to: Megfelelő
 2012-01-16:

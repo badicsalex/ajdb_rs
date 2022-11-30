@@ -6,8 +6,8 @@ use anyhow::{bail, Result};
 use chrono::NaiveDate;
 use hun_law::{
     identifier::IdentifierCommon,
-    reference::{to_element::ReferenceToElement, Reference},
-    semantic_info::{EnforcementDate, SpecialPhrase, StructuralRepeal},
+    reference::{structural::StructuralReference, to_element::ReferenceToElement, Reference},
+    semantic_info::{EnforcementDate, RepealReference, SpecialPhrase},
     structure::{
         Act, ActChild, BlockAmendment, ChangeCause, ChildrenCommon, Paragraph, ParagraphChildren,
         SAEBody, SubArticleElement,
@@ -170,27 +170,26 @@ impl<'a> SAEVisitor for ModificationAccumulator<'a> {
         if self.ed_set.came_into_force_today(position, self.date) {
             if let Some(phrase) = &element.semantic_info.special_phrase {
                 match phrase {
-                    SpecialPhrase::ArticleTitleAmendment(sp) => {
-                        self.add(sp.clone().into(), position)
-                    }
-                    SpecialPhrase::Repeal(repeal) => {
-                        for repeal_position in &repeal.positions {
-                            self.add(
-                                SimplifiedRepeal {
-                                    position: repeal_position.clone(),
+                    SpecialPhrase::Repeal(reps) => {
+                        for rep in reps {
+                            match rep {
+                                RepealReference::Reference(reference) => self.add(
+                                    SimplifiedRepeal {
+                                        position: reference.clone(),
+                                    }
+                                    .into(),
+                                    position,
+                                ),
+                                RepealReference::StructuralReference(reference) => {
+                                    self.handle_structural_repeal(reference, position)
                                 }
-                                .into(),
-                                position,
-                            )
+                            }
                         }
                     }
                     SpecialPhrase::TextAmendment(tas) => {
                         for ta in tas {
                             self.add(ta.clone().into(), position)
                         }
-                    }
-                    SpecialPhrase::StructuralRepeal(sp) => {
-                        self.handle_structural_repeal(sp, position)
                     }
                     // These are handled specially with get_modifications_for_block_amendment
                     SpecialPhrase::StructuralBlockAmendment(_) => (),
@@ -237,14 +236,10 @@ impl<'a> ModificationAccumulator<'a> {
         })
     }
 
-    fn handle_structural_repeal(
-        &mut self,
-        structural_repeal: &StructuralRepeal,
-        cause: &Reference,
-    ) {
+    fn handle_structural_repeal(&mut self, position: &StructuralReference, cause: &Reference) {
         self.add(
             StructuralBlockAmendmentWithContent {
-                position: structural_repeal.position.clone(),
+                position: position.clone(),
                 pure_insertion: false,
                 content: Vec::new(),
             }

@@ -37,12 +37,10 @@ impl<'a> SAEVisitor for AutoRepealAccumulator<'a> {
         let mut add_it = if let Some(phrase) = &element.semantic_info.special_phrase {
             // Simple match isntead of matches! to make sure all cases are covered
             match phrase {
-                SpecialPhrase::ArticleTitleAmendment(_)
-                | SpecialPhrase::BlockAmendment(_)
+                SpecialPhrase::BlockAmendment(_)
                 | SpecialPhrase::Repeal(_)
                 | SpecialPhrase::TextAmendment(_)
-                | SpecialPhrase::StructuralBlockAmendment(_)
-                | SpecialPhrase::StructuralRepeal(_) => true,
+                | SpecialPhrase::StructuralBlockAmendment(_) => true,
                 // Does not need to be auto-repealed
                 SpecialPhrase::EnforcementDate(_) => false,
             }

@@ -2,9 +2,12 @@
 // Copyright 2022, Alex Badics
 // All rights reserved.
 
-use hun_law::reference::{
-    structural::{StructuralReference, StructuralReferenceElement},
-    Reference,
+use hun_law::{
+    reference::{
+        structural::{StructuralReference, StructuralReferenceElement},
+        Reference,
+    },
+    semantic_info::{TextAmendment, TextAmendmentReference},
 };
 
 use super::{AppliableModification, AppliableModificationType};
@@ -27,24 +30,36 @@ fn amendment_order_wrong(
 ) -> bool {
     match (earlier, later) {
         (
-            AppliableModificationType::TextAmendment(earlier),
-            AppliableModificationType::TextAmendment(later),
-        ) if earlier.reference.contains(&later.reference)
-            || later.reference.contains(&earlier.reference) =>
-        {
+            AppliableModificationType::TextAmendment(TextAmendment {
+                reference:
+                    TextAmendmentReference::SAE {
+                        reference: earlier, ..
+                    },
+                from: earlier_from,
+                to: earlier_to,
+            }),
+            AppliableModificationType::TextAmendment(TextAmendment {
+                reference:
+                    TextAmendmentReference::SAE {
+                        reference: later, ..
+                    },
+                from: later_from,
+                ..
+            }),
+        ) if earlier.contains(later) || later.contains(earlier) => {
             // Substring case, e.g.
             // - from: aaa
             //     to: bbb
             // - from: aaa xxx
             //     to: bbb zzz
             //
-            later.from.contains(&earlier.from)
+            later_from.contains(earlier_from)
             // Semi-swap case
             // -from: a
             //    to: b c d
             // -from: c
             //    to: x
-            || earlier.to.contains(&later.from)
+            || earlier_to.contains(later_from)
         }
         (
             AppliableModificationType::BlockAmendment(earlier),

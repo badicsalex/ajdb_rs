@@ -28,28 +28,34 @@ children_original:
 modifications:
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '1'
       from: Paragraph
       to: ""
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '2'
-        paragraph: '2'
-        point: 'b'
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '2'
+            paragraph: '2'
+            point: 'b'
       from: "point b"
       to: ""
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '2'
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '2'
       from: "XXX"
       to: ""
 children_expected:

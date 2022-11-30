@@ -25,13 +25,15 @@ children_original:
 modifications:
   - TextAmendment:
       reference:
-        act:
-          year: 2012
-          number: 1
-        article: '1'
-        paragraph: '2'
-        point: 'a'
-      amended_part: IntroOnly
+        SAE:
+          reference:
+            act:
+              year: 2012
+              number: 1
+            article: '1'
+            paragraph: '2'
+            point: 'a'
+          amended_part: IntroOnly
       from: "bbb"
       to: "xxx"
 children_expected:

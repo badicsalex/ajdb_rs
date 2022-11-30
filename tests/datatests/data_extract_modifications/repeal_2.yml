@@ -55,11 +55,13 @@
     modification:
       TextAmendment:
         reference:
-          act:
-            year: 2003
-            number: 1
-          article: '4'
-          paragraph: '1'
+          SAE:
+            reference:
+              act:
+                year: 2003
+                number: 1
+              article: '4'
+              paragraph: '1'
         from: valami
         to: ''
 2012-01-03:
