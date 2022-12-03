@@ -8,8 +8,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{fs, io::Write, path::PathBuf};
 
-use anyhow::Result;
 use anyhow::{anyhow, Context};
+use anyhow::{ensure, Result};
 use flate2::write::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
@@ -144,6 +144,39 @@ impl Persistence {
 
     pub fn exists(&self, key: &PersistenceKey) -> Result<bool> {
         Ok(self.cache.contains(key) || self.path_for(key).exists())
+    }
+
+    pub fn is_link(&self, key: &PersistenceKey) -> Result<bool> {
+        Ok(self.cache.contains(key) || self.path_for(key).is_symlink())
+    }
+
+    pub fn link(&self, from: &PersistenceKey, to: &PersistenceKey) -> Result<()> {
+        let from_path = self.path_for(from);
+        ensure!(
+            from_path.exists(),
+            "Error linking {from} to {to}: file does not exist"
+        );
+        let to_path = self.path_for(to);
+        if to_path.exists() {
+            fs::remove_file(&to_path)?
+        }
+        let to_path_parent = to_path
+            .parent()
+            .ok_or_else(|| anyhow!("{to_path:?} is not in a directory"))?;
+        fs::create_dir_all(to_path_parent)
+            .with_context(|| anyhow!("Creating directories failed for {to}"))?;
+        std::os::unix::fs::symlink(
+            pathdiff::diff_paths(
+                fs::canonicalize(&from_path)?,
+                fs::canonicalize(to_path_parent)?,
+            )
+            .ok_or_else(|| {
+                anyhow!("Could not compute relative path for {from_path:?} to {to_path:?}")
+            })?,
+            to_path,
+        )?;
+        // TODO: cache
+        Ok(())
     }
 
     fn path_for(&self, key: &str) -> PathBuf {

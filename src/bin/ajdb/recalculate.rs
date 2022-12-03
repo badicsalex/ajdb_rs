@@ -41,6 +41,9 @@ fn recalculate_one_date(persistence: &Persistence, date: NaiveDate) -> Result<()
         .filter(|ae| ae.is_date_interesting(date))
         .map(|ae| ae.identifier())
         .collect();
+    if act_ids.is_empty() {
+        return Ok(());
+    }
 
     // NOTE: It's important to go in reverse, since there may be later acts
     //       that modify earlier acts on the same enforcement day.

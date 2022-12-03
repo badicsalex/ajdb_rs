@@ -48,13 +48,23 @@ impl<'p> ActSet<'p> {
         old_date: NaiveDate,
         new_date: NaiveDate,
     ) -> Result<()> {
-        let mut old_data = Self::load(persistence, old_date)?.data;
-        let mut new = Self::load(persistence, new_date)?;
-        Arc::make_mut(&mut new.data)
-            .acts
-            .append(&mut Arc::make_mut(&mut old_data).acts);
-        new.save()?;
-        Ok(())
+        let from_key = ActSetSpecifics::persistence_key(old_date);
+        let to_key = ActSetSpecifics::persistence_key(new_date);
+        if persistence.exists(&from_key)?
+            && (!persistence.exists(&to_key)? || persistence.is_link(&to_key)?)
+        {
+            persistence
+                .link(&from_key, &to_key)
+                .with_context(|| anyhow!("Error linking {old_date} to {new_date}"))
+        } else {
+            let mut old_data = Self::load(persistence, old_date)?.data;
+            let mut new = Self::load(persistence, new_date)?;
+            Arc::make_mut(&mut new.data)
+                .acts
+                .append(&mut Arc::make_mut(&mut old_data).acts);
+            new.save()?;
+            Ok(())
+        }
     }
 
     pub fn has_act(&self, id: ActIdentifier) -> bool {
