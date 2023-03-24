@@ -3,6 +3,7 @@ name = "ajdb"
 version = "0.1.0"
 edition = "2021"
 default-run = "ajdb"
+license = "AGPL-3.0-only"
 
 [dependencies]
 anyhow = "1.0"
