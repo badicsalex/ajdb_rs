@@ -5,6 +5,8 @@ then displaying them on a web UI.
 
 See [this hungarian presentation](https://ajdb.hu/prez/basic_sales/) about the project.
 
+![Screenshot](screenshot.png)
+
 The web UI:
 
 * Shows the in-force state of processed act for any date between its publication and 1-2 years into the future
