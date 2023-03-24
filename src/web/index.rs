@@ -67,16 +67,21 @@ pub async fn render_index(
                     }
                     .inner_container {
                         p {
-                            "Egy fejlesztés alatt lévő, a "
-                            a href="https://github.com/badicsalex/hun_law_rs" { "hun_law keretrendszerre"}
-                            " épülő jogtár (és egyéb) projekt."
-                            br;
+                            "Egy "
+                            a href="https://github.com/badicsalex/ajdb_rs" { "nyílt forráskódú"}
+                            " jogi adatbázis projekt. "
                             "Használata csak saját felelősségre (kezelje úgy, mintha az itt lévő adatok 100%-a hibás lenne)."
                             br;
                             br;
                             "Ha kérdése, észrevétele, ötlete van, mindenképpen küldjön egy levelet az "
                             a style="font-weight: bold" href="mailto:info@ajdb.hu" { "info@ajdb.hu" }
-                            " címre."
+                            " címre, vagy nyisson egy issue-t githubon."
+                            br;
+                            br;
+                            "Az adatbázis elérhető "
+                            a href="/db" { "gépi feldolgozásra alkalmas formában" }
+                            " is. A sémát a kódból ki lehet olvasni, de e-mailben is szívesen elmagyarázzuk."
+
                         }
                         h3 { "Fontos elérhető törvények:" }
                         @for (abbreviation, id) in important_acts {
