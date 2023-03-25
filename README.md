@@ -3,6 +3,8 @@
 A small project for computing the in-force state of Hungarian law and
 then displaying them on a web UI.
 
+You can see it in action at **[ajdb.hu](https://ajdb.hu)**
+
 See [this hungarian presentation](https://ajdb.hu/prez/basic_sales/) about the project.
 
 ![Screenshot](screenshot.png)
