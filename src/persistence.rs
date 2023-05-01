@@ -58,7 +58,7 @@ impl Persistence {
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Persistence {
             persistence_dir: path.into(),
-            cache: CacheBackend::new(NonZeroUsize::new(1024).unwrap()),
+            cache: CacheBackend::new(NonZeroUsize::new(64).unwrap()),
         }
     }
 
